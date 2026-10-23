@@ -5,6 +5,9 @@ build/
 .astro/
 target/
 *.log
+# Scenario disks contain in-world log files: they are content, not build output.
+!scenarios/**/*.log
+!scenarios/**/log/**
 .env
 .env.*
 !.env.example
