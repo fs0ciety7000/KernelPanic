@@ -51,6 +51,19 @@ describe('shell', () => {
     expect(h.sh.complete('wh').matches).toContain('whoami');
   });
 
+  it('sorts by delimited numeric field', async () => {
+    const h = harness(miniBundle());
+    await h.run('echo "a,3" > f.csv && echo "b,10" >> f.csv && echo "c,2" >> f.csv');
+    expect((await h.run('sort -t, -k2 -n f.csv')).out).toBe('c,2\na,3\nb,10\n');
+    expect((await h.run('sort -t , -k 2 -nr f.csv | head -1')).out).toBe('b,10\n');
+  });
+
+  it('round-trips hex with xxd -p / -r -p', async () => {
+    const h = harness(miniBundle());
+    expect((await h.run('echo -n hi | xxd -p')).out).toBe('6869\n');
+    expect((await h.run('echo 4c45414b | xxd -r -p')).out).toBe('LEAK');
+  });
+
   it('blocks execution of untrusted files', async () => {
     const h = harness(miniBundle());
     await h.run('echo "#!/bin/sh" > run.sh && chmod +x run.sh');

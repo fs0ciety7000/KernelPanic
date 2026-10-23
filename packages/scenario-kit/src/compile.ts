@@ -17,6 +17,8 @@ import {
   type ScriptedCommand,
   type Effect,
   type ScenarioIndexEntry,
+  type EvidenceDef,
+  type EndingDef,
 } from '@kp/kernel';
 
 const BINARY_MIME: Record<string, string> = {
@@ -29,7 +31,7 @@ const BINARY_MIME: Record<string, string> = {
 
 const KNOWN_EVENTS = new Set([
   'fs.read', 'fs.write', 'fs.list', 'cmd.exec', 'auth.sudo', 'auth.su', 'mail.open', 'image.open',
-  'app.open', 'scenario.flag', 'objective.complete',
+  'app.open', 'scenario.flag', 'objective.complete', 'evidence.found', 'choice.made',
 ]);
 
 export class ScenarioError extends Error {
@@ -50,7 +52,9 @@ interface RawObjective extends Omit<ObjectiveDef, 'answer'> {
   answer?: { label: string; placeholder?: string; accept: string[]; normalize?: Array<'trim' | 'lower' | 'nospace'> };
 }
 
-interface RawScenario extends Omit<ScenarioBundle, 'format' | 'fs' | 'deliveries' | 'users' | 'objectives'> {
+interface RawScenario extends Omit<ScenarioBundle, 'format' | 'fs' | 'deliveries' | 'users' | 'objectives' | 'evidence' | 'endings'> {
+  evidence?: EvidenceDef[];
+  endings?: EndingDef[];
   users: Array<UserDef & { password?: string }>;
   permissions?: RawPermission[];
   defaults?: { mtime?: string };
@@ -184,6 +188,13 @@ export function compileScenario(dir: string): ScenarioBundle {
   const flags = new Set(Object.values(commands).flatMap((c) => c.rules.map((r) => r.emit).filter(Boolean) as string[]));
 
   // ── Objectives ────────────────────────────────────────────────────────
+  const evidenceIds = new Set((raw.evidence ?? []).map((e) => e.id));
+  for (const o of raw.objectives) {
+    for (const opt of o.choice?.options ?? []) {
+      flags.add(`choice:${o.id}:${opt.id}`);
+      for (const f of opt.flags ?? []) flags.add(f);
+    }
+  }
   const ids = new Set<string>();
   const checkEffects = (o: RawObjective, fx: Effect[]) => {
     for (const e of fx) {
@@ -196,9 +207,24 @@ export function compileScenario(dir: string): ScenarioBundle {
     if (ids.has(o.id)) problems.push(`duplicate objective id '${o.id}'`);
     ids.add(o.id);
     checkEffects(o, o.onComplete ?? []);
+    for (const opt of o.choice?.options ?? []) checkEffects(o, opt.onSelect ?? []);
   }
   const objectives: ObjectiveDef[] = raw.objectives.map((o) => {
-    if (!o.trigger && !o.answer) problems.push(`objective ${o.id}: needs a trigger or an answer`);
+    if (!o.trigger && !o.answer && !o.choice) problems.push(`objective ${o.id}: needs a trigger, an answer or a choice`);
+    if (o.choice) {
+      const optIds = new Set<string>();
+      if (!o.choice.options?.length) problems.push(`objective ${o.id}: choice has no options`);
+      for (const opt of o.choice.options ?? []) {
+        if (optIds.has(opt.id)) problems.push(`objective ${o.id}: duplicate option '${opt.id}'`);
+        optIds.add(opt.id);
+        for (const ev of opt.requiresEvidence ?? []) {
+          if (!evidenceIds.has(ev)) problems.push(`objective ${o.id}: option '${opt.id}' requires unknown evidence '${ev}'`);
+        }
+      }
+      if (!o.choice.options?.some((opt) => !opt.requiresEvidence?.length)) {
+        problems.push(`objective ${o.id}: at least one option must need no evidence (the player can always decide)`);
+      }
+    }
     for (const r of o.requires ?? []) if (!ids.has(r)) problems.push(`objective ${o.id}: requires unknown '${r}'`);
     for (const leaf of o.trigger ? leaves(o.trigger) : []) {
       if (!KNOWN_EVENTS.has(leaf.event)) problems.push(`objective ${o.id}: unknown event '${leaf.event}'`);
@@ -229,6 +255,30 @@ export function compileScenario(dir: string): ScenarioBundle {
       },
     };
   });
+
+  // Evidence & endings
+  const seenEv = new Set<string>();
+  for (const ev of raw.evidence ?? []) {
+    if (seenEv.has(ev.id)) problems.push(`duplicate evidence id '${ev.id}'`);
+    seenEv.add(ev.id);
+    if (!ev.title || !ev.summary) problems.push(`evidence ${ev.id}: needs title and summary`);
+    if (ev.source && !entries.has(ev.source)) problems.push(`evidence ${ev.id}: source '${ev.source}' not in fs/`);
+    if (!ev.trigger) problems.push(`evidence ${ev.id}: needs a trigger`);
+    for (const leaf of ev.trigger ? leaves(ev.trigger) : []) {
+      if (!KNOWN_EVENTS.has(leaf.event)) problems.push(`evidence ${ev.id}: unknown event '${leaf.event}'`);
+      const p = leaf.where?.path;
+      if (typeof p === 'string' && !entries.has(p)) problems.push(`evidence ${ev.id}: trigger path '${p}' not in fs/`);
+    }
+  }
+  const endings = raw.endings ?? [];
+  for (const e of endings) {
+    for (const f of [...(e.flags ?? []), ...(e.notFlags ?? [])]) {
+      if (!flags.has(f)) problems.push(`ending ${e.id}: flag '${f}' is never raised`);
+    }
+  }
+  if (endings.length && !endings.some((e) => !e.flags?.length && !e.notFlags?.length) && !raw.outro) {
+    problems.push('endings: add an unconditional ending or an outro as fallback');
+  }
 
   // Dependency cycles
   const visiting = new Set<string>();
@@ -269,6 +319,8 @@ export function compileScenario(dir: string): ScenarioBundle {
     processes: raw.processes ?? [],
     network: raw.network ?? {},
     objectives,
+    evidence: raw.evidence ?? [],
+    endings,
     intro: raw.intro,
     outro: raw.outro,
   };
@@ -282,6 +334,7 @@ export function indexEntry(b: ScenarioBundle): ScenarioIndexEntry {
     summary: b.summary,
     difficulty: b.difficulty,
     estimatedMinutes: b.estimatedMinutes,
+    endings: b.endings?.length || undefined,
     file: `${b.id}.json`,
   };
 }

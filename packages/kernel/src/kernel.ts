@@ -1,6 +1,6 @@
 import { EventBus } from './events';
 import { ROOT, Vfs, type VfsDiff } from './vfs/vfs';
-import { normalize } from './vfs/path';
+import { dirname, normalize } from './vfs/path';
 import { Users } from './users';
 import { Shell, type CommandDef, type ShellIO } from './shell/shell';
 import { makeScripted } from './shell/scripted';
@@ -103,6 +103,7 @@ export class Kernel {
 
   /** Write performed by the system (scenario effects), owned by `owner` (default root). */
   systemWrite(path: string, content: string, mode?: string, owner?: string): void {
+    this.vfs.mkdir(dirname(path), ROOT, { parents: true });
     this.vfs.writeFile(path, content, ROOT);
     if (mode) this.vfs.chmod(path, parseInt(mode, 8), ROOT);
     if (owner) this.vfs.chown(path, owner, owner, ROOT);

@@ -29,6 +29,7 @@ defaults:
 
 session:
   user: elias
+  email: elias@lumengrid.fr
   cwd: /home/elias
   autostart:
     - { app: mail }
@@ -190,6 +191,54 @@ commands:
         version                   print version
 
       See ~/Documents/procedures/runbook-lumenctl.md
+
+# ─── Pièces à conviction ────────────────────────────────────────────────────
+evidence:
+  - id: phishing
+    title: Le faux mail du support IT
+    summary: "16/04 18:41 — support@lumengr1d.com (« 1 » au lieu de « i »), relayé par mail.k4de-relay.net [185.220.101.47]."
+    source: /home/elias/Maildir/cur/1776357720.M104P2104.ws-varga.eml
+    tag: vecteur
+    trigger: { event: mail.open, where: { messageId: 20260416164150.77310@lumengr1d.com } }
+  - id: reply
+    title: La réponse d'Elias
+    summary: "16/04 18:57 — Elias confirme avoir « validé » son mot de passe… identique à celui de sa session."
+    source: /home/elias/Maildir/.Sent/cur/1776358620.M106P2110.ws-varga.eml
+    tag: vecteur
+    trigger:
+      any:
+        - { event: mail.open, where: { messageId: e7b1a3f0.ev@lumengrid.fr } }
+        - { event: fs.read, where: { path: /home/elias/Maildir/.Sent/cur/1776358620.M106P2110.ws-varga.eml } }
+  - id: ssh-login
+    title: Connexion SSH nocturne
+    summary: "17/04 02:47:12 — Accepted password for elias from 185.220.101.47 ; sudo sur override.key à 02:49, lumenctl queue à 03:12."
+    source: /var/log/auth.log
+    tag: chronologie
+    trigger: { event: fs.read, where: { path: /var/log/auth.log } }
+  - id: cron-script
+    title: Script de persistance
+    summary: "~/.cache/.sync/sync.sh lancé toutes les 10 min par la crontab d'elias depuis 02:52."
+    source: /home/elias/.cache/.sync/sync.sh
+    tag: persistance
+    trigger: { event: fs.read, where: { path: /home/elias/.cache/.sync/sync.sh } }
+  - id: sticky-note
+    title: Le post-it
+    summary: "« mdp session = VPN (!!) → chat + année d'adoption » — collé sur l'écran d'Elias."
+    source: /home/elias/Pictures/bureau.svg
+    tag: faille humaine
+    trigger: { event: image.open, where: { path: /home/elias/Pictures/bureau.svg } }
+  - id: ssh-key
+    title: Clé SSH ajoutée
+    summary: "authorized_keys modifié à 02:55 : clé ed25519 « kade@ghost »."
+    source: /home/elias/.ssh/authorized_keys
+    tag: persistance
+    trigger: { event: fs.read, where: { path: /home/elias/.ssh/authorized_keys } }
+  - id: firmware
+    title: Firmware piégé
+    summary: "lumen-fw-4.2.1-hotfix.img : version inexistante, non signée, watchdog désactivé, breaker.cmd=OPEN_ALL, signé « kade@ghostshift »."
+    source: /tmp/.fw/lumen-fw-4.2.1-hotfix.img
+    tag: charge utile
+    trigger: { event: cmd.exec, regex: { line: "lumen-fw-4\\.2\\.1" } }
 
 # ─── Objectifs ───────────────────────────────────────────────────────────────
 objectives:

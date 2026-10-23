@@ -1,0 +1,9 @@
+point,date_prelevement,methode,pfas_ugl,seuil_ugl,statut
+STA-P1,2026-03-03,ponctuel (rév. A),0.04,0.10,conforme
+STA-P2,2026-03-03,ponctuel (rév. A),0.08,0.10,conforme
+STA-P3,2026-03-03,ponctuel (rév. A),0.17,0.10,NON CONFORME
+STA-P4,2026-03-03,ponctuel (rév. A),0.31,0.10,NON CONFORME
+STA-P5,2026-03-03,ponctuel (rév. A),0.06,0.10,conforme
+STA-P6,2026-03-03,ponctuel (rév. A),0.12,0.10,NON CONFORME
+STA-P7,2026-03-03,ponctuel (rév. A),0.22,0.10,NON CONFORME
+STA-P8,2026-03-03,ponctuel (rév. A),0.14,0.10,NON CONFORME

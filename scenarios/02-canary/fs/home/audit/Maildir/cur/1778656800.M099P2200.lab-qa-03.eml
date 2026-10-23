@@ -1,0 +1,21 @@
+Return-Path: <it-support@aqualis.fr>
+Delivered-To: audit@lab-qa-03.aqualis.local
+Received: from mx.aqualis.fr (mx.aqualis.fr [10.30.0.25])
+	by lab-qa-03.aqualis.local (Postfix) with ESMTP id 7A11BF40
+	for <audit@lab-qa-03.aqualis.local>; Wed, 13 May 2026 09:20:00 +0200
+From: Support IT Aqualis <it-support@aqualis.fr>
+To: audit@lab-qa-03.aqualis.local
+Subject: [IT-8812] Compte prestataire créé
+Date: Wed, 13 May 2026 09:20:00 +0200
+Message-ID: <it-8812@aqualis.fr>
+Content-Type: text/plain; charset=utf-8
+
+Bonjour,
+
+Le compte « audit » a été créé sur lab-qa-03 à la demande de M. Sorel (ticket IT-8812).
+Droits : sudo (administration), lecture des journaux (groupe adm).
+Outil de badges installé : /usr/local/bin/accesslog (usage : accesslog --date AAAA-MM-JJ).
+
+Le compte sera désactivé automatiquement le 14/05 à 00:00.
+
+Support IT — poste 2100

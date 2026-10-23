@@ -34,6 +34,7 @@
         <div class="meta">
           <span class="kp-badge violet">Dossier {String(i + 1).padStart(2, '0')}</span>
           <span class="kp-badge cyan">{DIFF[s.difficulty] ?? s.difficulty}</span>
+          {#if s.endings && s.endings > 1}<span class="kp-badge green">{os.discoveredEndings(s.id).length}/{s.endings} fins</span>{/if}
           {#if s.estimatedMinutes}<span class="mins mono">~{s.estimatedMinutes} min</span>{/if}
         </div>
         <h2>{s.title}</h2>

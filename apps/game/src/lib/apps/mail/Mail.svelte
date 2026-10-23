@@ -118,7 +118,7 @@
 
 <div class="mail">
   <aside class="kp-sidebar">
-    <div class="account mono">{k.sessionUser}@lumengrid.fr</div>
+    <div class="account mono">{k.bundle.session.email ?? `${k.sessionUser}@${k.machine.domain ?? k.machine.hostname}`}</div>
     {#each FOLDERS as f (f.id)}
       <button class="kp-side-item" class:active={folder === f.id} onclick={() => { folder = f.id; selected = null; }}>
         <Icon name={f.icon} size={15} />{f.name}

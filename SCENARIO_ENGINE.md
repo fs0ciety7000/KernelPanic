@@ -59,6 +59,7 @@ machine:
 session:
   user: elias                   # utilisateur de la session graphique / du terminal
   cwd: /home/elias
+  email: elias@lumengrid.fr     # adresse affichée par l'app Mail (défaut : user@domaine)
   autostart:                    # apps ouvertes au démarrage
     - { app: mail }
 
@@ -81,6 +82,12 @@ commands:                       # outils propres à l'univers (voir §4)
   lumenctl: { … }
 
 objectives:                     # voir §3
+  - …
+
+evidence:                       # pièces à conviction, voir §3.3
+  - …
+
+endings:                        # fins multiples, voir §3.4
   - …
 
 intro:  { title: …, lines: [ … ] }   # écran de briefing après le boot
@@ -138,6 +145,8 @@ trigger:
 | `app.open` | `appId, path?` | lancement d'app |
 | `scenario.flag` | `id` | commandes scénarisées (`emit`) |
 | `objective.complete` | `id` | runtime (chaînage) |
+| `evidence.found` | `id, title` | runtime (pièce découverte) |
+| `choice.made` | `objective, option` | runtime (décision prise) |
 
 ### 3.2 Effets `onComplete`
 
@@ -148,6 +157,56 @@ trigger:
 | `write` | `{ write: { path, content, mode? } }` | fichier créé/remplacé (en root) |
 | `flag` | `{ flag: alarm-raised }` | émet `scenario.flag` (chaînage) |
 | `end` | `{ end: true }` | écran de fin (score, temps, indices utilisés) |
+
+### 3.3 Pièces à conviction
+
+Inspiré d'*Orwell* : l'enquête ne se résume pas à des réponses justes, elle accumule des **faits sourcés** que le joueur pourra (ou non) utiliser. Une pièce est découverte automatiquement quand son trigger se déclenche, une seule fois, à n'importe quel moment de la partie, et s'affiche dans l'onglet « Pièces » du Dossier avec un lien vers sa source.
+
+```yaml
+evidence:
+  - id: exec-trace
+    title: Trace d'exécution auditd
+    summary: "06/05 23:10:02 — auid=1001 (mlefort) lance python3 ~/.local/share/.cache/sync.py"
+    source: /var/log/audit/audit.log      # rouvrable depuis le Dossier
+    tag: témoin                           # badge libre : vecteur, témoin, contradiction, contexte…
+    trigger: { event: cmd.exec, regex: { line: "audit\\.log" } }
+```
+
+Une pièce peut être **trompeuse** : le moteur ne le sait pas, c'est au joueur d'en juger (et au scénario de punir une conclusion hâtive par la fin qu'il obtient).
+
+### 3.4 Choix et fins multiples
+
+Un objectif peut être une **décision** (`choice`). Chaque option peut exiger des pièces : on ne peut accuser, dénoncer ou protéger qu'avec ce qu'on a trouvé. Au moins une option doit rester toujours disponible. Le choix est définitif.
+
+```yaml
+- id: verdict
+  title: Rendre votre rapport
+  requires: [qui]
+  choice:
+    prompt: Que transmettez-vous à votre client ?
+    options:
+      - id: name-source
+        label: Donner le nom de la source
+        detail: Le contrat est rempli.
+        requiresEvidence: [exec-trace]
+        flags: [source-exposed]           # + flag automatique `choice:verdict:name-source`
+        onSelect: [{ deliver: 06-client-merci.eml }]
+      - id: inconclusive
+        label: Conclure à une enquête non concluante
+  onComplete: [{ end: true }]
+
+endings:                                   # évaluées dans l'ordre à l'effet `end` ; la 1re qui correspond gagne
+  - id: price-of-silence
+    title: Le prix du silence
+    text: …
+    flags: [source-exposed]
+    notFlags: []
+  - id: fog                                # sans condition = fin par défaut
+    title: Brouillard
+    text: …
+```
+
+L'écran de fin affiche la fin obtenue (« Fin 2/4 ») ; `outro` reste le repli si aucune fin ne correspond.
 
 ## 4. Commandes scénarisées
 
@@ -176,7 +235,7 @@ commands:
       usage: lumenctl <status|jobs|abort> [options]
 ```
 
-Champs d’une règle : `ifFlag` / `unlessFlag` (conditions sur un flag déjà levé), `match` (regex sur les arguments joints par des espaces), `output` (texte, ANSI autorisé via `\e[…m`), `exit` (défaut 0), `requireRoot`, `emit`, `once`, `write` (même forme que l'effet).
+Champs d’une règle : `ifFlag` / `unlessFlag` (conditions sur un flag déjà levé), `write` peut être une liste (ex. `unzip` qui extrait plusieurs fichiers ; chemins avec `{{cwd}}`), `match` (regex sur les arguments joints par des espaces), `output` (texte, ANSI autorisé via `\e[…m`), `exit` (défaut 0), `requireRoot`, `emit`, `once`, `write` (même forme que l'effet).
 
 Variables substituées dans `output` : `{{user}}`, `{{hostname}}`, `{{date}}`, `{{cwd}}`.
 

@@ -8,11 +8,15 @@
 - 🖥️ Desktop : macOS · Windows · Linux (Tauri)
 - 📖 Site : `https://kernel.fsociety.org/`
 
-## Le premier dossier : *Ghost Shift*
+## Les dossiers
 
-> 03:12. Le compte de l'admin OT d'un opérateur électrique programme un firmware non signé sur 14 sous-stations. Exécution à 09:00. L'admin est en congé, injoignable. Vous avez sa machine.
+| # | Dossier | Niveau | Pitch |
+|---|---|---|---|
+| 00 | **Premier jour** *(en cours)* | Tutoriel · ~12 min | Premier matin chez Ironveil, cabinet de réponse à incident. Votre mentore vous a préparé une machine d'entraînement. |
+| 01 | **Ghost Shift** | Débutant → intermédiaire · ~40 min | 03:12 : le compte de l'admin d'un opérateur électrique programme un firmware non signé sur 14 sous-stations. Exécution à 09:00. |
+| 02 | **Canary** | Intermédiaire · ~40 min · 4 fins | On vous paie pour démasquer la source d'une fuite dans la presse. Les fichiers racontent une autre histoire, et c'est vous qui décidez ce que dira votre rapport. |
 
-8 objectifs + 2 bonus, ~40 min, débutant → intermédiaire. Chaque application du bureau sert l'enquête.
+Comme dans *Orwell*, chaque enquête accumule des **pièces à conviction** sourcées, dont certaines sont trompeuses. Les **décisions** finales ne sont possibles qu'avec les bonnes pièces, et mènent à des **fins différentes**, mémorisées d'une partie à l'autre.
 
 ## Le bureau
 
@@ -24,7 +28,7 @@
 | **Notes** | Éditeur de texte (Ctrl+S), lecture seule selon les droits | Runbooks, todo, vos propres notes |
 | **Images** | Visionneuse, zoom, panneau métadonnées/EXIF | Une photo dit quand, où, et parfois quoi |
 | **Logs** | Journaux colorés par gravité, filtres (texte, `/regex/`, presets) | La nuit, minute par minute |
-| **Dossier** | Objectifs, réponses, indices à paliers, score | Le fil de l'enquête |
+| **Dossier** | Objectifs, réponses, indices à paliers, pièces à conviction, décisions | Le fil de l'enquête |
 
 ## Démarrer
 
@@ -56,7 +60,7 @@ apps/
 packages/
   kernel/        Noyau TypeScript pur : VFS, utilisateurs, shell, commandes, runtime de scénario
   scenario-kit/  Compilateur/validateur de scénarios (YAML + fichiers → bundle JSON)
-scenarios/       Contenu jouable (01-ghost-shift/)
+scenarios/       Contenu jouable (00-premier-jour, 01-ghost-shift, 02-canary)
 docker/          Image web (nginx : site /, jeu /play/, proxy /api/), compose Coolify
 docs/            Roadmap
 .claude/         Agents spécialisés et skills

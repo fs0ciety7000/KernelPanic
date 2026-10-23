@@ -16,6 +16,8 @@ interface StoredGame {
 }
 
 const SAVE_KEY = (id: string) => `kp.save.${id}`;
+/** Endings reached across all playthroughs (survives "Nouvelle partie"). */
+const ENDINGS_KEY = (id: string) => `kp.endings.${id}`;
 const AUTOSAVE_MS = 15_000;
 
 class OS {
@@ -49,6 +51,10 @@ class OS {
     } catch (e) {
       this.error = `Impossible de charger les scénarios (${(e as Error).message}). Lancez \`pnpm scenarios\`.`;
     }
+  }
+
+  discoveredEndings(id: string): string[] {
+    return load<string[]>(ENDINGS_KEY(id)) ?? [];
   }
 
   hasSave(id: string): boolean {
@@ -108,8 +114,16 @@ class OS {
         action: { label: 'Lire', run: () => wm.open('mail', { path: e.path }) },
       }, 9000);
     });
+    on('evidence.found', (e) => {
+      notify.push({ kind: 'evidence', title: 'Pièce ajoutée au dossier', body: e.title, action: { label: 'Voir', run: () => wm.open('case', { tab: 'evidence' }) } }, 6000);
+    });
     on('scenario.notify', (e) => notify.push({ kind: 'system', title: e.title, body: e.body }));
     on('scenario.end', () => {
+      const ending = k.runtime.state.ending;
+      if (ending) {
+        const seen = this.discoveredEndings(k.bundle.id);
+        if (!seen.includes(ending)) store(ENDINGS_KEY(k.bundle.id), [...seen, ending]);
+      }
       this.save();
       setTimeout(() => {
         this.phase = 'ended';

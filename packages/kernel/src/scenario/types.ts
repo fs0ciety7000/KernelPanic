@@ -46,7 +46,8 @@ export interface ScriptedRule {
   requireRoot?: boolean;
   emit?: string;
   once?: boolean;
-  write?: WriteEffect;
+  /** One file or several (e.g. an archive extracted by a scenario tool). */
+  write?: WriteEffect | WriteEffect[];
   /** Rule only applies once this scenario flag has been raised… */
   ifFlag?: string;
   /** …or only while it has not. */
@@ -83,6 +84,45 @@ export type Effect =
   | { flag: string }
   | { end: true };
 
+export interface ChoiceOption {
+  id: string;
+  label: string;
+  /** Consequence shown under the option before confirming. */
+  detail?: string;
+  /** Evidence the player must have found for this option to be available (Orwell-style: you act on what you know). */
+  requiresEvidence?: string[];
+  /** Flags raised when chosen (in addition to `choice:<objective>:<option>`). */
+  flags?: string[];
+  onSelect?: Effect[];
+}
+
+export interface ChoiceDef {
+  prompt: string;
+  options: ChoiceOption[];
+}
+
+export interface EvidenceDef {
+  id: string;
+  title: string;
+  /** One-line fact, as it would be written in a report. */
+  summary: string;
+  /** VFS path the player can reopen from the case file. */
+  source?: string;
+  /** Free label shown as a badge (e.g. "vecteur", "témoin", "contradiction"). */
+  tag?: string;
+  trigger: Trigger;
+}
+
+export interface EndingDef {
+  id: string;
+  title: string;
+  text: string;
+  /** All of these flags must be raised… */
+  flags?: string[];
+  /** …and none of these. An ending with no condition is the default. */
+  notFlags?: string[];
+}
+
 export interface ObjectiveDef {
   id: string;
   title: string;
@@ -91,6 +131,8 @@ export interface ObjectiveDef {
   optional?: boolean;
   trigger?: Trigger;
   answer?: AnswerDef;
+  /** Decision objective: completed by picking an option in the case file. */
+  choice?: ChoiceDef;
   hints?: string[];
   onComplete?: Effect[];
 }
@@ -106,7 +148,13 @@ export interface ScenarioBundle {
   estimatedMinutes?: number;
   locale: string;
   machine: MachineDef;
-  session: { user: string; cwd?: string; autostart?: Array<{ app: string; path?: string }> };
+  session: {
+    user: string;
+    cwd?: string;
+    /** Address shown by the Mail app (default: user@machine domain). */
+    email?: string;
+    autostart?: Array<{ app: string; path?: string }>;
+  };
   users: UserDef[];
   fs: FsEntry[];
   deliveries: Record<string, string>;
@@ -114,6 +162,9 @@ export interface ScenarioBundle {
   processes: ProcessDef[];
   network: NetworkDef;
   objectives: ObjectiveDef[];
+  evidence?: EvidenceDef[];
+  /** Evaluated in order when an `end` effect fires; first match wins, else `outro`. */
+  endings?: EndingDef[];
   intro?: { title: string; lines: string[] };
   outro?: { title: string; text: string };
 }
@@ -125,5 +176,7 @@ export interface ScenarioIndexEntry {
   summary?: string;
   difficulty: ScenarioBundle['difficulty'];
   estimatedMinutes?: number;
+  /** Number of distinct endings (shown as a replay goal). */
+  endings?: number;
   file: string;
 }

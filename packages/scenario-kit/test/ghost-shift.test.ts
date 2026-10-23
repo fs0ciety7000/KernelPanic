@@ -105,6 +105,7 @@ describe('ghost-shift playthrough', () => {
     expect(kernel.runtime.ended).toBe(true);
     expect(kernel.runtime.progress()).toEqual({ done: 8, total: 8 });
     expect(kernel.runtime.score().bonus).toBe(300);
+    expect(kernel.runtime.state.evidence).toEqual(expect.arrayContaining(['ssh-login', 'cron-script', 'ssh-key', 'firmware']));
     expect((await run('ls -1 ~/Maildir/new')).out.split('\n').filter(Boolean)).toHaveLength(5);
   });
 

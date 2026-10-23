@@ -2,7 +2,7 @@
   import { notify } from '$lib/os/notify.svelte';
   import Icon from './Icon.svelte';
 
-  const ICON = { system: 'info', objective: 'diamond', mail: 'mail', error: 'alert', success: 'check-circle' } as const;
+  const ICON = { system: 'info', objective: 'diamond', evidence: 'key', mail: 'mail', error: 'alert', success: 'check-circle' } as const;
 </script>
 
 <div class="toasts" aria-live="polite">
@@ -48,7 +48,8 @@
   @keyframes slide { from { opacity: 0; transform: translateX(16px); } }
   .toast.objective { border-left: 2px solid var(--kp-violet); box-shadow: var(--kp-shadow-2), 0 0 40px -12px rgba(157, 123, 255, 0.5); }
   .ico { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 8px; flex-shrink: 0; background: var(--kp-cyan-dim); color: var(--kp-cyan); }
-  .objective .ico { background: var(--kp-violet-dim); color: var(--kp-violet); }
+  .objective .ico, .evidence .ico { background: var(--kp-violet-dim); color: var(--kp-violet); }
+  .toast.evidence { border-left: 2px solid rgba(157, 123, 255, 0.6); }
   .mail .ico { background: var(--kp-cyan-dim); color: var(--kp-cyan); }
   .error .ico { background: var(--kp-red-dim); color: var(--kp-red); }
   .success .ico { background: var(--kp-green-dim); color: var(--kp-green); }

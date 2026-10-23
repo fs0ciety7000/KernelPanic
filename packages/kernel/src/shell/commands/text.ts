@@ -98,15 +98,26 @@ const grep: CommandDef = {
 const sort: CommandDef = {
   name: 'sort',
   summary: 'sort lines of text files',
-  usage: 'sort [-rnu] [FILE]...',
+  usage: 'sort [-rnuf] [-t SEP] [-k FIELD] [FILE]...',
   run(ctx) {
-    const { flags, rest } = getopt(ctx.argv, 'rnuf');
+    const { flags, values, rest } = getopt(ctx.argv, 'rnuf', 'tk', { reverse: 'r', 'numeric-sort': 'n', unique: 'u' });
     const all: string[] = [];
     const status = eachInput(ctx, rest, (t) => all.push(...t.replace(/\n$/, '').split('\n')));
     let lines = all.filter((l, i) => l || i < all.length - 1);
-    if (flags.has('n')) lines.sort((a, b) => parseFloat(a) - parseFloat(b));
-    else if (flags.has('f')) lines.sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
-    else lines.sort();
+    // -k N[,M]: compare from field N (1-based) to M (default: end of line).
+    const [from, to] = (values.k ?? '').split(',').map((x) => parseInt(x, 10));
+    const sep = values.t;
+    const key = (line: string) => {
+      if (!from) return line;
+      const fields = sep !== undefined ? line.split(sep) : line.trim().split(/\s+/);
+      return fields.slice(from - 1, to ? to : undefined).join(sep ?? ' ');
+    };
+    const cmp = flags.has('n')
+      ? (a: string, b: string) => (parseFloat(key(a)) || 0) - (parseFloat(key(b)) || 0)
+      : flags.has('f')
+        ? (a: string, b: string) => key(a).toLowerCase().localeCompare(key(b).toLowerCase())
+        : (a: string, b: string) => (key(a) < key(b) ? -1 : key(a) > key(b) ? 1 : 0);
+    lines.sort(cmp);
     if (flags.has('r')) lines.reverse();
     if (flags.has('u')) lines = [...new Set(lines)];
     if (lines.length) ctx.out(lines.join('\n') + '\n');
@@ -228,10 +239,25 @@ const base64: CommandDef = {
 const xxd: CommandDef = {
   name: 'xxd',
   summary: 'make a hex dump',
-  usage: 'xxd [-l LEN] [FILE]',
+  usage: 'xxd [-p] [-r -p] [-l LEN] [FILE]',
   run(ctx) {
-    const { values, rest } = getopt(ctx.argv, 'p', 'l');
+    const { flags, values, rest } = getopt(ctx.argv, 'pr', 'l');
     const limit = values.l ? Number(values.l) : 1024;
+    if (flags.has('r')) {
+      // Reverse a plain hex dump back to bytes (only the -p form is supported).
+      return eachInput(ctx, rest, (text) => {
+        const hex = text.replace(/[^0-9a-fA-F]/g, '');
+        const bytes = new Uint8Array(Math.floor(hex.length / 2));
+        for (let i = 0; i < bytes.length; i++) bytes[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+        ctx.out(new TextDecoder().decode(bytes));
+      });
+    }
+    if (flags.has('p')) {
+      return eachInput(ctx, rest, (text) => {
+        const hex = [...new TextEncoder().encode(text).slice(0, limit)].map((b) => b.toString(16).padStart(2, '0')).join('');
+        ctx.out((hex.match(/.{1,60}/g) ?? ['']).join('\n') + '\n');
+      });
+    }
     return eachInput(ctx, rest, (text) => {
       const bytes = new TextEncoder().encode(text).slice(0, limit);
       for (let off = 0; off < bytes.length; off += 16) {

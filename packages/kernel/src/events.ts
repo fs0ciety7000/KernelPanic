@@ -15,6 +15,8 @@ export interface KernelEvents {
   'scenario.flag': { id: string };
   'objective.available': { id: string };
   'objective.complete': { id: string; title: string };
+  'evidence.found': { id: string; title: string };
+  'choice.made': { objective: string; option: string };
   'scenario.notify': { title: string; body: string };
   'scenario.end': Record<string, never>;
   'shell.clear': Record<string, never>;

@@ -1,5 +1,5 @@
 import type { AnyEvent, EventBus } from '../events';
-import type { Effect, ObjectiveDef, ScenarioBundle, Trigger, TriggerLeaf } from './types';
+import type { ChoiceOption, EndingDef, Effect, EvidenceDef, ObjectiveDef, ScenarioBundle, Trigger, TriggerLeaf } from './types';
 import { secretHash } from '../util/sha256';
 
 export interface ScenarioState {
@@ -8,6 +8,12 @@ export interface ScenarioState {
   flags: string[];
   /** Objectives whose trigger fired while they were still locked; completed on unlock. */
   early: string[];
+  /** Evidence ids, in discovery order. */
+  evidence: string[];
+  /** objective id → chosen option id. */
+  choices: Record<string, string>;
+  /** Ending reached (when the scenario defines several). */
+  ending?: string;
   startedAt: number;
   endedAt?: number;
   /** Accumulated play time in ms (excludes time the game was closed). */
@@ -62,7 +68,7 @@ export class ScenarioRuntime {
     private host: RuntimeHost,
     saved?: ScenarioState,
   ) {
-    this.state = { completed: {}, hints: {}, flags: [], early: [], startedAt: Date.now(), playtime: 0, ...saved };
+    this.state = { completed: {}, hints: {}, flags: [], early: [], evidence: [], choices: {}, startedAt: Date.now(), playtime: 0, ...saved };
     bus.onAny((e) => this.onEvent(e));
   }
 
@@ -104,6 +110,13 @@ export class ScenarioRuntime {
     if (e.type === 'scenario.flag' && !this.state.flags.includes(e.payload.id)) {
       this.state.flags.push(e.payload.id);
     }
+    for (const ev of this.bundle.evidence ?? []) {
+      if (!this.state.evidence.includes(ev.id) && matchTrigger(ev.trigger, e)) {
+        this.state.evidence.push(ev.id);
+        this.bus.emit('evidence.found', { id: ev.id, title: ev.title });
+        this.changed();
+      }
+    }
     // Decide against a snapshot, so completing one objective doesn't re-evaluate this event for others.
     const hits = this.bundle.objectives.filter((o) => o.trigger && !this.isDone(o.id) && matchTrigger(o.trigger, e));
     const ready = hits.filter((o) => this.isAvailable(o));
@@ -122,6 +135,44 @@ export class ScenarioRuntime {
     if (!o.answer.hashes.includes(h)) return false;
     this.complete(o);
     return true;
+  }
+
+  hasEvidence(id: string): boolean {
+    return this.state.evidence.includes(id);
+  }
+
+  /** Discovered evidence, in discovery order. */
+  evidence(): EvidenceDef[] {
+    const all = this.bundle.evidence ?? [];
+    return this.state.evidence.map((id) => all.find((e) => e.id === id)).filter((e): e is EvidenceDef => !!e);
+  }
+
+  /** Evidence ids an option still needs (empty = selectable). */
+  missingEvidence(opt: ChoiceOption): string[] {
+    return (opt.requiresEvidence ?? []).filter((id) => !this.hasEvidence(id));
+  }
+
+  /** Picks an option of a choice objective. Returns false when not allowed. */
+  choose(objectiveId: string, optionId: string): boolean {
+    const o = this.bundle.objectives.find((x) => x.id === objectiveId);
+    const opt = o?.choice?.options.find((x) => x.id === optionId);
+    if (!o || !opt || !this.isAvailable(o) || this.missingEvidence(opt).length) return false;
+    this.state.choices[o.id] = opt.id;
+    // Flags first: the ending is selected from them when an `end` effect runs.
+    for (const f of [`choice:${o.id}:${opt.id}`, ...(opt.flags ?? [])]) this.bus.emit('scenario.flag', { id: f });
+    this.bus.emit('choice.made', { objective: o.id, option: opt.id });
+    for (const fx of opt.onSelect ?? []) this.apply(fx);
+    this.complete(o);
+    return true;
+  }
+
+  /** The ending reached, or the one that would be reached with the current flags. */
+  ending(): EndingDef | undefined {
+    const endings = this.bundle.endings ?? [];
+    if (this.state.ending) return endings.find((e) => e.id === this.state.ending);
+    return endings.find(
+      (e) => (e.flags ?? []).every((f) => this.state.flags.includes(f)) && !(e.notFlags ?? []).some((f) => this.state.flags.includes(f)),
+    );
   }
 
   revealHint(id: string): string | undefined {
@@ -152,6 +203,7 @@ export class ScenarioRuntime {
     else if ('write' in fx) this.host.write(fx.write.path, fx.write.content, fx.write.mode, fx.write.owner);
     else if ('flag' in fx) this.bus.emit('scenario.flag', { id: fx.flag });
     else if ('end' in fx) {
+      this.state.ending = this.ending()?.id;
       this.state.endedAt = Date.now();
       this.state.playtime = this.playtime();
       this.bus.emit('scenario.end', {});

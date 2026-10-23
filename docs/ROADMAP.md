@@ -33,8 +33,11 @@ Agents : voir `AGENTS.md`.
 
 | # | Tâche | Agent |
 |---|---|---|
-| 2.1 | **Scénario 02** (intermédiaire) : exfiltration via DNS, analyse PCAP texte, archive chiffrée | scenario-writer |
-| 2.2 | Commandes : `tar`/`unzip`/`gzip` simulés, `diff`, `awk` minimal, substitution `$(…)`, `for` simple | os-engine |
+| 2.1 | ✅ **Scénario 02 « Canary »** (intermédiaire) : fuite vers la presse, client complice, 8 pièces dont une trompeuse, 4 fins | scenario-writer |
+| 2.1b | ✅ Moteur « à la *Orwell* » : pièces à conviction, décisions conditionnées par les pièces, fins multiples mémorisées entre parties | os-engine |
+| 2.1c | ⏳ **Scénario 00 « Premier jour »** (en cours) : tutoriel (toutes les apps, sudo, pièces, choix) | scenario-writer |
+| 2.1d | Scénario 03 (avancé) : plusieurs machines (dépend de 3.1), pièces contradictoires entre machines | scenario-writer |
+| 2.2 | Commandes : `tar`/`unzip`/`gzip` simulés, `diff`, `awk` minimal, substitution `$(…)`, `for` simple (✅ déjà : `sort -t -k`, `xxd -p/-r`) | os-engine |
 | 2.3 | App **Navigateur simulé** (intranet de l'entreprise, pages HTML du scénario, formulaires factices) | apps-developer |
 | 2.4 | App **Messagerie interne** (chat PNJ scripté, réponses à choix) | apps-developer |
 | 2.5 | Mode « Lisibilité » (taille +2, sans grain/glow) + thème clair éventuel | design-system |

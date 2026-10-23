@@ -39,7 +39,10 @@ export function makeScripted(name: string, def: ScriptedCommand): CommandDef {
           const text = renderTemplate(rule.output, vars);
           (rule.exit ? ctx.err : ctx.out)(text.endsWith('\n') ? text : text + '\n');
         }
-        if (rule.write) kernel.systemWrite(rule.write.path, rule.write.content, rule.write.mode, rule.write.owner);
+        for (const w of rule.write ? [rule.write].flat() : []) {
+          // Paths may use {{cwd}}/{{user}} so tools can extract next to the player.
+          kernel.systemWrite(ctx.resolve(renderTemplate(w.path, vars)), w.content, w.mode, w.owner ? renderTemplate(w.owner, vars) : undefined);
+        }
         if (rule.emit) {
           const already = flags.includes(rule.emit);
           if (!rule.once || !already) kernel.bus.emit('scenario.flag', { id: rule.emit });

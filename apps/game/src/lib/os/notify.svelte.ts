@@ -1,6 +1,6 @@
 import { sound, type Cue } from './sound.svelte';
 
-export type ToastKind = 'system' | 'objective' | 'mail' | 'error' | 'success';
+export type ToastKind = 'system' | 'objective' | 'evidence' | 'mail' | 'error' | 'success';
 
 export interface Toast {
   id: number;
@@ -10,7 +10,7 @@ export interface Toast {
   action?: { label: string; run: () => void };
 }
 
-const CUE: Record<ToastKind, Cue> = { system: 'notify', objective: 'objective', mail: 'mail', error: 'error', success: 'success' };
+const CUE: Record<ToastKind, Cue> = { system: 'notify', objective: 'objective', evidence: 'success', mail: 'mail', error: 'error', success: 'success' };
 // When several toasts arrive together (objective done + next one unlocked + mail), only the first is heard.
 const SOUND_GAP_MS = 400;
 
