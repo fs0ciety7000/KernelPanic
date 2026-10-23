@@ -1,0 +1,7 @@
+127.0.0.1       localhost
+127.0.1.1       training-01.lab.ironveil.local training-01
+10.100.0.1      lab.ironveil.local lab
+10.100.0.21     training-01.lab.ironveil.local
+
+# The following lines are desirable for IPv6 capable hosts
+::1     ip6-localhost ip6-loopback

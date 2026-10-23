@@ -1,0 +1,6 @@
+# Lumen Systems AG — official substation controller firmware images
+# Verify before any deployment:  sha256sum <image>  and compare below.
+# Signed manifest (key 0x4C55). Latest stable: 4.1.9
+6f1c0a4f3c8e2b1d9a7e5c3b1f0d8e6c4a2b0f9e7d5c3b1a9f8e7d6c5b4a3f21  lumen-fw-4.1.7.img
+b0e3d5a7c9f1e3d5b7a9c1e3f5a7b9d1c3e5f7a9b1d3c5e7f9a1b3c5d7e9f1a3  lumen-fw-4.1.8.img
+9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d1e0f9a8b  lumen-fw-4.1.9.img

@@ -1,0 +1,6 @@
+2026-04-08T16:41:22+02:00 INFO  queue job=JOB-0412 by=elias targets=1 image=/opt/lumen/firmware/lumen-fw-4.1.9.img at=2026-04-09T22:00
+2026-04-08T16:41:23+02:00 INFO  JOB-0412 signature OK (Lumen Systems AG, key 0x4C55)
+2026-04-09T22:04:51+02:00 INFO  JOB-0412 DONE substation-07 (4.1.8 -> 4.1.9)
+2026-04-16T17:41:10+02:00 INFO  jobs listed by=elias
+2026-04-17T03:12:05+02:00 INFO  queue job=JOB-0417 by=elias via=sudo targets=14 image=/tmp/.fw/lumen-fw-4.2.1-hotfix.img at=09:00 flags=--force-unsigned,--no-rollback
+2026-04-17T03:12:06+02:00 WARN  JOB-0417 image signature missing — accepted because --force-unsigned

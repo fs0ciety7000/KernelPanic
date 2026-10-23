@@ -1,0 +1,29 @@
+May  4 08:01:30 lab-qa-03 gdm-password: pam_unix(gdm-password:session): session opened for user tgarnier(uid=1003) by (uid=0)
+May  4 11:58:02 lab-qa-03 gdm-password: pam_unix(gdm-password:session): session closed for user tgarnier
+May  4 13:10:11 lab-qa-03 gdm-password: pam_unix(gdm-password:session): session opened for user srahmani(uid=1002) by (uid=0)
+May  4 17:42:40 lab-qa-03 gdm-password: pam_unix(gdm-password:session): session closed for user srahmani
+May  5 08:40:02 lab-qa-03 gdm-password: pam_unix(gdm-password:session): session opened for user mlefort(uid=1001) by (uid=0)
+May  5 12:15:19 lab-qa-03 gdm-password: pam_unix(gdm-password:session): session closed for user mlefort
+May  5 14:01:55 lab-qa-03 gdm-password: pam_unix(gdm-password:session): session opened for user srahmani(uid=1002) by (uid=0)
+May  5 16:30:27 lab-qa-03 gdm-password: pam_unix(gdm-password:session): session closed for user srahmani
+May  6 08:02:44 lab-qa-03 gdm-password: pam_unix(gdm-password:session): session opened for user tgarnier(uid=1003) by (uid=0)
+May  6 12:01:13 lab-qa-03 gdm-password: pam_unix(gdm-password:session): session closed for user tgarnier
+May  6 13:30:08 lab-qa-03 gdm-password: pam_unix(gdm-password:session): session opened for user mlefort(uid=1001) by (uid=0)
+May  6 17:55:41 lab-qa-03 gdm-password: pam_unix(gdm-password:session): session closed for user mlefort
+May  6 22:51:06 lab-qa-03 gdm-password: pam_unix(gdm-password:session): session opened for user mlefort(uid=1001) by (uid=0)
+May  6 22:51:06 lab-qa-03 systemd-logind[612]: New session 31 of user mlefort.
+May  6 23:00:12 lab-qa-03 gdm-password: pam_unix(gdm-password:session): session closed for user mlefort
+May  6 23:00:12 lab-qa-03 systemd-logind[612]: Session 31 logged out. Waiting for processes to exit.
+May  6 23:02:37 lab-qa-03 gdm-password: pam_unix(gdm-password:session): session opened for user srahmani(uid=1002) by (uid=0)
+May  6 23:02:37 lab-qa-03 systemd-logind[612]: New session 32 of user srahmani.
+May  6 23:31:52 lab-qa-03 gdm-password: pam_unix(gdm-password:session): session closed for user srahmani
+May  6 23:31:52 lab-qa-03 systemd-logind[612]: Session 32 logged out. Waiting for processes to exit.
+May  7 08:45:20 lab-qa-03 gdm-password: pam_unix(gdm-password:session): session opened for user srahmani(uid=1002) by (uid=0)
+May  7 12:20:02 lab-qa-03 gdm-password: pam_unix(gdm-password:session): session closed for user srahmani
+May 11 09:05:12 lab-qa-03 gdm-password: pam_unix(gdm-password:session): session opened for user mlefort(uid=1001) by (uid=0)
+May 11 12:40:44 lab-qa-03 gdm-password: pam_unix(gdm-password:session): session closed for user mlefort
+May 12 14:20:31 lab-qa-03 gdm-password: pam_unix(gdm-password:session): session opened for user srahmani(uid=1002) by (uid=0)
+May 12 17:25:08 lab-qa-03 gdm-password: pam_unix(gdm-password:session): session closed for user srahmani
+May 13 09:24:10 lab-qa-03 useradd[3011]: new user: name=audit, UID=1050, GID=1050, home=/home/audit, shell=/bin/bash, from=none
+May 13 09:24:10 lab-qa-03 usermod[3015]: add 'audit' to group 'sudo'
+May 13 09:30:00 lab-qa-03 kp-session[2210]: audit session opened for user audit (ticket IT-8812, requested by l.sorel)

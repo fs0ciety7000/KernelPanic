@@ -1,0 +1,9 @@
+root:x:0:
+adm:x:4:syslog,elias
+sudo:x:27:elias
+utmp:x:43:
+shadow:x:42:
+crontab:x:105:
+lumen-agent:x:998:
+lumen-ops:x:1001:elias
+elias:x:1000:

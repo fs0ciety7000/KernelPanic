@@ -1,0 +1,26 @@
+Return-Path: <leo.marchand@ironveil.fr>
+Delivered-To: recrue@ironveil.fr
+Received: from mx.ironveil.fr (mx.ironveil.fr [10.100.0.5])
+	by training-01.lab.ironveil.local (Postfix) with ESMTP id 7788AA11
+	for <recrue@ironveil.fr>; Fri, 3 Apr 2026 17:20:00 +0200
+From: Leo Marchand <leo.marchand@ironveil.fr>
+To: recrue@ironveil.fr, y.haddad@ironveil.fr
+Subject: VM d'entrainement prete (et desole d'avance)
+Date: Fri, 3 Apr 2026 17:20:00 +0200
+Message-ID: <leo-handover.lm@ironveil.fr>
+Content-Type: text/plain; charset=utf-8
+
+Salut, et bienvenue a celui ou celle qui reprend le compte !
+
+C'est mon dernier jour de stage. J'ai monte la VM training-01 avec la petite appli
+LedgerLite pour que tu t'exerces. Je te prepare le terrain mais j'ai fait quelques
+boulettes EXPRES (et peut-etre une ou deux pas expres, hum).
+
+Deux trucs que je sais deja :
+- j'ai mis un mot de passe en clair dans la config, c'est MAL, faut le trouver.
+- j'ai laisse une sauvegarde de cette config quelque part dans le dossier perso,
+  un fichier cache (ca commence par un point). Je l'ai "perdu", a toi de le retrouver.
+
+Yasmine t'expliquera le reste. Bonne chance !
+
+Leo

@@ -1,0 +1,5 @@
+PRETTY_NAME="LumenOS 22.04.4 LTS (Lab Workstation)"
+NAME="LumenOS"
+VERSION_ID="22.04"
+ID=lumenos
+ID_LIKE=ubuntu debian

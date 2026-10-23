@@ -1,0 +1,10 @@
+root:x:0:
+adm:x:4:syslog,audit
+lp:x:7:mlefort,srahmani,tgarnier
+sudo:x:27:audit
+plugdev:x:46:srahmani
+lims:x:1100:mlefort,srahmani,tgarnier
+mlefort:x:1001:
+srahmani:x:1002:
+tgarnier:x:1003:
+audit:x:1050:

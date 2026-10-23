@@ -1,0 +1,29 @@
+Return-Path: <y.haddad@ironveil.fr>
+Delivered-To: recrue@ironveil.fr
+Received: from mx.ironveil.fr (mx.ironveil.fr [10.100.0.5])
+	by training-01.lab.ironveil.local (Postfix) with ESMTP id 1A2B05
+	for <recrue@ironveil.fr>; {{date}}
+From: Yasmine Haddad <y.haddad@ironveil.fr>
+To: Nouvelle recrue <recrue@ironveil.fr>
+Subject: Re: exercice — passer root avec sudo
+Date: {{date}}
+Message-ID: <step-sudo.yh@ironveil.fr>
+Content-Type: text/plain; charset=utf-8
+
+Dernière ligne droite. Le corrigé de l'exercice est dans un fichier que seul root peut
+lire : /etc/ironveil/lab.key . Essaie sans rien, tu auras « Permission denied ». Normal.
+
+Pour franchir ça, on utilise `sudo` (« superuser do »). Trois choses à retenir :
+- sudo demande TON mot de passe de session (celui du premier mail : IronveilLab6),
+  pas celui de root.
+- il te donne les droits le temps d'UNE commande.
+- tout usage de sudo est journalisé. C'est voulu : on trace aussi l'analyste.
+
+Essaie :
+
+    sudo cat /etc/ironveil/lab.key
+
+Le fichier devient lisible. Tu verras un jeton un peu bizarre — je t'explique quoi en
+faire juste après.
+
+— Y.
