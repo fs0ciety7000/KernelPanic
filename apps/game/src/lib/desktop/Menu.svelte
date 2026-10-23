@@ -21,6 +21,8 @@
     <p class="tag">Une enquête dans une machine qui ne devrait pas mentir.</p>
   </header>
 
+  <p class="compact mono">Écran étroit détecté — Kernel_Panic se joue mieux à partir de 1024 px de large.</p>
+
   {#if os.error}
     <div class="kp-error">{os.error}</div>
   {/if}
@@ -84,5 +86,7 @@
   .actions { display: flex; gap: 8px; margin-top: 18px; }
   .actions .kp-btn { height: 34px; padding: 0 16px; }
   .loading { color: var(--kp-text-2); text-align: center; }
+  .compact { display: none; position: relative; margin: 0; padding: 8px 12px; border-radius: var(--kp-radius-s); background: var(--kp-amber-dim); color: var(--kp-amber); font-size: 11.5px; text-align: center; }
+  @media (max-width: 1023px) { .compact { display: block; } }
   footer { position: relative; color: var(--kp-text-2); font-size: 11px; }
 </style>

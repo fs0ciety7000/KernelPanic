@@ -25,7 +25,7 @@
 | `--kp-line-strong` | `rgba(148, 170, 200, 0.18)` | Bordure de fenêtre active |
 | `--kp-text-0` | `#e8eef7` | Texte principal |
 | `--kp-text-1` | `#a9b4c4` | Texte secondaire |
-| `--kp-text-2` | `#6b7789` | Texte tertiaire, placeholders, métadonnées |
+| `--kp-text-2` | `#808c9e` | Texte tertiaire, placeholders, métadonnées |
 
 ### 2.2 Accents (signaux)
 
@@ -126,6 +126,12 @@ elias@ws-varga:~/Documents$
 ```
 `user@host` en vert, `:` neutre, chemin en cyan, `$` (ou `#` en rouge pour root) neutre.
 
+### 6.9 Son
+Synthétisé en WebAudio (`apps/game/src/lib/os/sound.svelte.ts`), aucun fichier audio. Volume très bas, enveloppes courtes (< 250 ms, sauf la fin de scénario). Un son par type de toast : `notify` (bip sinus), `mail` (deux notes montantes), `objective` (arpège triangle), `success`, `error` (deux notes graves, carré atténué), `end` (arpège long). Quand plusieurs toasts arrivent ensemble, seul le premier est joué (fenêtre de 400 ms). Bouton muet dans la top bar, mémorisé par navigateur.
+
+### 6.10 Aide « Premiers pas »
+Panneau flottant non bloquant (verre, liseré cyan à gauche), affiché une seule fois au premier bureau puis réouvrable (menu KP, Ctrl+Alt+H). Rôle de chaque app en une phrase + raccourcis clavier.
+
 ## 7. Iconographie
 Jeu d'icônes maison au trait (24 px de grille, stroke 1.5, coins arrondis), inspiré de Lucide, stocké dans `apps/game/src/lib/desktop/icons.ts`. Les types de fichiers ont une icône + une teinte : dossier (text-1), texte (text-1), mail (cyan), image (violet), log (amber), script (green), caché (opacité 55 %).
 
@@ -133,7 +139,7 @@ Jeu d'icônes maison au trait (24 px de grille, stroke 1.5, coins arrondis), ins
 Dégradé radial très sombre (`#0d1420` → `#05070b`), grain (SVG noise à 4 %), une grille isométrique à 3 % et une lueur cyan/violette diffuse hors champ. Animation : dérive très lente de la lueur (60 s), désactivée en reduced-motion.
 
 ## 9. Accessibilité
-- Contraste texte principal ≥ 12:1, secondaire ≥ 7:1, tertiaire ≥ 4.5:1 sur `--kp-bg-1`.
+- Contraste texte principal ≥ 12:1, secondaire ≥ 7:1 sur `--kp-bg-1` ; tertiaire ≥ 4.5:1 sur **toutes** les surfaces (`--kp-bg-0` à `--kp-bg-4`, mesuré : 4.58:1 au pire, sur les champs). Seuls les numéros de ligne décoratifs (Logs) descendent en dessous.
 - Navigation clavier complète dans les apps, focus visible, `aria-label` sur les contrôles iconiques.
 - Le sens n'est jamais porté par la couleur seule (badges textuels, icônes).
 - Option « Lisibilité » (Paramètres, phase 2) : +2 px, désactivation du grain et du glow.

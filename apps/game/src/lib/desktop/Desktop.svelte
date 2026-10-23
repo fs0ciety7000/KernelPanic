@@ -6,6 +6,11 @@
   import Toasts from './Toasts.svelte';
   import Window from './Window.svelte';
   import Icon from './Icon.svelte';
+  import Help from './Help.svelte';
+  import { help } from '$lib/os/help.svelte';
+  import { onMount } from 'svelte';
+
+  onMount(() => help.maybeShowFirstTime());
 
   const home = $derived(os.kernel!.users.get(os.kernel!.sessionUser)!.home);
   const shortcuts = $derived([
@@ -17,17 +22,29 @@
   let selected = $state<number | null>(null);
 
   function onKey(e: KeyboardEvent) {
-    if (e.ctrlKey && e.altKey && e.key.toLowerCase() === 't') {
+    const handled = () => {
       e.preventDefault();
+      e.stopPropagation();
+    };
+    if (e.ctrlKey && e.altKey && e.key.toLowerCase() === 't') {
+      handled();
       wm.open('terminal');
     } else if (e.ctrlKey && e.key === '`') {
-      e.preventDefault();
+      handled();
       wm.cycle();
+    } else if (e.ctrlKey && e.altKey && e.key.toLowerCase() === 'w') {
+      handled();
+      const f = wm.focused;
+      if (f) wm.close(f.id);
+    } else if (e.ctrlKey && e.altKey && e.key.toLowerCase() === 'h') {
+      handled();
+      help.toggle();
     }
   }
 </script>
 
-<svelte:window onkeydown={onKey} />
+<!-- Capture phase: desktop shortcuts must win over apps that swallow keys (xterm). -->
+<svelte:window onkeydowncapture={onKey} />
 
 <main class="desktop">
   <div class="wallpaper" aria-hidden="true">
@@ -61,6 +78,7 @@
   <TopBar />
   <Dock />
   <Toasts />
+  <Help />
 </main>
 
 <style>

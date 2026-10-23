@@ -9,6 +9,10 @@ export interface Rect {
 
 export const TOPBAR_H = 30;
 export const DOCK_SPACE = 84;
+/** Below this width, floating windows don't fit side by side: new windows open maximized. */
+export const COMPACT_W = 900;
+
+export const isCompact = () => typeof window !== 'undefined' && window.innerWidth < COMPACT_W;
 
 export class WindowState {
   id: number;
@@ -86,6 +90,7 @@ class WindowManager {
     }
     const win = new WindowState(++this.seq, app, { ...this.nextRect(app), ...rect }, args);
     win.z = ++this.zTop;
+    if (!rect && isCompact()) win.maximized = true;
     this.windows.push(win);
     return win;
   }

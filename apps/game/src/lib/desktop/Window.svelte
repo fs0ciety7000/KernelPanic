@@ -18,6 +18,12 @@
   });
 
   const focused = $derived(wm.focused?.id === win.id);
+  let el: HTMLElement;
+
+  // Keyboard users (dock, shortcuts) land inside the window that just came to the front.
+  $effect(() => {
+    if (focused && el && !el.contains(document.activeElement)) el.focus({ preventScroll: true });
+  });
   const MIN_W = 320;
   const MIN_H = 200;
 
@@ -82,6 +88,8 @@
 </script>
 
 <section
+  bind:this={el}
+  tabindex="-1"
   class="window"
   class:focused
   class:maximized={win.maximized}
@@ -89,6 +97,7 @@
   {style}
   aria-label={win.title}
   onpointerdown={() => wm.focus(win.id)}
+  onfocusin={() => wm.focus(win.id)}
 >
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <header class="titlebar" onpointerdown={startDrag} ondblclick={() => wm.toggleMaximize(win.id)}>
@@ -130,6 +139,7 @@
     overflow: hidden;
     animation: open var(--kp-dur) var(--kp-ease);
   }
+  .window:focus { outline: none; }
   .window.focused {
     border-color: var(--kp-line-strong);
     box-shadow: var(--kp-shadow-2), 0 0 0 1px rgba(62, 230, 245, 0.06), 0 30px 80px -30px rgba(62, 230, 245, 0.18);

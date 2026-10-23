@@ -3,6 +3,7 @@
 import { base } from '$app/paths';
 import { Kernel, parseMail, type SaveGame, type ScenarioBundle, type ScenarioIndexEntry } from '@kp/kernel';
 import { notify } from './notify.svelte';
+import { sound } from './sound.svelte';
 import { load, remove, store } from './storage';
 import { appForPath, appById } from './apps';
 import { wm, type WindowSnapshot } from './wm.svelte';
@@ -110,7 +111,10 @@ class OS {
     on('scenario.notify', (e) => notify.push({ kind: 'system', title: e.title, body: e.body }));
     on('scenario.end', () => {
       this.save();
-      setTimeout(() => (this.phase = 'ended'), 2500);
+      setTimeout(() => {
+        this.phase = 'ended';
+        sound.play('end');
+      }, 2500);
     });
     on('app.open', (e) => {
       if (e.path) this.openPath(e.path, e.appId || undefined);

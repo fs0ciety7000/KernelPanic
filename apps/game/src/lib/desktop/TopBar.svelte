@@ -2,6 +2,8 @@
   import { os } from '$lib/os/os.svelte';
   import { wm } from '$lib/os/wm.svelte';
   import Icon from './Icon.svelte';
+  import { help } from '$lib/os/help.svelte';
+  import { sound } from '$lib/os/sound.svelte';
 
   let menuOpen = $state(false);
 
@@ -17,7 +19,10 @@
   const focusedTitle = $derived(wm.focused?.title ?? 'Bureau');
 </script>
 
-<svelte:window onclick={(e) => { if (!(e.target as HTMLElement).closest('.sysmenu')) menuOpen = false; }} />
+<svelte:window
+  onclick={(e) => { if (!(e.target as HTMLElement).closest('.sysmenu')) menuOpen = false; }}
+  onkeydown={(e) => { if (e.key === 'Escape' && menuOpen) menuOpen = false; }}
+/>
 
 <header class="topbar">
   <div class="left">
@@ -32,6 +37,7 @@
             <div class="sub">{k.machine.os}</div>
           </div>
           <button role="menuitem" onclick={() => { wm.open('case'); menuOpen = false; }}><Icon name="case" size={14} /> Dossier d'enquête</button>
+          <button role="menuitem" onclick={() => { help.toggle(); menuOpen = false; }}><Icon name="info" size={14} /> Aide — premiers pas</button>
           <button role="menuitem" onclick={() => { os.save(); menuOpen = false; }}><Icon name="save" size={14} /> Sauvegarder</button>
           <div class="sep"></div>
           <button role="menuitem" onclick={() => { menuOpen = false; os.quitToMenu(); }}><Icon name="power" size={14} /> Quitter vers le menu</button>
@@ -46,6 +52,9 @@
     <button class="objectives" onclick={() => wm.open('case')} title="Objectifs">
       <Icon name="diamond" size={11} stroke={2} />
       <span class="num">{progress.done}/{progress.total}</span>
+    </button>
+    <button class="status btn" onclick={() => sound.toggle()} aria-pressed={!sound.muted} aria-label={sound.muted ? 'Activer les sons' : 'Couper les sons'} title={sound.muted ? 'Sons coupés' : 'Sons activés'}>
+      <Icon name={sound.muted ? 'volume-off' : 'volume'} size={14} />
     </button>
     <span class="status" title="Session forensique — réseau filtré"><Icon name="shield" size={14} /></span>
     <span class="status" title="eth0 · {k.machine.ip}"><Icon name="wifi" size={14} /></span>
@@ -105,6 +114,8 @@
   }
   .objectives:hover { border-color: var(--kp-violet); }
   .status { color: var(--kp-text-2); display: grid; }
+  .status.btn { border: 0; background: transparent; padding: 3px; border-radius: 5px; }
+  .status.btn:hover { color: var(--kp-text-0); background: var(--kp-bg-4); }
   .clock { color: var(--kp-text-0); font-weight: 500; min-width: 38px; text-align: right; }
   @media (max-width: 720px) { .center { display: none; } }
 </style>
