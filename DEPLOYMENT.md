@@ -59,6 +59,8 @@ Aucun secret n'est requis pour le MVP.
 
 ## 4. Cloudflare
 
+> **État actuel (en place)** : zone `fs0ciety.org`, enregistrement `CNAME kernel → fs0ciety.org`, **proxied**, comme les autres apps de la zone. Mode SSL de la zone : **Full (strict)** (déjà réglé). *Always Use HTTPS* est désactivé au niveau de la zone ; la redirection HTTP→HTTPS est faite par Coolify (*Force HTTPS*). Les réglages ci-dessous (cache, Rocket Loader…) restent à appliquer ou à vérifier ; ils sont **zone-wide** et touchent donc toutes les apps de `fs0ciety.org`.
+
 1. **DNS** : enregistrement `A kernel → <IP du serveur Coolify>` (ou `CNAME` vers l'hôte Coolify), **proxied** (nuage orange).
 2. **SSL/TLS → Overview** : mode **Full (strict)**.
 3. **Certificat d'origine**, au choix :
@@ -80,6 +82,12 @@ Le HTML est servi en `no-cache` par nginx : un déploiement est visible immédia
 
 ## 5. Coolify — pas à pas
 
+> **État actuel (en place)** : projet **Kernel_Panic**, application **kernel-panic-web** sur le serveur `localhost`, source GitHub App privée, branche `ccr-aadfddbd-8ps2l1` (à basculer sur `main` après fusion de la PR), *build pack* **Dockerfile** (`/docker/Dockerfile`, contexte `/`), port 80, domaine `https://kernel.fs0ciety.org`, healthcheck `/healthz`, *Force HTTPS* et *Automatic deployment* actifs. Le service `server` (Axum) n'est **pas** déployé au MVP : `/api/` répond 502, le jeu sauvegarde en local.
+>
+> Pour l'activer en phase 2 : soit passer l'app en *Docker Compose* (`/docker/docker-compose.yml`), soit déployer `apps/server/Dockerfile` comme seconde app sur le même réseau Docker, nommée `server` (ou régler `KP_API_UPSTREAM` sur son nom interne).
+
+Procédure générique (référence) :
+
 1. **Sources** : connecter le dépôt GitHub (GitHub App Coolify).
 2. **New Resource → Docker Compose** → dépôt `fs0ciety7000/KernelPanic`, branche `main`, *Docker Compose Location* : `/docker/docker-compose.yml`.
 3. **Domaines** : sur le service `web`, `https://kernel.fs0ciety.org` (port 80). Ne pas exposer `server` (il n'est joignable que via `/api/`).
@@ -90,6 +98,8 @@ Le HTML est servi en `no-cache` par nginx : un déploiement est visible immédia
 8. Premier déploiement : *Deploy*, vérifier `https://kernel.fs0ciety.org/healthz`, `/`, `/play/`.
 
 ### Build local de l'image
+
+Derrière un proxy TLS d'entreprise (ou dans un environnement cloud avec proxy), le build échoue sur `corepack`/`pnpm` faute de certificat : construire avec une copie locale du Dockerfile qui ajoute le CA (`COPY` du bundle + `NODE_EXTRA_CA_CERTS`) et les `--build-arg HTTPS_PROXY…`. Ne pas committer cette variante.
 
 ```bash
 docker build -f docker/Dockerfile -t kp-web .
