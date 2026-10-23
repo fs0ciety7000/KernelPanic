@@ -1,0 +1,14 @@
+node_modules/
+dist/
+build/
+.svelte-kit/
+.astro/
+target/
+*.log
+.env
+.env.*
+!.env.example
+.DS_Store
+apps/game/static/scenarios/
+apps/game/src-tauri/gen/
+coverage/

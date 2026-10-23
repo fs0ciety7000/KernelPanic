@@ -1,0 +1,23 @@
+Return-Path: <n.kessler@lumengrid.fr>
+Delivered-To: elias@lumengrid.fr
+Received: from mx1.lumengrid.fr (mx1.lumengrid.fr [10.20.0.25])
+	by ws-varga.ot.lumengrid.local (Postfix) with ESMTP id 61A0C2D1
+	for <elias@lumengrid.fr>; {{date}}
+From: Nadia Kessler <n.kessler@lumengrid.fr>
+To: Analyste DFIR <ir-analyst@lumengrid.fr>
+Subject: Re: INC-2026-0417 — IP confirmée
+Date: {{date}}
+Message-ID: <ip-0417.nk@lumengrid.fr>
+Content-Type: text/plain; charset=utf-8
+
+185.220.101.47 — confirmé par le pare-feu de bordure : c'est un VPS loué chez un
+hébergeur « bulletproof », déjà lié à deux campagnes contre des énergéticiens.
+Bloqué au périmètre depuis 08:20.
+
+Il s'est connecté avec le mot de passe d'Elias par l'accès SSH de maintenance
+(l'exception OT-2025-31… je sais, je sais). Il est resté une vingtaine de minutes.
+Personne ne reste vingt minutes sans laisser de quoi revenir.
+
+Regarde les tâches planifiées et les dossiers cachés.
+
+N.

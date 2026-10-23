@@ -1,0 +1,49 @@
+/* NOCTIS design tokens — source of truth: DESIGN_SYSTEM.md (mirrored in apps/site/src/styles/tokens.css) */
+:root {
+  --kp-bg-0: #05070b;
+  --kp-bg-1: #0a0e14;
+  --kp-bg-2: #0f141c;
+  --kp-bg-3: #151b25;
+  --kp-bg-4: #1c2430;
+  --kp-line: rgba(148, 170, 200, 0.1);
+  --kp-line-strong: rgba(148, 170, 200, 0.18);
+  --kp-text-0: #e8eef7;
+  --kp-text-1: #a9b4c4;
+  --kp-text-2: #6b7789;
+
+  --kp-cyan: #3ee6f5;
+  --kp-violet: #9d7bff;
+  --kp-green: #5af2a0;
+  --kp-amber: #ffb648;
+  --kp-red: #ff4f6d;
+  --kp-cyan-dim: rgba(62, 230, 245, 0.12);
+  --kp-violet-dim: rgba(157, 123, 255, 0.12);
+  --kp-green-dim: rgba(90, 242, 160, 0.12);
+  --kp-amber-dim: rgba(255, 182, 72, 0.12);
+  --kp-red-dim: rgba(255, 79, 109, 0.12);
+
+  --kp-font-ui: 'Geist Variable', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --kp-font-mono: 'JetBrains Mono Variable', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+
+  --kp-space-1: 4px;
+  --kp-space-2: 8px;
+  --kp-space-3: 12px;
+  --kp-space-4: 16px;
+  --kp-space-5: 20px;
+  --kp-space-6: 24px;
+  --kp-space-7: 32px;
+  --kp-space-8: 48px;
+
+  --kp-radius-s: 6px;
+  --kp-radius-m: 10px;
+  --kp-radius-l: 16px;
+
+  --kp-shadow-1: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 4px 12px rgba(0, 0, 0, 0.35);
+  --kp-shadow-2: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 18px 48px rgba(0, 0, 0, 0.55), 0 2px 6px rgba(0, 0, 0, 0.4);
+  --kp-shadow-focus: 0 0 0 1px var(--kp-cyan-dim), 0 0 32px -8px rgba(62, 230, 245, 0.35);
+
+  --kp-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --kp-dur-fast: 120ms;
+  --kp-dur: 200ms;
+  --kp-dur-slow: 420ms;
+}

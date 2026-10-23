@@ -1,0 +1,34 @@
+Return-Path: <bounce-7731@mx.k4de-relay.net>
+Delivered-To: elias@lumengrid.fr
+Received: from mx1.lumengrid.fr (mx1.lumengrid.fr [10.20.0.25])
+	by ws-varga.ot.lumengrid.local (Postfix) with ESMTP id 9D4E7F01
+	for <elias@lumengrid.fr>; Thu, 16 Apr 2026 18:42:00 +0200
+Received: from mail.k4de-relay.net (unknown [185.220.101.47])
+	by mx1.lumengrid.fr (Postfix) with ESMTP id 5A2C3B88
+	for <elias@lumengrid.fr>; Thu, 16 Apr 2026 18:41:57 +0200
+Authentication-Results: mx1.lumengrid.fr; spf=pass smtp.mailfrom=mx.k4de-relay.net;
+	dkim=none; dmarc=none header.from=lumengr1d.com
+From: Support IT Lumen Grid <support@lumengr1d.com>
+Reply-To: support@lumengr1d.com
+To: Elias Varga <elias@lumengrid.fr>
+Subject: [IT] Votre mot de passe VPN expire aujourd'hui
+Date: Thu, 16 Apr 2026 18:41:50 +0200
+Message-ID: <20260416164150.77310@lumengr1d.com>
+X-Mailer: PHPMailer 6.8.1
+X-Originating-IP: 185.220.101.47
+Content-Type: text/plain; charset=utf-8
+
+Bonjour Elias,
+
+Votre mot de passe VPN arrive à expiration aujourd'hui à 23:59.
+Sans renouvellement, votre accès distant sera suspendu pendant vos congés.
+
+Pour conserver votre accès, validez votre mot de passe actuel ici :
+
+    https://vpn.lumengr1d.com/renew?u=elias
+
+L'opération prend moins d'une minute.
+
+Cordialement,
+Le Support IT — Lumen Grid
+Ce message est généré automatiquement, merci de ne pas y répondre.

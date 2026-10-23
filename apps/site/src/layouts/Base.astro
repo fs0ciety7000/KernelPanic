@@ -1,0 +1,50 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+const {
+  title = 'Kernel_Panic — enquête de hacking dans un OS virtuel',
+  description = "Kernel_Panic est un jeu d'enquête immersif : explorez un vrai système d'exploitation virtuel — terminal, mails, logs, fichiers cachés — pour remonter la piste d'une intrusion.",
+} = Astro.props;
+const canonical = new URL(Astro.url.pathname, 'https://kernel.fsociety.org').href;
+const ogImage = new URL('/og.svg', 'https://kernel.fsociety.org').href;
+---
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="theme-color" content="#05070b" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Kernel_Panic" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:locale" content="fr_FR" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+    <script type="application/ld+json" set:html={JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'VideoGame',
+      name: 'Kernel_Panic',
+      url: 'https://kernel.fsociety.org/',
+      description,
+      genre: ['Puzzle', 'Investigation', 'Simulation'],
+      gamePlatform: ['Web browser', 'macOS', 'Windows', 'Linux'],
+      inLanguage: 'fr',
+    })} />
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>

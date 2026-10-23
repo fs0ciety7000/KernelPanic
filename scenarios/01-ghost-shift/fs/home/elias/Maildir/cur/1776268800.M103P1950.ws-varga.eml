@@ -1,0 +1,21 @@
+Return-Path: <newsletter@lumen-systems.ch>
+Delivered-To: elias@lumengrid.fr
+Received: from mail.lumen-systems.ch (mail.lumen-systems.ch [195.141.88.20])
+	by mx1.lumengrid.fr (Postfix) with ESMTPS id 3E0F9B12
+	for <elias@lumengrid.fr>; Wed, 15 Apr 2026 18:00:00 +0200
+From: Lumen Systems AG <newsletter@lumen-systems.ch>
+To: elias@lumengrid.fr
+Subject: Lumen Systems — Bulletin firmware avril 2026
+Date: Wed, 15 Apr 2026 18:00:00 +0200
+Message-ID: <bulletin-2026-04@lumen-systems.ch>
+Content-Type: text/plain; charset=utf-8
+
+Bulletin firmware — Avril 2026
+
+• 4.1.9 (stable) : correctifs watchdog, recommandé sur tous les contrôleurs.
+• 4.2.0 : en développement, sortie prévue au T3 2026. Aucune préversion n'est
+  diffusée en dehors du programme pilote.
+• Rappel sécurité : toute image légitime est signée (clé 0x4C55). N'acceptez
+  jamais une image non signée, même « hotfix ».
+
+L'équipe Lumen Systems AG — Zürich

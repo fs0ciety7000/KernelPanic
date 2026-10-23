@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Kernel_Panic exposes no native API to the WebView: everything is sandboxed in the virtual OS.",
+  "windows": ["main"],
+  "permissions": []
+}

@@ -1,0 +1,7 @@
+127.0.0.1       localhost
+127.0.1.1       ws-varga.ot.lumengrid.local ws-varga
+10.20.0.40      ot-deploy.lumengrid.local ot-deploy
+10.20.0.12      intranet.lumengrid.local intranet
+
+# The following lines are desirable for IPv6 capable hosts
+::1     ip6-localhost ip6-loopback

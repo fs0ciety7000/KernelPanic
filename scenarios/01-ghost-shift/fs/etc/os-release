@@ -1,0 +1,8 @@
+PRETTY_NAME="LumenOS 22.04.4 LTS (Ops Workstation)"
+NAME="LumenOS"
+VERSION_ID="22.04"
+VERSION="22.04.4 LTS (Jammy Jellyfish)"
+ID=lumenos
+ID_LIKE=ubuntu debian
+HOME_URL="https://intranet.lumengrid.local/it/lumenos"
+SUPPORT_URL="mailto:support@lumengrid.fr"
