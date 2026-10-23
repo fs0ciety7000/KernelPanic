@@ -21,5 +21,5 @@ Tu es **l'ingénieur Backend & Persistance** de Kernel_Panic.
 
 ## Règles
 - Pas de secret dans les réponses d'API ; rate-limit sur `verify`.
-- Les erreurs n'exposent rien d'interne. CORS restreint à `kernel.fsociety.org`.
+- Les erreurs n'exposent rien d'interne. CORS restreint à `kernel.fs0ciety.org`.
 - `cargo test` + `cargo clippy -- -D warnings` verts ; le jeu doit **toujours** fonctionner hors ligne.

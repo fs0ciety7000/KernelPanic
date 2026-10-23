@@ -4,9 +4,9 @@
 
 **Kernel_Panic** vous assoit devant la station de travail d'un inconnu. Vous lisez ses mails, fouillez ses dossiers cachés, filtrez ses logs, décodez ce qu'un attaquant a laissé derrière lui — avec de vrais réflexes d'analyste (`grep`, `sudo`, `base64 -d`, en-têtes de mail, EXIF, crontab). Tout est simulé et sandboxé : aucune vraie commande n'est exécutée.
 
-- 🌐 Web : `https://kernel.fsociety.org/play/`
+- 🌐 Web : `https://kernel.fs0ciety.org/play/`
 - 🖥️ Desktop : macOS · Windows · Linux (Tauri)
-- 📖 Site : `https://kernel.fsociety.org/`
+- 📖 Site : `https://kernel.fs0ciety.org/`
 
 ## Les dossiers
 

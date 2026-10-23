@@ -16,7 +16,7 @@ flowchart LR
   GH -->|tag v*| GA[GitHub Actions<br/>tauri-action] --> R[GitHub Releases<br/>.dmg · .msi · .AppImage · .deb]
 ```
 
-### Un seul hôte : `kernel.fsociety.org`
+### Un seul hôte : `kernel.fs0ciety.org`
 
 | Chemin | Contenu | Source |
 |---|---|---|
@@ -25,7 +25,7 @@ flowchart LR
 | `/api/` | Backend Axum (phase 2 — saves, vérification) | service `server` |
 | `/healthz` | Sonde de santé nginx | — |
 
-**Pourquoi pas `play.kernel.fsociety.org` ?** Le certificat *Universal SSL* gratuit de Cloudflare couvre `fsociety.org` et `*.fsociety.org`, mais **pas** les sous-domaines de second niveau (`*.kernel.fsociety.org`). Il faudrait Advanced Certificate Manager (payant). Un seul hôte avec des chemins évite aussi le CORS et partage l'origine (cookies, `localStorage`).
+**Pourquoi pas `play.kernel.fs0ciety.org` ?** Le certificat *Universal SSL* gratuit de Cloudflare couvre `fs0ciety.org` et `*.fs0ciety.org`, mais **pas** les sous-domaines de second niveau (`*.kernel.fs0ciety.org`). Il faudrait Advanced Certificate Manager (payant). Un seul hôte avec des chemins évite aussi le CORS et partage l'origine (cookies, `localStorage`).
 
 ## 2. Fichiers
 
@@ -82,12 +82,12 @@ Le HTML est servi en `no-cache` par nginx : un déploiement est visible immédia
 
 1. **Sources** : connecter le dépôt GitHub (GitHub App Coolify).
 2. **New Resource → Docker Compose** → dépôt `fs0ciety7000/KernelPanic`, branche `main`, *Docker Compose Location* : `/docker/docker-compose.yml`.
-3. **Domaines** : sur le service `web`, `https://kernel.fsociety.org` (port 80). Ne pas exposer `server` (il n'est joignable que via `/api/`).
+3. **Domaines** : sur le service `web`, `https://kernel.fs0ciety.org` (port 80). Ne pas exposer `server` (il n'est joignable que via `/api/`).
 4. **Environment Variables** : rien d'obligatoire ; surcharger `RUST_LOG` si besoin.
 5. **Health checks** : définis dans le compose (`/healthz` pour web, `/api/health` pour server) — Coolify les affiche et ne bascule le trafic qu'une fois `healthy`.
 6. **Persistent storage** (phase 2) : volume `/data` sur `server` pour SQLite.
 7. **Auto-deploy** : activer *Automatic deployment* (webhook GitHub) sur `main`. Option recommandée : déclencher seulement si la CI est verte (*Webhooks → Deploy on successful CI* ou déploiement manuel depuis l'action).
-8. Premier déploiement : *Deploy*, vérifier `https://kernel.fsociety.org/healthz`, `/`, `/play/`.
+8. Premier déploiement : *Deploy*, vérifier `https://kernel.fs0ciety.org/healthz`, `/`, `/play/`.
 
 ### Build local de l'image
 
@@ -155,8 +155,8 @@ Plugin `tauri-plugin-updater` : clé de signature des mises à jour (`TAURI_SIGN
 ## 8. Checklist de mise en production
 
 - [ ] CI verte sur `main` (tests noyau, validation scénarios, builds)
-- [ ] `https://kernel.fsociety.org/healthz` → `ok`
+- [ ] `https://kernel.fs0ciety.org/healthz` → `ok`
 - [ ] `/play/` charge, le scénario démarre, une sauvegarde survit à un rechargement
-- [ ] En-têtes : `curl -sI https://kernel.fsociety.org/play/ | grep -i content-security`
+- [ ] En-têtes : `curl -sI https://kernel.fs0ciety.org/play/ | grep -i content-security`
 - [ ] Assets `/play/_app/immutable/*` : `cache-control: public, max-age=31536000, immutable`
 - [ ] `/api/health` → `{"status":"ok"}` (si `server` déployé)

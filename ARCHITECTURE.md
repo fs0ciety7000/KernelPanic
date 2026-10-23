@@ -242,4 +242,4 @@ KernelPanic/
 | 005 | 2026-10-23 | Axum plutôt que PocketBase, différé | Besoins gameplay (validation, serveurs simulés) > CRUD. |
 | 006 | 2026-10-23 | Astro pour la vitrine | SEO + zéro JS. |
 | 008 | 2026-10-23 | Pièces à conviction, décisions conditionnées par les pièces, fins multiples (référence : *Orwell*) | Le joueur ne fait pas que trouver des réponses : il juge des faits parfois trompeurs et assume ce qu'il en fait. Tout est déclaratif dans le scénario, aucune logique spécifique dans l'UI. |
-| 007 | 2026-10-23 | Un seul domaine `kernel.fsociety.org` (site `/`, jeu `/play/`, API `/api/`) | Le certificat Universal SSL de Cloudflare ne couvre pas les sous-domaines de 2ᵉ niveau (`play.kernel.fsociety.org`). |
+| 007 | 2026-10-23 | Un seul domaine `kernel.fs0ciety.org` (site `/`, jeu `/play/`, API `/api/`) | Le certificat Universal SSL de Cloudflare ne couvre pas les sous-domaines de 2ᵉ niveau (`play.kernel.fs0ciety.org`). |

@@ -54,7 +54,7 @@
     {/each}
   </section>
 
-  <footer class="mono">kernel.fsociety.org · v0.1 · tout est simulé, aucune vraie machine n'est touchée</footer>
+  <footer class="mono">kernel.fs0ciety.org · v0.1 · tout est simulé, aucune vraie machine n'est touchée</footer>
 </div>
 
 <style>

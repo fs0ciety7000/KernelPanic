@@ -261,7 +261,7 @@ Convention de métadonnées SVG reconnue par la visionneuse :
 
 ```xml
 <metadata>
-  <kp:exif xmlns:kp="https://kernel.fsociety.org/ns" Make="Fairphone" Model="FP5"
+  <kp:exif xmlns:kp="https://kernel.fs0ciety.org/ns" Make="Fairphone" Model="FP5"
            DateTimeOriginal="2019-03-09 14:02:11" Description="…"/>
 </metadata>
 ```

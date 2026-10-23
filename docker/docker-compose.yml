@@ -1,6 +1,6 @@
 # Coolify "Docker Compose" resource. Coolify's proxy (Traefik) routes the
 # domain to the `web` service; no host ports are published here.
-# In Coolify, assign https://kernel.fsociety.org to service `web` (port 80).
+# In Coolify, assign https://kernel.fs0ciety.org to service `web` (port 80).
 services:
   web:
     build:
