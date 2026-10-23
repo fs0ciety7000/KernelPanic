@@ -23,7 +23,7 @@ Agents : voir `AGENTS.md`.
 |---|---|---|
 | 1.1 | Playtests externes (5 joueurs, débutants + confirmés) sur Ghost Shift ; ajuster indices et rythme | scenario-writer |
 | 1.2 | Premier build Tauri sur les 3 OS via `desktop.yml`, vérifier sauvegarde locale dans la WebView | os-engine |
-| 1.3 | Déploiement Coolify + Cloudflare sur `kernel.fs0ciety.org` (site `/`, jeu `/play/`) | backend |
+| 1.3 | ✅ En ligne sur **https://kernel.fs0ciety.org** (site `/`, jeu `/play/`) : Coolify (app `kernel-panic-web`, auto-deploy) + Cloudflare (CNAME proxifié, Full strict). Basculer la branche Coolify sur `main` après fusion | backend |
 | 1.4 | ✅ Panneau « Premiers pas » au premier lancement (rôle de chaque app, raccourcis), réouvrable (menu KP, Ctrl+Alt+H) | apps-developer |
 | 1.5 | ✅ Petits écrans : avertissement < 1024 px au menu, fenêtres ouvertes en plein écran < 900 px | design-system |
 | 1.6 | ✅ Accessibilité : `--kp-text-2` relevé à 4.58:1 minimum, focus qui suit la fenêtre active, raccourcis prioritaires même dans le terminal, Échap ferme le menu | design-system |
