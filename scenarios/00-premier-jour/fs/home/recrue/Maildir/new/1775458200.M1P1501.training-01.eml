@@ -1,0 +1,38 @@
+Return-Path: <y.haddad@ironveil.fr>
+Delivered-To: recrue@ironveil.fr
+Received: from mx.ironveil.fr (mx.ironveil.fr [10.100.0.5])
+	by training-01.lab.ironveil.local (Postfix) with ESMTP id 0A1B2C3D
+	for <recrue@ironveil.fr>; Mon, 6 Apr 2026 08:50:00 +0200
+From: Yasmine Haddad <y.haddad@ironveil.fr>
+To: Nouvelle recrue <recrue@ironveil.fr>
+Subject: Bienvenue ! On commence en douceur
+Date: Mon, 6 Apr 2026 08:50:00 +0200
+Message-ID: <welcome-0006.yh@ironveil.fr>
+X-Ironveil-Ticket: IV-2026-0006
+X-Mailer: Ironveil Webmail 3.2
+Content-Type: text/plain; charset=utf-8
+
+Bienvenue chez Ironveil !
+
+Moi c'est Yasmine, ta mentore. Aujourd'hui, pas de vrai feu : tu prends en main les
+outils sur une VM d'entraînement (training-01) où un ancien stagiaire, Léo, a laissé
+deux-trois bêtises. On va les retrouver ensemble, tranquillement.
+
+Tout se passe dans le **Dossier** (l'app en bas à droite) : il liste tes objectifs,
+accepte tes réponses, et te donne des indices si tu bloques. Je te relance par mail
+à chaque étape.
+
+Avant tout, deux choses à savoir :
+
+1) Ton mot de passe de session (temporaire) : IronveilLab6
+   Tu en auras besoin plus tard pour `sudo`. Ne le partage pas, même ici c'est pour de faux.
+
+2) Chaque mail cache des infos utiles dans ses EN-TÊTES. Exerce-toi tout de suite :
+   ouvre CE message, puis clique sur « Afficher la source » (en haut de la fenêtre de
+   lecture). Tu verras toutes les lignes techniques du mail. L'une d'elles commence par
+   « X-Ironveil-Ticket » et donne le numéro de ton exercice. Reporte-le dans le Dossier.
+
+C'est parti. Prends ton temps, lis dans l'ordre, et pose des questions (enfin… au Dossier).
+
+— Yasmine
+Ironveil · Réponse à incident · Valmont

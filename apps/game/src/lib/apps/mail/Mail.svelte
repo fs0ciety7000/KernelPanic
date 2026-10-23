@@ -101,6 +101,29 @@
   };
 
   /** Splits body text into plain/link fragments (links are displayed, never navigable). */
+  /**
+   * Plain-text mails are hard-wrapped around 80 columns. Re-flow prose so it fits the pane,
+   * but keep structure: lists, quotes, indented/code lines and signatures stay on their own line.
+   */
+  function reflow(text: string): string {
+    const keep = (l: string) => /^\s|^[-*•>]|^\d+[.)]\s|^--\s*$|^—|^\S+:\s/.test(l) || l.length < 40;
+    return text
+      .replace(/\r\n/g, '\n')
+      .split(/\n{2,}/)
+      .map((para) => {
+        const lines = para.split('\n');
+        let out = lines[0] ?? '';
+        for (let i = 1; i < lines.length; i++) {
+          const prev = lines[i - 1]!;
+          const cur = lines[i]!;
+          // Join only prose continuations: previous line was long prose, current isn't structural.
+          out += !keep(prev) && !keep(cur) ? ' ' + cur : !keep(prev) && /^[a-zà-ÿ(«"]/.test(cur) ? ' ' + cur : '\n' + cur;
+        }
+        return out;
+      })
+      .join('\n\n');
+  }
+
   function fragments(text: string) {
     const out: Array<{ t: string; link: boolean }> = [];
     let last = 0;
@@ -169,7 +192,7 @@
 {/each}
 {m.body}</pre>
       {:else}
-        <div class="body">{#each fragments(m.body) as f, i (i)}{#if f.link}<span class="link" title="Lien externe — navigation désactivée dans la session forensique">{f.t}</span>{:else}{f.t}{/if}{/each}</div>
+        <div class="body">{#each fragments(reflow(m.body)) as f, i (i)}{#if f.link}<span class="link" title="Lien externe — navigation désactivée dans la session forensique">{f.t}</span>{:else}{f.t}{/if}{/each}</div>
       {/if}
     {:else}
       <div class="kp-empty"><div><Icon name="mail" size={36} stroke={1.2} /><p>Sélectionnez un message</p></div></div>

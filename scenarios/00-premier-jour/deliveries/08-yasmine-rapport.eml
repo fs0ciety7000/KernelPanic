@@ -1,0 +1,26 @@
+Return-Path: <y.haddad@ironveil.fr>
+Delivered-To: recrue@ironveil.fr
+Received: from mx.ironveil.fr (mx.ironveil.fr [10.100.0.5])
+	by training-01.lab.ironveil.local (Postfix) with ESMTP id 1A2B07
+	for <recrue@ironveil.fr>; {{date}}
+From: Yasmine Haddad <y.haddad@ironveil.fr>
+To: Nouvelle recrue <recrue@ironveil.fr>
+Subject: Re: exercice — ton premier rapport
+Date: {{date}}
+Message-ID: <step-rapport.yh@ironveil.fr>
+Content-Type: text/plain; charset=utf-8
+
+Exercice validé, bravo. Tu as touché à tout : mails, fichiers cachés, terminal, logs,
+images, sudo, et nos outils maison. C'est exactement la boîte à outils d'une journée
+normale.
+
+Dernière étape, dans le Dossier : comment présentes-tu la « connexion suspecte » que tu
+as trouvée ? Deux écoles :
+- la version sobre : une ligne dans le ticket, avec la source. C'est la bonne habitude.
+- la version grand jeu : tu la balances au point d'équipe de 11 h comme une vraie
+  compromission. (Je te rappelle que c'est un exercice… mais à toi de voir.)
+
+Il n'y a pas de piège : les deux « marchent ». Choisis, puis on clôture ta première
+matinée.
+
+— Yasmine

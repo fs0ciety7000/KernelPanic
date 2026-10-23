@@ -1,0 +1,26 @@
+Return-Path: <y.haddad@ironveil.fr>
+Delivered-To: recrue@ironveil.fr
+Received: from mx.ironveil.fr (mx.ironveil.fr [10.100.0.5])
+	by training-01.lab.ironveil.local (Postfix) with ESMTP id 1A2B01
+	for <recrue@ironveil.fr>; {{date}}
+From: Yasmine Haddad <y.haddad@ironveil.fr>
+To: Nouvelle recrue <recrue@ironveil.fr>
+Subject: Re: exercice — le fichier caché
+Date: {{date}}
+Message-ID: <step-cache.yh@ironveil.fr>
+Content-Type: text/plain; charset=utf-8
+
+Bien joué, en-têtes lus et numéro d'exercice noté.
+
+Étape suivante : Léo dit avoir « perdu » une sauvegarde de config dans ton dossier
+perso. C'est un fichier CACHÉ — son nom commence par un point, donc il ne s'affiche
+pas par défaut.
+
+Deux façons de le voir :
+- App Fichiers : va dans ton dossier perso et clique sur le bouton « Cachés ».
+- Terminal : `ls -a` (le -a = « all », y compris les .fichiers). Regarde le dossier
+  .ledgerlite , puis ouvre ce qu'il contient (`cat ~/.ledgerlite/settings.ini.bak`).
+
+Ouvre-le, ça débloque la suite.
+
+— Y.

@@ -1,0 +1,11 @@
+; LedgerLite — SAUVEGARDE de settings.ini (copie de travail de Leo)
+; "fichier perdu" : Leo l'a laisse dans le home de ce compte avant de partir.
+; Identique a /opt/ledgerlite/config/settings.ini — meme mot de passe en clair.
+
+[accounts]
+deploy_user = deploy
+deploy_password = Printemps2026!
+
+[auth]
+default_admin = admin
+default_admin_password = admin
