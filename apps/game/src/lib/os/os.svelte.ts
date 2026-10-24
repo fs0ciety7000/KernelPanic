@@ -7,12 +7,15 @@ import { sound } from './sound.svelte';
 import { load, remove, store } from './storage';
 import { appForPath, appById } from './apps';
 import { wm, type WindowSnapshot } from './wm.svelte';
+import { desktop, type Cell } from './desktop.svelte';
 
 type Phase = 'boot' | 'select' | 'intro' | 'desktop' | 'ended';
 
 interface StoredGame {
   save: SaveGame;
   windows: WindowSnapshot[];
+  /** Desktop icon positions (older saves don't have it). */
+  desktop?: Record<string, Cell>;
 }
 
 const SAVE_KEY = (id: string) => `kp.save.${id}`;
@@ -71,9 +74,11 @@ class OS {
     this.wire(kernel);
     this.kernel = kernel;
     wm.reset();
+    desktop.reset();
     if (stored && stored.save.scenarioVersion === bundle.version) {
       this.phase = kernel.runtime.ended ? 'ended' : 'desktop';
       wm.restore(stored.windows);
+      desktop.positions = stored.desktop ?? {};
     } else {
       this.phase = bundle.intro ? 'intro' : 'desktop';
     }
@@ -180,7 +185,7 @@ class OS {
   save = (): void => {
     const k = this.kernel;
     if (!k || this.phase === 'intro') return;
-    store(SAVE_KEY(k.bundle.id), { save: k.save(), windows: wm.snapshot() } satisfies StoredGame);
+    store(SAVE_KEY(k.bundle.id), { save: k.save(), windows: wm.snapshot(), desktop: $state.snapshot(desktop.positions) } satisfies StoredGame);
   };
 
   quitToMenu(): void {

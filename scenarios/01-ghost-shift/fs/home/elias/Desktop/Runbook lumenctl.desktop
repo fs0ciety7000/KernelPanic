@@ -1,0 +1,6 @@
+[Desktop Entry]
+Type=Link
+Name=Runbook lumenctl
+Comment=Procédures de déploiement OT
+Exec=notes ~/Documents/procedures/runbook-lumenctl.md
+Icon=note

@@ -12,7 +12,7 @@ const term = (line) => async (page) => {
   await page.waitForTimeout(250);
 };
 const dock = (label) => async (page) => {
-  await page.locator(`.dock .item[aria-label="${label}"]`).click();
+  await page.locator(`.taskbar .pin[aria-label="${label}"]`).click();
   await page.waitForTimeout(600);
 };
 
@@ -35,7 +35,7 @@ const STEPS = [
   page.on('console', (m) => ['error', 'warning'].includes(m.type()) && errors.push(`${m.type()}: ${m.text()}`));
 
   await page.goto(URL);
-  await page.evaluate(() => localStorage.clear());
+  await page.evaluate(() => { localStorage.clear(); localStorage.setItem('kp.help.seen', 'true'); });
   await page.reload();
   await page.waitForTimeout(300);
   await page.keyboard.press('Space');

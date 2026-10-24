@@ -80,6 +80,21 @@ export const APPS: AppManifest[] = [
     defaultSize: { w: 560, h: 620 },
     dock: true,
   },
+  {
+    id: 'settings',
+    title: 'Paramètres',
+    icon: 'settings',
+    load: () => import('../apps/settings/Settings.svelte'),
+    singleton: true,
+    defaultSize: { w: 720, h: 520 },
+  },
+  {
+    id: 'properties',
+    title: 'Propriétés',
+    icon: 'info',
+    load: () => import('../apps/properties/Properties.svelte'),
+    defaultSize: { w: 400, h: 520 },
+  },
 ];
 
 export const appById = (id: string) => APPS.find((a) => a.id === id);

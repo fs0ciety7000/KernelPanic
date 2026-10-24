@@ -7,8 +7,10 @@ export interface Rect {
   h: number;
 }
 
-export const TOPBAR_H = 30;
-export const DOCK_SPACE = 84;
+/** The desktop has no top bar anymore: everything lives in the bottom taskbar. */
+export const TOPBAR_H = 0;
+export const TASKBAR_H = 48;
+export const DOCK_SPACE = TASKBAR_H;
 /** Below this width, floating windows don't fit side by side: new windows open maximized. */
 export const COMPACT_W = 900;
 
@@ -25,6 +27,8 @@ export class WindowState {
   z = $state(1);
   minimized = $state(false);
   maximized = $state(false);
+  /** Half-screen tiling (drag to a side edge). */
+  snap = $state<'left' | 'right' | null>(null);
   /** App-specific arguments (path to open…). Reassigned when a singleton is re-targeted. */
   args = $state<Record<string, unknown>>({});
   /** Bumps when args change on an existing window, so apps can react. */
@@ -48,6 +52,8 @@ export interface WindowSnapshot extends Rect {
 
 class WindowManager {
   windows = $state<WindowState[]>([]);
+  /** Highlighted drop zone while dragging a window to a screen edge. */
+  snapPreview = $state<'left' | 'right' | 'top' | null>(null);
   private seq = 0;
   private zTop = 10;
 
@@ -113,7 +119,51 @@ class WindowManager {
 
   toggleMaximize(id: number): void {
     const w = this.windows.find((x) => x.id === id);
-    if (w) w.maximized = !w.maximized;
+    if (!w) return;
+    w.snap = null;
+    w.maximized = !w.maximized;
+  }
+
+  /** Tile a window to half of the screen. */
+  setSnap(id: number, side: 'left' | 'right' | null): void {
+    const w = this.windows.find((x) => x.id === id);
+    if (!w) return;
+    w.maximized = false;
+    w.snap = side;
+  }
+
+  /** Minimize everything / restore (taskbar "show desktop"). */
+  private peek: number[] = [];
+  toggleShowDesktop(): void {
+    const visible = this.windows.filter((w) => !w.minimized);
+    if (visible.length) {
+      this.peek = visible.map((w) => w.id);
+      for (const w of visible) w.minimized = true;
+    } else {
+      for (const id of this.peek) this.focus(id);
+      this.peek = [];
+    }
+  }
+
+  // ── Window switcher (Alt+` / Ctrl+`) ─────────────────────────────────
+  switcher = $state<{ open: boolean; index: number; order: number[] }>({ open: false, index: 0, order: [] });
+
+  switchNext(back = false): void {
+    if (!this.switcher.open) {
+      const order = [...this.windows].sort((a, b) => b.z - a.z).map((w) => w.id);
+      if (order.length < 2) return;
+      this.switcher = { open: true, index: back ? order.length - 1 : 1, order };
+      return;
+    }
+    const n = this.switcher.order.length;
+    this.switcher.index = (this.switcher.index + (back ? -1 : 1) + n) % n;
+  }
+
+  switchCommit(): void {
+    if (!this.switcher.open) return;
+    const id = this.switcher.order[this.switcher.index];
+    this.switcher = { open: false, index: 0, order: [] };
+    if (id !== undefined) this.focus(id);
   }
 
   /** Dock click: launch, focus, or minimize if already focused. */

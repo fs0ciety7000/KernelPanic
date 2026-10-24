@@ -27,6 +27,7 @@ Agents : voir `AGENTS.md`.
 | 1.4 | ✅ Panneau « Premiers pas » au premier lancement (rôle de chaque app, raccourcis), réouvrable (menu KP, Ctrl+Alt+H) | apps-developer |
 | 1.5 | ✅ Petits écrans : avertissement < 1024 px au menu, fenêtres ouvertes en plein écran < 900 px | design-system |
 | 1.6 | ✅ Accessibilité : `--kp-text-2` relevé à 4.58:1 minimum, focus qui suit la fenêtre active, raccourcis prioritaires même dans le terminal, Échap ferme le menu | design-system |
+| 1.8 | ✅ **Bureau « vrai OS »** : icônes = `~/Desktop` (lanceurs `.desktop`), sélection/lasso/glisser-déposer, clic droit partout, Corbeille freedesktop restaurable, barre des tâches (lanceur + recherche, fenêtres, notifications, calendrier, réseau), ancrage des fenêtres, sélecteur de fenêtres, Propriétés (chmod), Paramètres | os-engine + apps-developer |
 | 1.7 | ✅ Sons d'interface synthétisés (WebAudio, sans fichier), anti-chevauchement, bouton muet persistant | design-system |
 
 ## Jalon 2 — Profondeur (P1) · ~4 semaines

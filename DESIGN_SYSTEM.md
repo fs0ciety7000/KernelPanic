@@ -95,11 +95,22 @@ Ouverture de fenêtre : depuis l'icône du dock (transform-origin). Fermeture : 
 - Bordure 1 px `--kp-line` ; active : `--kp-line-strong` + liseré supérieur cyan 1 px à 40 %.
 - Fenêtre inactive : contenu à 100 %, seule la chrome s'atténue.
 
-### 6.2 Top bar (28 px)
-Verre. À gauche : logotype `KP_` + menu système. Au centre : nom de la machine (`ws-varga.lumengrid.local`). À droite : indicateur d'objectifs (`◆ 2/7`, violet quand un nouvel objectif apparaît), réseau, horloge du jeu.
+### 6.2 Barre des tâches (48 px, en bas)
+Verre, bordure haute `--kp-line-strong`. De gauche à droite :
+- **Lanceur** `KP_` (underscore cyan clignotant) → menu d'applications : recherche (apps + fichiers du home), grille d'apps, emplacements, pied avec l'utilisateur et les actions (aide, paramètres, sauvegarder, quitter, recommencer). Touche Windows / Alt+F1.
+- **Apps épinglées** : icônes 40 px ; indicateur 3 px sous l'icône (gris = ouverte, cyan + lueur = active).
+- **Fenêtres ouvertes** : un bouton par fenêtre (icône + titre, 190 px max), soulignement cyan pour la fenêtre active, opacité réduite si minimisée. Clic droit : réduire, agrandir, ancrer, fermer.
+- **Zone de notification** : pastille objectifs (violet), centre de notifications (badge cyan), son, réseau, horloge (heure + date de la machine) → calendrier, et une fine bande « afficher le bureau » à l'extrême droite.
+Les panneaux (lanceur, calendrier, notifications, réseau) s'ouvrent au-dessus de la barre, rayon L, verre, animation `rise`.
 
-### 6.3 Dock
-Centré en bas, verre, rayon L. Icônes 40 px, glyphes au trait 1.5 px (style unifié, `currentColor`). Indicateur d'app ouverte : point 4 px cyan sous l'icône. Survol : étiquette au-dessus.
+### 6.3 Bureau
+Les icônes sont les fichiers de `~/Desktop` + trois icônes système (Dossier personnel, Corbeille, Dossier d'enquête). Grille de 96 × 102 px, tuile 50 px rayon 13 px, libellé 11.5 px sur 2 lignes (4 si sélectionné) avec ombre portée. Sélection : fond `--kp-cyan` 12 % + bordure 28 %. Cible de dépôt : violet. Élément coupé ou caché : opacité 55 %. Lasso : bordure cyan 70 %, fond 10 %. Lanceurs `.desktop` en cyan.
+
+### 6.3b Menu contextuel
+220 px min, verre opaque à 96 %, rayon M, éléments 28 px avec icône 14 px, raccourci en mono `--kp-text-2`, séparateurs `--kp-line`, sous-menus à droite (ou à gauche près du bord). Élément dangereux en rouge, survol `--kp-red-dim`. Clavier : ↑ ↓ Entrée Échap.
+
+### 6.3c Ancrage des fenêtres
+Glisser une fenêtre contre un bord : aperçu (bordure cyan 55 %, fond 8 %) puis moitié d'écran ; contre le haut : plein écran. Traîner une fenêtre ancrée la décroche sous le curseur.
 
 ### 6.4 Boutons
 | Variante | Style |
@@ -117,7 +128,7 @@ Lignes 28 px, zébrage *non*, séparateurs `--kp-line`, sélection `--kp-cyan-di
 Mono 10.5 px capitales, padding 2×6, fond `-dim`, texte accent. Ex. `HIDDEN` (violet), `ROOT` (ambre), `NEW` (cyan), `DONE` (vert).
 
 ### 6.7 Notifications (toasts)
-En haut à droite, sous la top bar, 320 px, verre, icône accent à gauche, titre 600 + corps 12.5 px. Les notifications narratives (objectif) ont un liseré violet.
+En haut à droite, 340 px, verre, icône accent à gauche, titre 600 + corps 12.5 px. Les notifications narratives (objectif) ont un liseré violet.
 
 ### 6.8 Terminal
 Pas de chrome supplémentaire. Padding 12 px. Prompt :

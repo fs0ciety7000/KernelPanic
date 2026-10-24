@@ -12,8 +12,11 @@
     { icon: 'case', name: 'Dossier', text: 'Vos objectifs, vos réponses et des indices si vous bloquez.' },
   ];
   const KEYS = [
+    ['Clic droit', 'Menu contextuel (bureau, fichiers, fenêtres)'],
     ['Ctrl+Alt+T', 'Nouveau terminal'],
-    ['Ctrl+`', 'Fenêtre suivante'],
+    ['Ctrl+` ou Alt+`', 'Changer de fenêtre (maintenir)'],
+    ['Ctrl+Alt+← → ↑', 'Ancrer / agrandir la fenêtre'],
+    ['Ctrl+Alt+D', 'Afficher le bureau'],
     ['Ctrl+Alt+W', 'Fermer la fenêtre active'],
     ['Ctrl+Alt+H', 'Afficher / masquer cette aide'],
   ];
@@ -25,7 +28,7 @@
       <span class="kp-label">Premiers pas</span>
       <button class="close" aria-label="Fermer l’aide" onclick={() => help.close()}><Icon name="x" size={14} /></button>
     </header>
-    <p class="lead">Tout ce que vous voyez est la machine. Ce que vous pouvez faire au terminal, vous pouvez souvent le faire dans une app — et inversement.</p>
+    <p class="lead">Tout ce que vous voyez est la machine : les icônes du bureau sont de vrais fichiers de <span class="mono">~/Desktop</span>, la barre du bas lance les apps et liste les fenêtres. Ce que vous faites au terminal, vous pouvez souvent le faire à la souris — et inversement.</p>
     <ul class="apps">
       {#each APPS as a (a.name)}
         <li>
@@ -48,7 +51,7 @@
   .help {
     position: absolute;
     left: 124px;
-    bottom: 96px;
+    bottom: 62px;
     width: 400px;
     max-width: calc(100vw - 32px);
     max-height: calc(100vh - 140px);

@@ -24,7 +24,7 @@
 <style>
   .toasts {
     position: absolute;
-    top: 42px;
+    top: 14px;
     right: 14px;
     display: flex;
     flex-direction: column;

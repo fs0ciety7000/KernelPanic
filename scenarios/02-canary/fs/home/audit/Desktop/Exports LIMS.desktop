@@ -1,0 +1,6 @@
+[Desktop Entry]
+Type=Link
+Name=Exports LIMS
+Comment=Résultats d'analyses exportés du LIMS (groupe lims)
+Exec=files /srv/lims/exports
+Icon=folder

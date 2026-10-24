@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount, type Component } from 'svelte';
-  import { wm, TOPBAR_H, type WindowState } from '$lib/os/wm.svelte';
+  import { wm, TOPBAR_H, TASKBAR_H, type WindowState } from '$lib/os/wm.svelte';
   import { appById, type AppProps } from '$lib/os/apps';
   import Icon from './Icon.svelte';
 
@@ -31,18 +31,37 @@
   function startDrag(e: PointerEvent) {
     if (e.button !== 0 || (e.target as HTMLElement).closest('button')) return;
     wm.focus(win.id);
-    if (win.maximized) return;
     const el = e.currentTarget as HTMLElement;
     el.setPointerCapture(e.pointerId);
-    const ox = e.clientX - win.x;
-    const oy = e.clientY - win.y;
+    let ox = e.clientX - win.x;
+    let oy = e.clientY - win.y;
+    let detached = !(win.maximized || win.snap);
+    let zone: 'left' | 'right' | 'top' | null = null;
     const move = (ev: PointerEvent) => {
+      // Dragging a maximized/tiled window detaches it under the cursor, like a real desktop.
+      if (!detached) {
+        if (Math.abs(ev.clientX - e.clientX) + Math.abs(ev.clientY - e.clientY) < 6) return;
+        // Keep the grab point at the same relative position in the restored window.
+        const tiledW = win.snap ? window.innerWidth / 2 : window.innerWidth;
+        const tiledLeft = win.snap === 'right' ? window.innerWidth / 2 : 0;
+        const ratio = (e.clientX - tiledLeft) / tiledW;
+        win.maximized = false;
+        win.snap = null;
+        ox = Math.round(win.w * Math.min(Math.max(ratio, 0.1), 0.9));
+        oy = 18;
+        detached = true;
+      }
       win.x = Math.min(Math.max(ev.clientX - ox, -win.w + 120), window.innerWidth - 120);
-      win.y = Math.min(Math.max(ev.clientY - oy, TOPBAR_H), window.innerHeight - 60);
+      win.y = Math.min(Math.max(ev.clientY - oy, TOPBAR_H), window.innerHeight - TASKBAR_H - 36);
+      zone = ev.clientY <= 2 ? 'top' : ev.clientX <= 3 ? 'left' : ev.clientX >= window.innerWidth - 4 ? 'right' : null;
+      wm.snapPreview = zone;
     };
     const up = () => {
       el.removeEventListener('pointermove', move);
       el.removeEventListener('pointerup', up);
+      wm.snapPreview = null;
+      if (zone === 'top') wm.toggleMaximize(win.id);
+      else if (zone) wm.setSnap(win.id, zone);
     };
     el.addEventListener('pointermove', move);
     el.addEventListener('pointerup', up);
@@ -81,7 +100,7 @@
   }
 
   const style = $derived(
-    win.maximized
+    win.maximized || win.snap
       ? `z-index:${win.z}`
       : `left:${win.x}px;top:${win.y}px;width:${win.w}px;height:${win.h}px;z-index:${win.z}`,
   );
@@ -93,6 +112,8 @@
   class="window"
   class:focused
   class:maximized={win.maximized}
+  class:snap-left={win.snap === 'left'}
+  class:snap-right={win.snap === 'right'}
   class:minimized={win.minimized}
   {style}
   aria-label={win.title}
@@ -119,7 +140,7 @@
       <div class="kp-error">{loadError}</div>
     {/if}
   </div>
-  {#if !win.maximized}
+  {#if !win.maximized && !win.snap}
     {#each ['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw'] as dir (dir)}
       <!-- svelte-ignore a11y_no_static_element_interactions -->
       <div class="rz rz-{dir}" onpointerdown={(e) => startResize(e, dir)}></div>
@@ -153,13 +174,17 @@
     z-index: 2;
     pointer-events: none;
   }
-  .window.maximized {
+  .window.maximized,
+  .window.snap-left,
+  .window.snap-right {
     left: 0 !important;
-    top: 30px !important;
+    top: 0 !important;
     width: 100% !important;
-    height: calc(100% - 30px - 78px) !important;
+    height: calc(100% - 48px) !important;
     border-radius: 0;
   }
+  .window.snap-left { width: 50% !important; border-right-color: var(--kp-line-strong); }
+  .window.snap-right { left: 50% !important; width: 50% !important; }
   .window.minimized {
     display: none;
   }

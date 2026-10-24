@@ -175,10 +175,23 @@ export interface AppProps { win: WindowState; args: Record<string, unknown> }
 | **Images** | Visionneuse (zoom, panneau métadonnées/EXIF). | `.svg .png .jpg` |
 | **Logs** | Visionneuse de journaux : coloration par niveau, filtre texte/regex, saut à l'horodatage. | `.log`, `/var/log/*` |
 | **Case** | Dossier d'enquête : objectifs, réponses, indices, **pièces à conviction** (avec lien vers leur source) et **décisions** finales. | — |
+| **Paramètres** | Fond d'écran, son, ne pas déranger, lisibilité, « À propos » (machine, noyau, IP, uptime). | — |
+| **Propriétés** | Type (`file`), taille, dates, propriétaire, **permissions rwx modifiables** (règle réelle : seul le propriétaire, sinon `sudo chmod`). | tout chemin |
+
+### 5.1b Le bureau
+
+Le bureau se comporte comme un environnement Linux réel, et tout passe par le noyau avec les droits de la session :
+
+- **Icônes** = contenu de `~/Desktop` (créé s'il manque) + Dossier personnel, Corbeille, Dossier d'enquête. Les lanceurs sont de vrais fichiers freedesktop `.desktop` (`Exec=<app> [chemin]`, `Icon=`). Positions sur grille sauvegardées avec la partie.
+- **Interactions** : double-clic, sélection (clic, Ctrl, lasso), glisser-déposer (HTML5, partagé avec l'app Fichiers : déplacer, Ctrl = copier, vers un dossier, vers la Corbeille), F2, Suppr, Ctrl+A/C/X/V, Entrée.
+- **Menus contextuels** construits par `lib/os/filemenu.ts` (mêmes menus sur le bureau et dans Fichiers) : ouvrir, ouvrir avec, terminal ici, couper/copier/coller, renommer, corbeille, propriétés ; fond : nouveau dossier/document, coller, réorganiser, fichiers cachés, fond d'écran.
+- **Corbeille** au format freedesktop (`~/.local/share/Trash/{files,info}` + `.trashinfo` avec `Path=` et `DeletionDate=`), donc restaurable — et visible au terminal.
+- **Barre des tâches** : lanceur avec recherche, apps épinglées, une entrée par fenêtre, zone de notification (objectifs, centre de notifications avec « ne pas déranger », son, réseau, calendrier de la machine, afficher le bureau).
+- Opérations fichiers : `lib/os/fileops.svelte.ts` ; état du bureau : `lib/os/desktop.svelte.ts` ; préférences par navigateur : `lib/os/settings.svelte.ts`.
 
 ### 5.2 Window Manager
 
-État par fenêtre : `{ id, appId, title, x, y, w, h, z, minimized, maximized, args }`. Focus = z max, déplacement par pointer events (capture), redimensionnement par 8 poignées, double-clic sur la barre = maximiser, snap demi-écran au bord (phase 2). Raccourcis : `Alt+Tab`-like (`Ctrl+\``), `Ctrl+Alt+T` → terminal.
+État par fenêtre : `{ id, appId, title, x, y, w, h, z, minimized, maximized, snap, args }`. Focus = z max, déplacement par pointer events (capture), redimensionnement par 8 poignées, double-clic sur la barre = maximiser, **ancrage** : bord gauche/droit = moitié d'écran, haut = plein écran (aperçu pendant le glisser ; traîner une fenêtre ancrée la décroche). Sélecteur de fenêtres façon Alt+Tab : maintenir `Ctrl` ou `Alt` et appuyer sur `` ` ``. Raccourcis : `Ctrl+Alt+T` terminal, `Ctrl+Alt+←/→/↑` ancrer/agrandir, `Ctrl+Alt+D` afficher le bureau, `Ctrl+Alt+W` fermer, `Ctrl+Alt+H` aide. Les raccourcis du bureau sont écoutés en phase de capture pour passer avant les apps (xterm).
 
 ## 6. Format de scénario (résumé)
 

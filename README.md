@@ -20,15 +20,18 @@ Comme dans *Orwell*, chaque enquête accumule des **pièces à conviction** sour
 
 ## Le bureau
 
+Un vrai bureau : les icônes sont les fichiers de `~/Desktop` (double-clic, lasso, glisser-déposer, F2, Suppr, clic droit partout), une Corbeille restaurable, une barre des tâches avec lanceur et recherche, liste des fenêtres, centre de notifications, calendrier et réseau, des fenêtres qu'on ancre aux bords, un panneau Propriétés qui montre (et modifie, si on en a le droit) les permissions rwx, et des Paramètres (fonds d'écran, son, lisibilité).
+
 | App | Ce qu'elle fait | Pourquoi elle compte |
 |---|---|---|
-| **Fichiers** | Arborescence, fichiers cachés, droits, propriétaires | Ce qu'on cache commence par un point |
+| **Fichiers** | Liste ou icônes, fichiers cachés, droits, glisser-déposer, couper/copier/coller, Corbeille | Ce qu'on cache commence par un point |
 | **Terminal** | xterm.js + shell bash-like : pipes, redirections, globs, `sudo`, ~70 commandes, complétion Tab, historique | Le scalpel |
 | **Mail** | Client Maildir lisant de vrais `.eml`, vue source complète | Les en-têtes ne mentent pas |
 | **Notes** | Éditeur de texte (Ctrl+S), lecture seule selon les droits | Runbooks, todo, vos propres notes |
 | **Images** | Visionneuse, zoom, panneau métadonnées/EXIF | Une photo dit quand, où, et parfois quoi |
 | **Logs** | Journaux colorés par gravité, filtres (texte, `/regex/`, presets) | La nuit, minute par minute |
 | **Dossier** | Objectifs, réponses, indices à paliers, pièces à conviction, décisions | Le fil de l'enquête |
+| **Paramètres** · **Propriétés** | Fond d'écran, son, lisibilité · type, taille, propriétaire, permissions | Une machine qui se règle et s'inspecte |
 
 ## Démarrer
 
