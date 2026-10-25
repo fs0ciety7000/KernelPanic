@@ -88,7 +88,7 @@ function logAuth(target: System, line: string): void {
 async function login(ctx: CommandContext, target: System, host: string, user: string, prog: string, identity?: string): Promise<boolean> {
   const src = ctx.kernel.machine.ip;
   const port = 40000 + (ctx.kernel.now() % 20000);
-  const emit = (ok: boolean, method: 'password' | 'key') => ctx.kernel.bus.emit('auth.ssh', { user: ctx.cred.user, target: target.id, ok, method });
+  const emit = (ok: boolean, method: 'password' | 'key') => ctx.kernel.bus.emit('auth.ssh', { user: ctx.cred.user, login: user, target: target.id, ok, method });
   const exists = !!target.users.get(user);
   if (exists && keyAuth(ctx, target, user, identity)) {
     logAuth(target, `Accepted publickey for ${user} from ${src} port ${port} ssh2`);

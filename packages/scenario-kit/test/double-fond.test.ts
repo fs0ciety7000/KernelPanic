@@ -146,3 +146,65 @@ describe('double-fond playthrough', () => {
     expect(k2.runtime.state.completed['backup-in']).toBeDefined();
   });
 });
+
+describe('double-fond timed mode', () => {
+  const timedPlay = () => {
+    const kernel = new Kernel(structuredClone(bundle), undefined, { timed: true });
+    let out = '';
+    const sh = kernel.createShell({ write: (t) => (out += t), prompt: async () => null });
+    const run = async (line: string) => {
+      out = '';
+      await sh.run(line);
+      return stripAnsi(out);
+    };
+    return { kernel, rt: kernel.runtime, run };
+  };
+  const at = (rt: Kernel['runtime'], hhmm: string) => {
+    const target = Date.parse(`2026-06-08T${hhmm}:00+02:00`);
+    rt.advance(target - (Date.parse(bundle.machine.clock) + rt.playtime()));
+    rt.tick();
+  };
+
+  it('Julie and Yasmine warn, then the log backup disappears and leaves traces', async () => {
+    const { rt, kernel } = timedPlay();
+    at(rt, '09:31');
+    expect(rt.state.chat.log.julie!.at(-1)!.text).toContain('Il avait l');
+    at(rt, '09:46');
+    expect(rt.state.chat.log.yasmine!.at(-1)!.text).toContain('Mets tes preuves à l');
+    at(rt, '09:51');
+    const backup = kernel.hosts.get('backup')!;
+    expect(backup.vfs.exists('/srv/backups/claims/logs-2026-06-03_2000.tgz')).toBe(false);
+    expect(backup.vfs.exists('/srv/backups/claims/logs-2026-06-04_2000.tgz')).toBe(true);
+    expect(backup.vfs.readFile('/var/log/backup.log', { user: 'root', uid: 0, groups: [] })).toContain('SUPPRESSION manuelle');
+    expect(rt.state.flags).toContain('backup-wiped');
+    expect(rt.ended).toBe(false);
+    expect(rt.journal().find((j) => j.kind === 'timer')?.text).toContain('effacée');
+  });
+
+  it('evidence secured before 09:50 stays usable', async () => {
+    const { rt, run, kernel } = timedPlay();
+    await run('ssh audit@srv-claims');
+    await run('scp -i /opt/claims/keys/backup_ed25519 svc-backup@srv-backup:/srv/backups/claims/logs-2026-06-03_2000.tgz /tmp/');
+    at(rt, '09:55');
+    expect(kernel.hosts.get('claims')!.vfs.exists('/tmp/logs-2026-06-03_2000.tgz')).toBe(true);
+    await run('mkdir /tmp/j && tar -xzf /tmp/logs-2026-06-03_2000.tgz -C /tmp/j');
+    expect(await run('grep 14:02 /tmp/j/claims/app.log')).toContain('REFUSE');
+    expect(rt.hasEvidence('original-log')).toBe(true);
+  });
+});
+
+describe('replay journal', () => {
+  it('records how each piece was found, the hops, hints and wrong answers', async () => {
+    const p = play();
+    const { rt } = await p.investigate();
+    rt.submit('report', 'accident');
+    rt.revealHint('report');
+    const j = rt.journal();
+    const kinds = j.map((e) => e.kind);
+    expect(kinds).toEqual(expect.arrayContaining(['objective', 'evidence', 'ssh', 'wrong', 'hint']));
+    expect(j.find((e) => e.kind === 'ssh' && e.text === 'svc-backup@srv-backup')?.detail).toBe('clé SSH');
+    expect(j.find((e) => e.text === 'La nuit du 3 juin')?.detail).toBe('srv-claims /var/log/auth.log');
+    expect(j.find((e) => e.kind === 'wrong')?.detail).toBe('accident');
+    expect(j.every((e, i) => i === 0 || e.at >= j[i - 1]!.at)).toBe(true);
+  });
+});

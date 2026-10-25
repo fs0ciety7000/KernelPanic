@@ -71,7 +71,14 @@ export class Kernel implements System {
       this.bus,
       {
         deliver: (name) => this.deliver(name),
-        write: (path, content, mode, owner) => this.systemWrite(path, content, mode, owner),
+        write: (w) => this.machineFor(w.machine)?.systemWrite(w.path, w.content, w.mode, w.owner, w.append),
+        remove: (path, machine) => {
+          try {
+            this.machineFor(machine)?.vfs.remove(path, ROOT, { recursive: true });
+          } catch {
+            /* already gone */
+          }
+        },
         now: () => this.now(),
       },
       compatible ? save.scenario : undefined,
@@ -87,6 +94,11 @@ export class Kernel implements System {
 
   get kernel(): Kernel {
     return this;
+  }
+
+  /** The workstation (no id / "local") or a remote host by id. */
+  machineFor(id?: string): System | undefined {
+    return !id || id === 'local' ? this : this.hosts.get(id);
   }
 
   /** Resolves a name/IP to a machine, the way ssh would (workstation included). */
@@ -122,9 +134,9 @@ export class Kernel implements System {
   }
 
   /** Write performed by the system (scenario effects), owned by `owner` (default root). */
-  systemWrite(path: string, content: string, mode?: string, owner?: string): void {
+  systemWrite(path: string, content: string, mode?: string, owner?: string, append = false): void {
     this.vfs.mkdir(dirname(path), ROOT, { parents: true });
-    this.vfs.writeFile(path, content, ROOT);
+    this.vfs.writeFile(path, content, ROOT, { append });
     if (mode) this.vfs.chmod(path, parseInt(mode, 8), ROOT);
     if (owner) this.vfs.chown(path, owner, owner, ROOT);
   }

@@ -15,6 +15,7 @@ summary: >
   remontez de serveur en serveur jusqu'aux sauvegardes.
 difficulty: advanced
 estimatedMinutes: 50
+# Mode chronométré : à 09:50 (heure de jeu), quelqu'un efface la sauvegarde qui contredit le journal.
 locale: fr
 
 machine:
@@ -389,6 +390,38 @@ objectives:
     hints:
       - "claimsctl sans argument affiche son aide."
 
+# ─── Mode chronométré : Fabien Marchal voit l'audit et efface ce qui l'accuse ──
+timers:
+  - id: wipe
+    at: "2026-06-08T09:50:00+02:00"
+    timedOnly: true
+    journal: "La sauvegarde des journaux du 3 juin est effacée de srv-backup (session svc-backup depuis 10.40.7.31)"
+    warnings:
+      - { before: 20, effects: [{ chat: julie-fabien }] }
+      - { before: 5, effects: [{ chat: yasmine-secure }] }
+    effects:
+      - { remove: { machine: backup, path: /srv/backups/claims/logs-2026-06-03_2000.tgz } }
+      - write:
+          machine: claims
+          path: /var/log/auth.log
+          append: true
+          content: |
+            Jun  8 09:49:20 srv-claims sshd[24410]: Accepted publickey for fmarchal from 10.40.7.31 port 52088 ssh2: ED25519 SHA256:p0Xk3mRb7wQ1fmarchalHome
+            Jun  8 09:49:41 srv-claims sudo: fmarchal : TTY=pts/2 ; PWD=/home/fmarchal ; USER=root ; COMMAND=/usr/bin/ssh -i /opt/claims/keys/backup_ed25519 svc-backup@srv-backup
+            Jun  8 09:50:31 srv-claims sshd[24410]: pam_unix(sshd:session): session closed for user fmarchal
+      - write:
+          machine: backup
+          path: /var/log/auth.log
+          append: true
+          content: "Jun  8 09:49:42 srv-backup sshd[10233]: Accepted publickey for svc-backup from 10.40.1.20 port 52114 ssh2\n"
+      - write:
+          machine: backup
+          path: /var/log/backup.log
+          append: true
+          content: "2026-06-08 09:50:07 SUPPRESSION manuelle logs-2026-06-03_2000.tgz (session svc-backup)\n"
+      - { flag: backup-wiped }
+      - { chat: julie-left }
+
 endings:
   - id: double-fond
     title: DOUBLE FOND
@@ -466,6 +499,19 @@ chat:
       messages:
         - "…Merci. Ça fait cinq jours que tout le monde me regarde comme une voleuse."
         - "Si le journal a été réécrit, quelqu'un est entré après 20:00. Ce n'est pas moi : je suis partie à 18:00."
+    - id: julie-fabien
+      contact: julie
+      messages:
+        - "Fabien vient de passer devant mon bureau. Il m'a demandé qui était le compte « audit » connecté sur srv-claims depuis ce matin."
+        - "Il avait l'air pressé. Je vous le dis, c'est tout."
+    - id: yasmine-secure
+      contact: yasmine
+      messages:
+        - "Réflexe d'analyste : ce que tu n'as pas encore extrait ou copié, quelqu'un d'autre peut l'effacer. Mets tes preuves à l'abri."
+    - id: julie-left
+      contact: julie
+      messages:
+        - "Fabien est parti. Il a dit à l'accueil qu'il ne se sentait pas bien."
     - id: yasmine-pivot
       contact: yasmine
       trigger: { event: auth.ssh, where: { target: backup, ok: false } }

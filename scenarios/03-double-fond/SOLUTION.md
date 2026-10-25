@@ -90,3 +90,15 @@ Le rapport peut être rendu dès que l'application et l'expert ont parlé : rien
 - Extraire le rapport sur le poste après `scp` (srv-backup → srv-claims → ws-audit-02) : la pièce est créditée.
 - `ssh srv-backup` depuis le poste : délai dépassé (réseau de sauvegarde).
 - Sauvegarde/chargement : les fichiers créés sur les serveurs distants sont conservés.
+
+## Mode chronométré
+
+Case « Mode chronométré » au menu (nouvelle partie). L'heure de jeu démarre à 09:00.
+
+| Heure | Événement |
+|---|---|
+| 09:30 | Julie : Fabien a demandé qui était le compte « audit » connecté sur srv-claims |
+| 09:45 | Yasmine : « ce que tu n'as pas encore extrait ou copié, quelqu'un d'autre peut l'effacer » |
+| 09:50 | `logs-2026-06-03_2000.tgz` est **supprimé** de srv-backup. Traces : auth.log de srv-claims (fmarchal 09:49, `sudo ssh -i …backup_ed25519 svc-backup@srv-backup`), auth.log et backup.log de srv-backup (« SUPPRESSION manuelle »). Julie : « Fabien est parti. » |
+
+Ce qui a été extrait ou copié avant 09:50 (dans `/tmp` de srv-backup ou de srv-claims, ou sur le poste) reste utilisable : la pièce *Le journal d'origine* et l'objectif « Ce qui s'est vraiment passé à 14:02 » restent atteignables. Sinon, la preuve de la falsification a disparu : *Le faussaire* et *Double fond* deviennent inaccessibles, il reste le rapport prudent ou la mauvaise signature. Pas de fin forcée : c'est la perte de la preuve qui sanctionne.

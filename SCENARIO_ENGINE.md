@@ -150,7 +150,7 @@ trigger:
 | `web.visit` | `url, host, path, title, status` | Navigateur |
 | `chat.message` | `contact, text` | runtime (un PNJ écrit) |
 | `chat.reply` | `contact, node, reply` | Messagerie (réponse du joueur) |
-| `auth.ssh` | `user, target, ok, method, machine?` | `ssh`/`scp` (connexion à une machine distante) |
+| `auth.ssh` | `user, login, target, ok, method, machine?` | `ssh`/`scp` (connexion à une machine distante) |
 
 ### 3.2 Effets `onComplete`
 
@@ -158,7 +158,8 @@ trigger:
 |---|---|---|
 | `deliver` | `{ deliver: 03-final.eml }` | nouveau mail + notification « Nouveau message » |
 | `notify` | `{ notify: { title, body } }` | toast narratif |
-| `write` | `{ write: { path, content, mode? } }` | fichier créé/remplacé (en root) |
+| `write` | `{ write: { path, content, mode?, owner?, append?, machine? } }` | fichier créé/remplacé (en root) ; `append: true` ajoute (lignes de journal) ; `machine: <id>` vise une machine distante |
+| `remove` | `{ remove: { path, machine? } }` | supprime un fichier (preuve détruite par un PNJ, rétention…) ; le chemin doit exister à la compilation |
 | `flag` | `{ flag: alarm-raised }` | émet `scenario.flag` (chaînage) |
 | `end` | `{ end: true }` | écran de fin (score, temps, indices utilisés) |
 | `chat` | `{ chat: tomas-hello }` | un PNJ écrit dans la messagerie |
@@ -288,7 +289,12 @@ timers:
 
 - L'heure de jeu avance avec le temps de jeu réel (pause hors partie). Les minuteries ne se déclenchent que sur le bureau déverrouillé.
 - Un scénario qui a au moins une minuterie `timedOnly` propose la case « Mode chronométré » au menu (nouvelle partie) ; le choix est conservé dans la sauvegarde.
+- `journal: "…"` : la ligne qui apparaît dans le déroulé de fin de partie quand la minuterie se déclenche (par défaut : `label` ou `id`).
 - Une fin peut porter `tone: bad` (titre rouge) ou `tone: mixed` (ambre). Le score est pondéré par la part des objectifs principaux terminés : une fin atteinte par une minuterie ou un rapport précipité rapporte moins.
+
+### 3.6c Déroulé de partie (replay)
+
+Le runtime tient un journal (`state.journal`, sauvegardé) affiché sur l'écran de fin, « Revoir la partie » : objectifs atteints, pièces trouvées **avec ce qui les a révélées** (la commande tapée et sa machine, le fichier lu, le mail ouvert), connexions `ssh` (`compte@machine`, clé ou mot de passe), indices demandés, réponses refusées (la valeur saisie), décisions, minuteries déclenchées et fin. Heure de jeu pour chaque ligne, temps de jeu en infobulle. Rien à déclarer côté scénario : soignez les titres des objectifs et des pièces, c'est ce qui se lit.
 
 ### 3.7 Machines distantes (`ssh`, `scp`)
 
@@ -318,7 +324,7 @@ hosts:
 - Chaque connexion écrit une ligne `sshd` dans `/var/log/auth.log` de la machine visée, et `sudo` journalise sur la machine où il s'exécute : le joueur laisse des traces, comme un vrai administrateur.
 - `ssh hôte commande` exécute puis rend la main ; `exit` ferme la connexion (« Connection to … closed. ») et rend le dossier courant du poste. `scp [-r]` copie dans les deux sens. Les applications du bureau ne montrent que le poste : pour lire un fichier distant dans Images ou Notes, il faut le rapatrier avec `scp`.
 - **Événements** : tout ce qui se passe sur une machine distante (`fs.*`, `cmd.exec`, `auth.sudo`…) porte `machine: <id>`. Un trigger ne les voit **que s'il nomme la machine** : `{ event: fs.read, where: { path: /var/log/auth.log, machine: claims } }`. Sans `machine`, il ne concerne que le poste.
-- Nouvel événement `auth.ssh` `{ user, target, ok, method: password|key, machine? }`, où `target` est l'id de la machine visée et `machine` celle d'où part la connexion (absente = le poste).
+- Nouvel événement `auth.ssh` `{ user, login, target, ok, method: password|key, machine? }` : `user` est le compte d'où part la connexion, `login` le compte visé, `target` l'id de la machine visée et `machine` celle d'où l'on part (absente = le poste).
 - Une pièce dont la source est distante déclare `machine: <id>` ; le Dossier l'affiche `hôte:/chemin` (sans l'ouvrir).
 - Sauvegardes : les modifications de chaque machine sont conservées (`SaveGame.hosts`).
 

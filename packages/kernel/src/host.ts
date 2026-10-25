@@ -38,7 +38,7 @@ export interface System {
   hasSudoTicket(user: string): boolean;
   grantSudoTicket(user: string): void;
   dropSudoTicket(user: string): void;
-  systemWrite(path: string, content: string, mode?: string, owner?: string): void;
+  systemWrite(path: string, content: string, mode?: string, owner?: string, append?: boolean): void;
   open(appId: string | undefined, path?: string): void;
 }
 
@@ -141,9 +141,9 @@ export class Host implements System {
   dropSudoTicket(user: string) {
     this.sudo.drop(user);
   }
-  systemWrite(path: string, content: string, mode?: string, owner?: string) {
+  systemWrite(path: string, content: string, mode?: string, owner?: string, append = false) {
     this.vfs.mkdir(dirname(path), ROOT, { parents: true });
-    this.vfs.writeFile(path, content, ROOT);
+    this.vfs.writeFile(path, content, ROOT, { append });
     if (mode) this.vfs.chmod(path, parseInt(mode, 8), ROOT);
     if (owner) this.vfs.chown(path, owner, owner, ROOT);
   }

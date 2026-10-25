@@ -1,5 +1,5 @@
 import type { AnyEvent, EventBus } from '../events';
-import type { ChatReply, ChoiceOption, EndingDef, Effect, EvidenceDef, ObjectiveDef, ScenarioBundle, TimerDef, Trigger, TriggerLeaf } from './types';
+import type { ChatReply, ChoiceOption, EndingDef, Effect, EvidenceDef, ObjectiveDef, ScenarioBundle, TimerDef, Trigger, TriggerLeaf, WriteEffect } from './types';
 import { secretHash } from '../util/sha256';
 
 export interface ScenarioState {
@@ -16,6 +16,8 @@ export interface ScenarioState {
   ending?: string;
   chat: ChatState;
   startedAt: number;
+  /** What happened, for the end-of-game replay (capped). */
+  journal?: JournalEntry[];
   /** Timed mode chosen at the start of the game. */
   timed?: boolean;
   /** Timer ids already fired / warning keys ("id@before") already shown. */
@@ -46,9 +48,25 @@ export interface ObjectiveView extends ObjectiveDef {
   hintsShown: number;
 }
 
+export type JournalKind = 'objective' | 'evidence' | 'hint' | 'wrong' | 'ssh' | 'choice' | 'timer' | 'end';
+
+export interface JournalEntry {
+  kind: JournalKind;
+  /** Game time (ms). */
+  at: number;
+  /** Play time (ms) since the start. */
+  t: number;
+  text: string;
+  /** How it happened: the command, the file, the answer… */
+  detail?: string;
+}
+
+const JOURNAL_MAX = 400;
+
 export interface RuntimeHost {
   deliver(name: string): void;
-  write(path: string, content: string, mode?: string, owner?: string): void;
+  write(w: WriteEffect): void;
+  remove(path: string, machine?: string): void;
   /** Current game time (ms). */
   now(): number;
 }
@@ -109,6 +127,7 @@ export class ScenarioRuntime {
       ...saved,
     };
     this.state.timers ??= { fired: [], warned: [] };
+    this.state.journal ??= [];
     if (!saved?.chat) this.seedChatHistory();
     bus.onAny((e) => this.onEvent(e));
   }
@@ -151,12 +170,16 @@ export class ScenarioRuntime {
     if (e.type === 'scenario.flag' && !this.state.flags.includes(e.payload.id)) {
       this.state.flags.push(e.payload.id);
     }
+    if (e.type === 'auth.ssh' && e.payload.ok) {
+      this.log('ssh', `${e.payload.login}@${this.hostname(e.payload.target)}`, e.payload.method === 'key' ? 'clé SSH' : 'mot de passe');
+    }
     for (const node of this.bundle.chat?.nodes ?? []) {
       if (node.trigger && !this.state.chat.fired.includes(node.id) && matchTrigger(node.trigger, e)) this.fireChat(node.id);
     }
     for (const ev of this.bundle.evidence ?? []) {
       if (!this.state.evidence.includes(ev.id) && matchTrigger(ev.trigger, e)) {
         this.state.evidence.push(ev.id);
+        this.log('evidence', ev.title, this.describe(e));
         this.bus.emit('evidence.found', { id: ev.id, title: ev.title });
         this.changed();
       }
@@ -176,7 +199,11 @@ export class ScenarioRuntime {
     const o = this.bundle.objectives.find((x) => x.id === id);
     if (!o?.answer || !this.isAvailable(o)) return false;
     const h = secretHash(this.bundle.id, normalizeAnswer(value, o.answer.normalize));
-    if (!o.answer.hashes.includes(h)) return false;
+    if (!o.answer.hashes.includes(h)) {
+      this.log('wrong', o.title, value.trim().slice(0, 80));
+      this.changed();
+      return false;
+    }
     this.complete(o);
     return true;
   }
@@ -204,6 +231,7 @@ export class ScenarioRuntime {
     this.state.choices[o.id] = opt.id;
     // Flags first: the ending is selected from them when an `end` effect runs.
     for (const f of [`choice:${o.id}:${opt.id}`, ...(opt.flags ?? [])]) this.bus.emit('scenario.flag', { id: f });
+    this.log('choice', opt.label);
     this.bus.emit('choice.made', { objective: o.id, option: opt.id });
     for (const fx of opt.onSelect ?? []) this.apply(fx);
     this.complete(o);
@@ -224,6 +252,7 @@ export class ScenarioRuntime {
     const shown = this.state.hints[id] ?? 0;
     if (!o?.hints || shown >= o.hints.length) return undefined;
     this.state.hints[id] = shown + 1;
+    this.log('hint', o.title, `indice ${shown + 1}/${o.hints.length}`);
     this.changed();
     return o.hints[shown];
   }
@@ -231,6 +260,7 @@ export class ScenarioRuntime {
   private complete(o: ObjectiveDef): void {
     if (this.isDone(o.id)) return;
     this.state.completed[o.id] = Date.now();
+    if (!o.choice) this.log('objective', o.title);
     this.bus.emit('objective.complete', { id: o.id, title: o.title });
     for (const fx of o.onComplete ?? []) this.apply(fx);
     for (const next of this.bundle.objectives) {
@@ -299,10 +329,12 @@ export class ScenarioRuntime {
     if ('deliver' in fx) this.host.deliver(fx.deliver);
     else if ('chat' in fx) this.fireChat(fx.chat);
     else if ('notify' in fx) this.bus.emit('scenario.notify', fx.notify);
-    else if ('write' in fx) this.host.write(fx.write.path, fx.write.content, fx.write.mode, fx.write.owner);
+    else if ('write' in fx) this.host.write(fx.write);
+    else if ('remove' in fx) this.host.remove(fx.remove.path, fx.remove.machine);
     else if ('flag' in fx) this.bus.emit('scenario.flag', { id: fx.flag });
     else if ('end' in fx) {
       this.state.ending = this.ending()?.id;
+      this.log('end', this.ending()?.title ?? this.bundle.outro?.title ?? 'Dossier clos');
       this.state.endedAt = Date.now();
       this.state.playtime = this.playtime();
       this.bus.emit('scenario.end', {});
@@ -342,6 +374,7 @@ export class ScenarioRuntime {
       }
       if (now >= at) {
         this.state.timers!.fired.push(t.id);
+        this.log('timer', t.journal ?? t.label ?? t.id);
         for (const fx of t.effects) this.apply(fx);
         changed = true;
         if (this.ended) break;
@@ -357,6 +390,46 @@ export class ScenarioRuntime {
       .map((t) => ({ id: t.id, label: t.label!, at: Date.parse(t.at) }))
       .sort((a, b) => a.at - b.at)[0];
     return this.ended ? null : (next ?? null);
+  }
+
+  // ── Journal (end-of-game replay) ──────────────────────────────────────
+
+  private log(kind: JournalKind, text: string, detail?: string): void {
+    const j = this.state.journal!;
+    if (j.length >= JOURNAL_MAX) return;
+    j.push({ kind, at: this.host.now(), t: this.playtime(), text, ...(detail ? { detail } : {}) });
+  }
+
+  private hostname(id?: string): string {
+    if (!id || id === 'local') return this.bundle.machine.hostname;
+    return this.bundle.hosts?.find((h) => h.id === id)?.machine.hostname ?? id;
+  }
+
+  /** One line saying how an event revealed something (the command typed, the file read…). */
+  private describe(e: AnyEvent): string | undefined {
+    const p = e.payload as Record<string, unknown>;
+    const where = p.machine ? `${this.hostname(String(p.machine))} ` : '';
+    switch (e.type) {
+      case 'cmd.exec':
+        return `${where}$ ${e.payload.line}`.slice(0, 160);
+      case 'fs.read':
+      case 'fs.list':
+        return `${where}${e.payload.path}`;
+      case 'mail.open':
+        return `mail « ${e.payload.subject} »`;
+      case 'image.open':
+        return e.payload.path;
+      case 'web.visit':
+        return e.payload.url;
+      case 'chat.reply':
+        return 'messagerie';
+      default:
+        return undefined;
+    }
+  }
+
+  journal(): JournalEntry[] {
+    return this.state.journal ?? [];
   }
 
   /** Moves game time forward (tests, debug). */

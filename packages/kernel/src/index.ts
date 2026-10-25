@@ -7,7 +7,7 @@ export { Shell, type ShellIO, type CommandDef, type CommandContext } from './she
 export { parse, tokenize } from './shell/parser';
 export { stripAnsi } from './shell/ansi';
 export { describeFile, humanSize } from './shell/commands/fs';
-export { ScenarioRuntime, normalizeAnswer, matchTrigger, type ScenarioState, type ObjectiveView, type ChatLine, type ChatState } from './scenario/runtime';
+export { ScenarioRuntime, normalizeAnswer, matchTrigger, type ScenarioState, type ObjectiveView, type ChatLine, type ChatState, type JournalEntry, type JournalKind } from './scenario/runtime';
 export * from './scenario/types';
 export { sha256, secretHash } from './util/sha256';
 export { encodeBase64, decodeBase64 } from './util/base64';

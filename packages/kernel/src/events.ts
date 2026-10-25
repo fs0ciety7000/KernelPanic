@@ -9,8 +9,8 @@ export interface KernelEvents {
   'cmd.exec': { name: string; argv: string[]; line: string; exit: number; user: string; machine?: string };
   'auth.sudo': { user: string; ok: boolean; machine?: string };
   'auth.su': { user: string; target: string; ok: boolean; machine?: string };
-  /** ssh/scp login attempt from `machine` (absent = workstation) to `target`. */
-  'auth.ssh': { user: string; target: string; ok: boolean; method: 'password' | 'key'; machine?: string };
+  /** ssh/scp login attempt by `user` from `machine` (absent = workstation) as `login` on `target`. */
+  'auth.ssh': { user: string; login: string; target: string; ok: boolean; method: 'password' | 'key'; machine?: string };
   'mail.open': { path: string; messageId: string; subject: string; from: string };
   'mail.delivered': { path: string; subject: string; from: string };
   'image.open': { path: string };

@@ -326,6 +326,12 @@ export function compileScenario(dir: string): ScenarioBundle {
   for (const fx of allEffects) {
     if ('chat' in fx && !chat?.nodes.some((n) => n.id === fx.chat)) problems.push(`effect chat: unknown node '${fx.chat}'`);
     if ('deliver' in fx && !deliveries[fx.deliver]) problems.push(`effect deliver: '${fx.deliver}' not found in deliveries/`);
+    if ('write' in fx && fx.write.machine && fx.write.machine !== 'local' && !hostEntries.has(fx.write.machine)) problems.push(`effect write: unknown machine '${fx.write.machine}'`);
+    if ('remove' in fx) {
+      const m = fx.remove.machine && fx.remove.machine !== 'local' ? fx.remove.machine : undefined;
+      if (m && !hostEntries.has(m)) problems.push(`effect remove: unknown machine '${m}'`);
+      else if (!pathExists(fx.remove.path, m)) problems.push(`effect remove: '${fx.remove.path}' not in ${m ? `hosts/${m}/` : 'fs/'}`);
+    }
   }
 
   const endings = raw.endings ?? [];

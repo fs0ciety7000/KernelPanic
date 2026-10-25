@@ -37,6 +37,10 @@ export interface WriteEffect {
   content: string;
   mode?: string;
   owner?: string;
+  /** Append instead of replacing (log lines). */
+  append?: boolean;
+  /** Host id (default: the workstation). */
+  machine?: string;
 }
 
 export interface ScriptedRule {
@@ -83,6 +87,8 @@ export type Effect =
   | { chat: string }
   | { notify: { title: string; body: string } }
   | { write: WriteEffect }
+  /** Delete a file (evidence destroyed by an NPC, retention…). */
+  | { remove: { path: string; machine?: string } }
   | { flag: string }
   | { end: true };
 
@@ -226,6 +232,8 @@ export interface TimerDef {
   timedOnly?: boolean;
   /** Defused as soon as one of these flags is raised. */
   unlessFlags?: string[];
+  /** Line shown in the end-of-game replay when it fires (default: label or id). */
+  journal?: string;
   /** Fired `before` minutes ahead (notifications, NPC messages…). */
   warnings?: Array<{ before: number; effects: Effect[] }>;
   effects: Effect[];
