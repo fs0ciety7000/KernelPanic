@@ -53,7 +53,7 @@ Agents : voir `AGENTS.md`.
 | 3.1 | ✅ **Machines distantes locales** (ADR-009) : `hosts:` dans le scénario, `ssh` (clé ou mot de passe, bannière, known_hosts, auth.log), `scp -r`, `ssh.from` pour les réseaux cloisonnés, événements étiquetés `machine` | architect + os-engine |
 | 3.1b | Machines distantes côté serveur (WebSocket, état partagé, leaderboard anti-triche) | backend |
 | 3.2 | Validation serveur des réponses + **leaderboard** (temps, indices) | backend |
-| 3.3 | Mode chronométré (JOB qui s'exécute vraiment à l'heure de jeu) et fins alternatives | scenario-writer |
+| 3.3 | ✅ **Mode chronométré** : minuteries déclaratives (`timers:`, avertissements, désamorçage par flag), compte à rebours dans la barre des tâches, case au menu ; Ghost Shift : JOB-0417 part vraiment à 09:00 → fin « Blackout ». Fins colorées (`tone`), score pondéré par les objectifs faits | scenario-writer + os-engine |
 | 3.4 | Workshop : chargement de scénarios communautaires (bundle signé, sandbox stricte) | architect |
 | 3.5 | Localisation EN (UI + scénarios, artefacts machine déjà en anglais) | scenario-writer |
 | 3.6 | Auto-update Tauri, signature/notarisation macOS & Windows | backend |

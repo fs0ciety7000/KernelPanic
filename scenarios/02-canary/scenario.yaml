@@ -364,6 +364,7 @@ endings:
       grand groupe de la région. Vous dormez très bien.
   - id: scapegoat
     title: LE MAUVAIS NOM
+    tone: bad
     flags: [wrong-person]
     text: >
       Samir Rahmani est licencié pour faute grave le 15 mai. Il conteste, produit sa clé
@@ -372,6 +373,7 @@ endings:
       Lefort ne dit rien. Personne ne lui demande rien.
   - id: price-of-silence
     title: LE PRIX DU SILENCE
+    tone: mixed
     flags: [source-exposed]
     text: >
       Margaux Lefort est mise à pied le 14 mai, puis poursuivie pour violation du secret
@@ -380,6 +382,7 @@ endings:
       réglée sous huit jours, avec une prime. Les puits de Saint-Ambroise tournent toujours.
   - id: fog
     title: BROUILLARD
+    tone: mixed
     text: >
       Laurent Sorel lit votre rapport en silence et vous remercie du bout des lèvres.
       Une semaine plus tard, un autre cabinet est mandaté. Vous ne saurez pas ce qu'il a

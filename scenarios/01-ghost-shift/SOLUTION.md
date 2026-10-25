@@ -58,3 +58,7 @@ Lumen Grid, opérateur électrique de Valmont. À 03:12, le compte de l'admin OT
 - **Passerelle OT** (`ot-deploy.lumengrid.local`) : JOB-0417, image 4.2.1, « signature: NONE ».
 - **Tomás** (messagerie) écrit après le briefing ; il oriente vers l'historique de navigation. Après l'objectif « persistance », il demande une preuve : la réponse n'est disponible qu'avec la pièce *Firmware piégé* (`strings` sur l'image), et il passe alors les sous-stations en manuel (drapeau d'ambiance `substations-manual`).
 - **Nadia** confirme l'annulation de JOB-0417 et relance pour l'attribution.
+
+## Mode chronométré
+
+Case « Mode chronométré » au menu (nouvelle partie) : JOB-0417 s'exécute réellement à 09:00, heure de jeu, soit 48 minutes après le début. Notification et message de Tomás à 08:45, notification à 08:55, compte à rebours dans la barre des tâches (rouge sous 5 minutes). Si le job n'est pas annulé (`lumenctl abort … --token`, flag `job-aborted`) : mail de Nadia « JOB-0417 EXÉCUTÉ » et fin **Blackout**. Sans le mode chronométré, le job ne part jamais.

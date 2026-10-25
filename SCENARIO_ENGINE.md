@@ -272,6 +272,24 @@ chat:
 - Les réponses peuvent exiger des pièces (`requiresEvidence`), lever des flags (pour les fins) et lancer des effets.
 - Événements : `chat.message` `{ contact, text }`, `chat.reply` `{ contact, node, reply }`.
 
+### 3.6b Minuteries et mode chronométré
+
+```yaml
+timers:
+  - id: job-0417
+    at: "2026-04-17T09:00:00+02:00"       # heure de JEU
+    label: JOB-0417                       # compte à rebours dans la barre des tâches tant qu'elle est armée
+    timedOnly: true                       # seulement si le joueur a coché « Mode chronométré » au menu
+    unlessFlags: [job-aborted]            # désamorcée dès qu'un de ces flags est levé
+    warnings:                             # n minutes avant (seule la plus récente se joue après un saut de temps)
+      - { before: 15, effects: [{ notify: { title: "…", body: "…" } }, { chat: tomas-countdown }] }
+    effects: [{ deliver: 06-blackout.eml }, { flag: blackout }, { end: true }]
+```
+
+- L'heure de jeu avance avec le temps de jeu réel (pause hors partie). Les minuteries ne se déclenchent que sur le bureau déverrouillé.
+- Un scénario qui a au moins une minuterie `timedOnly` propose la case « Mode chronométré » au menu (nouvelle partie) ; le choix est conservé dans la sauvegarde.
+- Une fin peut porter `tone: bad` (titre rouge) ou `tone: mixed` (ambre). Le score est pondéré par la part des objectifs principaux terminés : une fin atteinte par une minuterie ou un rapport précipité rapporte moins.
+
 ### 3.7 Machines distantes (`ssh`, `scp`)
 
 Un scénario peut déclarer d'autres machines. Leurs fichiers vivent dans `hosts/<id>/`, comme `fs/` pour le poste du joueur.

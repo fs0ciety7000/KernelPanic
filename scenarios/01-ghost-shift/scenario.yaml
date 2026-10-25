@@ -258,6 +258,11 @@ chat:
         - "OK, là c'est clair. Je mets les 14 sous-stations en mode manuel, au cas où."
       onComplete:
         - { flag: substations-manual }
+    - id: tomas-countdown
+      contact: tomas
+      messages:
+        - "La passerelle affiche toujours JOB-0417 en file pour 09:00. Je ne peux pas l'annuler sans le jeton d'override, il est sur ta machine."
+        - "Si tu as les droits root, c'est maintenant."
     - id: nadia-abort
       contact: nadia
       trigger: { event: objective.complete, where: { id: abort } }
@@ -438,6 +443,45 @@ objectives:
     hints:
       - "`lumenctl show JOB-0417` indique où se trouve l'image."
       - Un binaire ne se lit pas avec `cat`, mais `strings` en extrait le texte. Les empreintes officielles sont dans /opt/lumen/firmware/MANIFEST.sha256.
+
+# ─── Mode chronométré : JOB-0417 part vraiment à 09:00 (heure de jeu) ────────
+timers:
+  - id: job-0417
+    at: "2026-04-17T09:00:00+02:00"
+    label: JOB-0417
+    timedOnly: true
+    unlessFlags: [job-aborted]
+    warnings:
+      - before: 15
+        effects:
+          - { notify: { title: "JOB-0417 dans 15 minutes", body: "La passerelle OT poussera le firmware à 09:00." } }
+          - { chat: tomas-countdown }
+      - before: 5
+        effects:
+          - { notify: { title: "JOB-0417 dans 5 minutes", body: "Annulez le job ou les 14 sous-stations recevront l'image." } }
+    effects:
+      - { deliver: 06-kessler-blackout.eml }
+      - { flag: blackout }
+      - { end: true }
+
+endings:
+  - id: blackout
+    title: BLACKOUT
+    tone: bad
+    flags: [blackout]
+    text: >
+      09:00:00. JOB-0417 quitte la passerelle et quatorze sous-stations reçoivent le
+      firmware de « kade ». Les disjoncteurs s'ouvrent en cascade : Valmont passe la
+      matinée dans le noir, les feux de circulation éteints, l'hôpital sur groupes. Il
+      faudra trois jours pour réinstaller chaque poste à la main. Le dossier reste ouvert.
+      La prochaine fois, chaque minute comptera.
+  - id: dossier-clos
+    title: DOSSIER CLOS
+    text: >
+      JOB-0417 n'a jamais quitté la passerelle. Les 14 sous-stations de Valmont ont tourné
+      toute la journée sans savoir qu'elles avaient failli s'éteindre. Elias rentrera de
+      randonnée avec un nouveau mot de passe, une formation anti-phishing et un chat qui
+      ne sera plus jamais un secret. Quant à « kade »… le SOC a ouvert un nouveau dossier.
 
 intro:
   title: GHOST SHIFT

@@ -169,3 +169,30 @@ describe('ghost-shift web and chat', () => {
     expect(rt.state.flags).toContain('substations-manual');
   });
 });
+
+describe('ghost-shift timed mode', () => {
+  it('JOB-0417 really fires at 09:00 game time: Tomás warns, then blackout', () => {
+    const kernel = new Kernel(structuredClone(bundle), undefined, { timed: true });
+    const rt = kernel.runtime;
+    expect(rt.upcoming()).toMatchObject({ label: 'JOB-0417' });
+    rt.advance(34 * 60_000); // 08:46
+    rt.tick();
+    expect(rt.state.chat.log.tomas!.at(-1)!.text).toContain('maintenant');
+    rt.advance(14 * 60_000); // 09:00
+    rt.tick();
+    expect(rt.ended).toBe(true);
+    expect(rt.ending()?.id).toBe('blackout');
+  });
+
+  it('aborting the job defuses the timer; untimed games never black out', async () => {
+    const timed = new Kernel(structuredClone(bundle), undefined, { timed: true });
+    timed.bus.emit('scenario.flag', { id: 'job-aborted' });
+    timed.runtime.advance(60 * 60_000);
+    timed.runtime.tick();
+    expect(timed.runtime.ended).toBe(false);
+    const relaxed = new Kernel(structuredClone(bundle));
+    relaxed.runtime.advance(5 * 60 * 60_000);
+    relaxed.runtime.tick();
+    expect(relaxed.runtime.ended).toBe(false);
+  });
+});

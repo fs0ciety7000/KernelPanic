@@ -68,13 +68,13 @@ class OS {
     return !!load<StoredGame>(SAVE_KEY(id));
   }
 
-  async start(id: string, opts: { fresh?: boolean } = {}): Promise<void> {
+  async start(id: string, opts: { fresh?: boolean; timed?: boolean } = {}): Promise<void> {
     const entry = this.scenarios.find((s) => s.id === id);
     if (!entry) return;
     const bundle: ScenarioBundle = await (await fetch(`${base}/scenarios/${entry.file}`)).json();
     if (opts.fresh) remove(SAVE_KEY(id));
     const stored = load<StoredGame>(SAVE_KEY(id));
-    const kernel = new Kernel(bundle, stored?.save);
+    const kernel = new Kernel(bundle, stored?.save, { timed: opts.timed });
     this.wire(kernel);
     this.kernel = kernel;
     wm.reset();
@@ -198,7 +198,13 @@ class OS {
 
   private startTimers(): void {
     this.stopTimers();
-    this.timers.push(setInterval(() => this.tick++, 1000));
+    this.timers.push(
+      setInterval(() => {
+        this.tick++;
+        // Timers only fire on the unlocked desktop, never behind the intro or a lock screen.
+        if (this.phase === 'desktop' && !this.locked) this.kernel?.runtime.tick();
+      }, 1000),
+    );
     this.timers.push(setInterval(() => this.save(), AUTOSAVE_MS));
     window.addEventListener('beforeunload', this.save);
   }

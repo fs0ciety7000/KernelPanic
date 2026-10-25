@@ -1,5 +1,5 @@
 import type { AnyEvent, EventBus } from '../events';
-import type { ChatReply, ChoiceOption, EndingDef, Effect, EvidenceDef, ObjectiveDef, ScenarioBundle, Trigger, TriggerLeaf } from './types';
+import type { ChatReply, ChoiceOption, EndingDef, Effect, EvidenceDef, ObjectiveDef, ScenarioBundle, TimerDef, Trigger, TriggerLeaf } from './types';
 import { secretHash } from '../util/sha256';
 
 export interface ScenarioState {
@@ -16,6 +16,10 @@ export interface ScenarioState {
   ending?: string;
   chat: ChatState;
   startedAt: number;
+  /** Timed mode chosen at the start of the game. */
+  timed?: boolean;
+  /** Timer ids already fired / warning keys ("id@before") already shown. */
+  timers?: { fired: string[]; warned: string[] };
   endedAt?: number;
   /** Accumulated play time in ms (excludes time the game was closed). */
   playtime: number;
@@ -89,6 +93,7 @@ export class ScenarioRuntime {
     private bus: EventBus,
     private host: RuntimeHost,
     saved?: ScenarioState,
+    opts: { timed?: boolean } = {},
   ) {
     this.state = {
       completed: {},
@@ -100,8 +105,10 @@ export class ScenarioRuntime {
       chat: { log: {}, pending: {}, fired: [], unread: {} },
       startedAt: Date.now(),
       playtime: 0,
+      timed: opts.timed ?? false,
       ...saved,
     };
+    this.state.timers ??= { fired: [], warned: [] };
     if (!saved?.chat) this.seedChatHistory();
     bus.onAny((e) => this.onEvent(e));
   }
@@ -307,6 +314,56 @@ export class ScenarioRuntime {
     return this.state.playtime + (Date.now() - this.sessionStart);
   }
 
+  // ── Timers (timed mode) ───────────────────────────────────────────────
+
+  private armed(t: TimerDef): boolean {
+    if (t.timedOnly && !this.state.timed) return false;
+    if (this.state.timers!.fired.includes(t.id)) return false;
+    return !(t.unlessFlags ?? []).some((f) => this.state.flags.includes(f));
+  }
+
+  /** Fires due warnings and timers. Called every second by the desktop (and by tests). */
+  tick(): void {
+    if (this.ended) return;
+    const now = this.host.now();
+    let changed = false;
+    for (const t of this.bundle.timers ?? []) {
+      if (!this.armed(t)) continue;
+      const at = Date.parse(t.at);
+      // Only the most recent due warning fires: a reload or a jump must not replay stale ones.
+      const warned = this.state.timers!.warned;
+      const key = (w: { before: number }) => `${t.id}@${w.before}`;
+      const [latest, ...stale] = (t.warnings ?? []).filter((w) => now >= at - w.before * 60_000 && now < at).sort((x, y) => x.before - y.before);
+      for (const w of stale) if (!warned.includes(key(w))) warned.push(key(w));
+      if (latest && !warned.includes(key(latest))) {
+        warned.push(key(latest));
+        for (const fx of latest.effects) this.apply(fx);
+        changed = true;
+      }
+      if (now >= at) {
+        this.state.timers!.fired.push(t.id);
+        for (const fx of t.effects) this.apply(fx);
+        changed = true;
+        if (this.ended) break;
+      }
+    }
+    if (changed) this.changed();
+  }
+
+  /** The nearest armed timer with a label, for the taskbar countdown. */
+  upcoming(): { id: string; label: string; at: number } | null {
+    const next = (this.bundle.timers ?? [])
+      .filter((t) => t.label && this.armed(t))
+      .map((t) => ({ id: t.id, label: t.label!, at: Date.parse(t.at) }))
+      .sort((a, b) => a.at - b.at)[0];
+    return this.ended ? null : (next ?? null);
+  }
+
+  /** Moves game time forward (tests, debug). */
+  advance(ms: number): void {
+    this.state.playtime += ms;
+  }
+
   /** Call before serializing so playtime survives reloads. */
   checkpoint(): ScenarioState {
     if (!this.ended) {
@@ -320,7 +377,10 @@ export class ScenarioRuntime {
     const hints = Object.values(this.state.hints).reduce((a, b) => a + b, 0);
     const minutes = Math.floor(this.playtime() / 60000);
     const bonus = this.bundle.objectives.filter((o) => o.optional && this.isDone(o.id)).length * 150;
-    const score = Math.max(100, 1000 - 40 * hints - 2 * minutes) + bonus;
+    // An ending reached before the work was done (a timer, a hasty report) scores accordingly.
+    const required = this.bundle.objectives.filter((o) => !o.optional);
+    const share = required.length ? required.filter((o) => this.isDone(o.id)).length / required.length : 1;
+    const score = Math.round(Math.max(100, 1000 - 40 * hints - 2 * minutes) * share) + bonus;
     return { score, hints, minutes, bonus };
   }
 }

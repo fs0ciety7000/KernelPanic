@@ -304,7 +304,22 @@ export function compileScenario(dir: string): ScenarioBundle {
       if (!KNOWN_EVENTS.has(leaf.event)) problems.push(`chat node ${n.id}: unknown event '${leaf.event}'`);
     }
   }
+  // Timers (timed mode)
+  const timerIds = new Set<string>();
+  for (const t of raw.timers ?? []) {
+    if (timerIds.has(t.id)) problems.push(`duplicate timer id '${t.id}'`);
+    timerIds.add(t.id);
+    const at = Date.parse(t.at);
+    if (Number.isNaN(at)) problems.push(`timer ${t.id}: 'at' is not a valid ISO date`);
+    else if (at <= Date.parse(raw.machine.clock)) problems.push(`timer ${t.id}: fires before the scenario starts`);
+    if (!t.effects?.length) problems.push(`timer ${t.id}: needs effects`);
+    for (const fx of [...(t.effects ?? []), ...(t.warnings ?? []).flatMap((w) => w.effects)]) if ('flag' in fx) flags.add(fx.flag);
+  }
+  for (const t of raw.timers ?? []) {
+    for (const f of t.unlessFlags ?? []) if (!flags.has(f)) problems.push(`timer ${t.id}: unless flag '${f}' is never raised`);
+  }
   const allEffects = [
+    ...(raw.timers ?? []).flatMap((t) => [...(t.effects ?? []), ...(t.warnings ?? []).flatMap((w) => w.effects)]),
     ...raw.objectives.flatMap((o) => [...(o.onComplete ?? []), ...(o.choice?.options ?? []).flatMap((x) => x.onSelect ?? [])]),
     ...(chat?.nodes ?? []).flatMap((n) => [...(n.onComplete ?? []), ...(n.replies ?? []).flatMap((r) => r.onSelect ?? [])]),
   ];
@@ -362,6 +377,7 @@ export function compileScenario(dir: string): ScenarioBundle {
     processes: raw.processes ?? [],
     network: raw.network ?? {},
     ...(hosts.length ? { hosts } : {}),
+    ...(raw.timers?.length ? { timers: raw.timers } : {}),
     objectives,
     evidence: raw.evidence ?? [],
     web,
@@ -381,6 +397,7 @@ export function indexEntry(b: ScenarioBundle): ScenarioIndexEntry {
     difficulty: b.difficulty,
     estimatedMinutes: b.estimatedMinutes,
     endings: b.endings?.length || undefined,
+    timed: b.timers?.some((t) => t.timedOnly) || undefined,
     file: `${b.id}.json`,
   };
 }

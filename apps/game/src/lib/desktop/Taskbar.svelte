@@ -25,6 +25,17 @@
     void os.version;
     return k.runtime.progress();
   });
+  // Timed mode: countdown to the nearest pending timer, in game time.
+  const countdown = $derived.by(() => {
+    void os.tick;
+    void os.version;
+    const t = k.runtime.upcoming();
+    if (!t) return null;
+    const left = Math.max(0, Math.ceil((t.at - k.now()) / 1000));
+    const mm = String(Math.floor(left / 60)).padStart(2, '0');
+    const ss = String(left % 60).padStart(2, '0');
+    return { label: t.label, text: `${mm}:${ss}`, urgent: left <= 300, at: k.time.hm(t.at) };
+  });
   const focusedId = $derived(wm.focused?.id);
   const pinned = APPS.filter((a) => a.dock);
   const running = $derived(new Set(wm.windows.map((w) => w.appId)));
@@ -121,6 +132,11 @@
   </div>
 
   <div class="tray">
+    {#if countdown}
+      <span class="timer mono" class:urgent={countdown.urgent} role="timer" title="Mode chronométré : {countdown.label} s'exécute à {countdown.at} (heure de jeu)">
+        <Icon name="clock" size={12} stroke={2} />{countdown.label} · {countdown.text}
+      </span>
+    {/if}
     <button class="chip" onclick={() => wm.open('case')} title="Objectifs — Dossier d'enquête">
       <Icon name="diamond" size={11} stroke={2} /><span class="mono">{progress.done}/{progress.total}</span>
     </button>
@@ -226,6 +242,23 @@
     font-size: 11.5px;
   }
   .chip:hover { border-color: var(--kp-violet); }
+  .timer {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    height: 26px;
+    margin-right: 6px;
+    padding: 0 9px;
+    border: 1px solid rgba(255, 182, 72, 0.35);
+    border-radius: 999px;
+    background: var(--kp-amber-dim);
+    color: var(--kp-amber);
+    font-size: 11.5px;
+    font-variant-numeric: tabular-nums;
+  }
+  .timer.urgent { border-color: rgba(255, 79, 109, 0.6); background: var(--kp-red-dim); color: var(--kp-red); animation: pulse 1s ease-in-out infinite; }
+  @keyframes pulse { 50% { opacity: 0.6; } }
+  @media (prefers-reduced-motion: reduce) { .timer.urgent { animation: none; } }
   .ti {
     position: relative;
     display: grid;

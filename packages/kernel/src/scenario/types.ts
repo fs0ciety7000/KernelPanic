@@ -125,6 +125,8 @@ export interface EndingDef {
   flags?: string[];
   /** …and none of these. An ending with no condition is the default. */
   notFlags?: string[];
+  /** Colour of the end screen: success (default), failure, or something in between. */
+  tone?: 'good' | 'bad' | 'mixed';
 }
 
 // ── Web (simulated browser) ────────────────────────────────────────────
@@ -213,6 +215,22 @@ export interface ObjectiveDef {
   onComplete?: Effect[];
 }
 
+/** Something that happens at a given game time unless the player prevented it (timed mode, 3.3). */
+export interface TimerDef {
+  id: string;
+  /** ISO game time. */
+  at: string;
+  /** Shown as a countdown in the taskbar while pending. */
+  label?: string;
+  /** Only armed when the player chose the timed mode. */
+  timedOnly?: boolean;
+  /** Defused as soon as one of these flags is raised. */
+  unlessFlags?: string[];
+  /** Fired `before` minutes ahead (notifications, NPC messages…). */
+  warnings?: Array<{ before: number; effects: Effect[] }>;
+  effects: Effect[];
+}
+
 /** A remote machine reachable with `ssh` (ADR-009). Same building blocks as the local one. */
 export interface HostDef {
   /** Stable id, carried by events from this machine as `machine`. */
@@ -262,6 +280,7 @@ export interface ScenarioBundle {
   network: NetworkDef;
   /** Remote machines (ssh). */
   hosts?: HostDef[];
+  timers?: TimerDef[];
   objectives: ObjectiveDef[];
   evidence?: EvidenceDef[];
   web?: WebDef;
@@ -281,5 +300,7 @@ export interface ScenarioIndexEntry {
   estimatedMinutes?: number;
   /** Number of distinct endings (shown as a replay goal). */
   endings?: number;
+  /** Offers a timed mode (some timers only fire when it is on). */
+  timed?: boolean;
   file: string;
 }

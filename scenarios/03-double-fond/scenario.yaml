@@ -401,6 +401,7 @@ endings:
       promotion. Hélène Vasseur vous envoie un seul mot : « Merci. »
   - id: faussaire
     title: LE FAUSSAIRE
+    tone: mixed
     flags: [forger-named]
     text: >
       Fabien Marchal est mis à pied et l'escroquerie est signalée. Mais sans le mobile,
@@ -409,6 +410,7 @@ endings:
       quelqu'un, quelque part, a touché ses 10 %.
   - id: mauvaise-signature
     title: LA MAUVAISE SIGNATURE
+    tone: bad
     flags: [blamed-ruiz]
     text: >
       Julie Ruiz est licenciée pour faute grave le 12 juin. Elle conteste, et son avocat
@@ -417,6 +419,7 @@ endings:
       client, et votre nom apparaît dans les conclusions adverses.
   - id: classe
     title: CLASSÉ SANS SUITE
+    tone: mixed
     text: >
       Votre rapport ne conclut pas. Orbis passe la perte en provision, Julie Ruiz reste
       suspecte aux yeux de tous, et les sauvegardes de juin disparaissent à l'échéance de

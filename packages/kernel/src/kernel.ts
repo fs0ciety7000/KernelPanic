@@ -45,7 +45,7 @@ export class Kernel implements System {
   private sudo = new SudoTickets(() => this.now());
   private clockStart: number;
 
-  constructor(readonly bundle: ScenarioBundle, save?: SaveGame) {
+  constructor(readonly bundle: ScenarioBundle, save?: SaveGame, opts: { timed?: boolean } = {}) {
     if (bundle.format !== BUNDLE_FORMAT) throw new Error(`unsupported scenario format ${bundle.format}`);
     this.machine = bundle.machine;
     this.time = new GameTime(parseOffset(bundle.machine.clock));
@@ -75,6 +75,7 @@ export class Kernel implements System {
         now: () => this.now(),
       },
       compatible ? save.scenario : undefined,
+      opts,
     );
   }
 

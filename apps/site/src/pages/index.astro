@@ -5,13 +5,22 @@ import Terminal from '../components/Terminal.astro';
 const releases = 'https://github.com/fs0ciety7000/KernelPanic/releases/latest';
 
 const apps = [
-  { id: 'files', name: 'Files', tone: 'text', desc: 'Arborescence complète, permissions, propriétaires — et ce qui commence par un point.', icon: 'M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z' },
-  { id: 'terminal', name: 'Terminal', tone: 'green', desc: 'Un shell crédible : pipes, redirections, grep, find, base64, sudo. Le scalpel de l’analyste.', icon: 'M4 6l6 6-6 6M12 18h8' },
+  { id: 'files', name: 'Fichiers', tone: 'text', desc: 'Arborescence complète, permissions, propriétaires — et ce qui commence par un point.', icon: 'M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z' },
+  { id: 'terminal', name: 'Terminal', tone: 'green', desc: 'Un shell crédible : pipes, $(…), boucles, grep, awk, sed, diff, tar, sudo — et ssh vers les autres machines du réseau.', icon: 'M4 6l6 6-6 6M12 18h8' },
   { id: 'notes', name: 'Notes', tone: 'text', desc: 'Lire runbooks et scripts, éditer des fichiers, tenir son propre carnet d’enquête.', icon: 'M6 3h9l4 4v14H6zM9 11h7M9 15h7' },
   { id: 'mail', name: 'Mail', tone: 'cyan', desc: 'Une vraie Maildir. Les en-têtes complets racontent le trajet de chaque message.', icon: 'M3 6h18v12H3zM3 7l9 6 9-6' },
   { id: 'images', name: 'Images', tone: 'violet', desc: 'Zoom, métadonnées EXIF. Une photo de bureau peut en dire beaucoup trop.', icon: 'M4 5h16v14H4zM4 16l5-5 4 4 3-3 4 4M15 9h.01' },
   { id: 'logs', name: 'Logs', tone: 'amber', desc: 'Journaux colorés par niveau, filtres regex, saut à l’horodatage. La nuit, minute par minute.', icon: 'M5 4h14v16H5zM8 8h8M8 12h8M8 16h5' },
-  { id: 'case', name: 'Case', tone: 'violet', desc: 'Le dossier d’enquête : objectifs, réponses, indices, rapport final.', icon: 'M5 4h14v16H5zM9 9l2 2 4-4M9 15h6' },
+  { id: 'browser', name: 'Navigateur', tone: 'cyan', desc: 'L’intranet, la presse locale, le site de l’entreprise… et les domaines que le SOC a bloqués.', icon: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z' },
+  { id: 'chat', name: 'Messages', tone: 'green', desc: 'Les collègues écrivent pendant l’enquête. Certaines réponses exigent une preuve.', icon: 'M4 5h16v11H9l-5 4z' },
+  { id: 'case', name: 'Dossier', tone: 'violet', desc: 'Le dossier d’enquête : objectifs, pièces à conviction, indices, et le rapport que vous signerez.', icon: 'M5 4h14v16H5zM9 9l2 2 4-4M9 15h6' },
+];
+
+const scenarios = [
+  { n: '00', t: 'Premier jour', d: 'Tutoriel', m: '~12 min', s: 'Premier matin chez Ironveil. Une machine d’entraînement, une mentore, et toutes les apps à apprivoiser.' },
+  { n: '01', t: 'Ghost Shift', d: 'Débutant', m: '~40 min · mode chronométré', s: 'Un firmware non signé part vers 14 sous-stations à 09:00. Le compte qui l’a programmé est en congé.' },
+  { n: '02', t: 'Canary', d: 'Intermédiaire', m: '~40 min · 4 fins', s: 'On vous paie pour trouver la source d’une fuite. Les fichiers disent pourquoi elle a parlé. Votre rapport, votre choix.' },
+  { n: '03', t: 'Double fond', d: 'Avancé', m: '~50 min · 3 machines · 4 fins', s: '2,4 M€ versés pour un incendie. Le journal accuse une responsable, les sauvegardes la défendent. De serveur en serveur.' },
 ];
 
 const pillars = [
@@ -27,7 +36,7 @@ const pillars = [
       <nav aria-label="Navigation principale">
         <a href="#concept">Concept</a>
         <a href="#apps">Applications</a>
-        <a href="#scenario">Scénario</a>
+        <a href="#scenarios">Scénarios</a>
         <a href="#download">Télécharger</a>
       </nav>
       <a class="btn btn-primary nav-cta" href="/play/">Jouer</a>
@@ -72,7 +81,7 @@ const pillars = [
     <section id="apps" class="section">
       <div class="wrap">
         <p class="label">Applications système</p>
-        <h2>Sept outils. Une seule machine.</h2>
+        <h2>Neuf outils. Une machine. Parfois trois.</h2>
         <ul class="apps">
           {apps.map((a) => (
             <li class={`app tone-${a.tone}`}>
@@ -104,6 +113,24 @@ const pillars = [
             <div><dt>Compte</dt><dd>elias</dd></div>
           </dl>
         </aside>
+      </div>
+    </section>
+
+    <section id="scenarios" class="section">
+      <div class="wrap">
+        <p class="label">Dossiers</p>
+        <h2>Quatre enquêtes.<br /><span class="muted">Chacune ment d'une façon différente.</span></h2>
+        <ul class="cases">
+          {scenarios.map((c) => (
+            <li class="case">
+              <div class="case-meta mono"><span>Dossier {c.n}</span><span>{c.d}</span></div>
+              <h3>{c.t}</h3>
+              <p>{c.s}</p>
+              <span class="case-m mono">{c.m}</span>
+            </li>
+          ))}
+        </ul>
+        <a class="btn btn-primary" href="/play/">Choisir un dossier <span aria-hidden="true">→</span></a>
       </div>
     </section>
 
@@ -180,6 +207,12 @@ const pillars = [
   .tone-green { --tone: var(--kp-green); }
   .tone-amber { --tone: var(--kp-amber); }
 
+  .cases { list-style: none; margin: 32px 0 28px; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+  .case { display: flex; flex-direction: column; gap: 8px; padding: 20px; border: 1px solid var(--kp-line); border-radius: 14px; background: var(--kp-bg-1); }
+  .case-meta { display: flex; justify-content: space-between; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--kp-violet); }
+  .case h3 { margin: 4px 0 0; font-size: 20px; }
+  .case p { margin: 0; color: var(--kp-text-1); line-height: 1.55; flex: 1; }
+  .case-m { color: var(--kp-text-2); font-size: 11.5px; }
   .scenario { display: grid; grid-template-columns: 1.3fr 1fr; gap: 56px; align-items: center; }
   .scenario .lede b { color: var(--kp-text-0); }
   .scenario .btn { margin-top: 12px; }

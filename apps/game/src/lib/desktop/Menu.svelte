@@ -3,11 +3,13 @@
 
   const DIFF: Record<string, string> = { beginner: 'Débutant', intermediate: 'Intermédiaire', advanced: 'Avancé' };
   let busy = $state<string | null>(null);
+  /** Timed mode, per scenario, chosen before a new game. */
+  let timed = $state<Record<string, boolean>>({});
 
   async function play(id: string, fresh: boolean) {
     busy = id;
     try {
-      await os.start(id, { fresh });
+      await os.start(id, { fresh, timed: fresh && !!timed[id] });
     } finally {
       busy = null;
     }
@@ -48,6 +50,12 @@
             <button class="kp-btn primary" disabled={!!busy} onclick={() => play(s.id, true)}>Ouvrir le dossier</button>
           {/if}
         </div>
+        {#if s.timed}
+          <label class="timed" title="L'horloge du jeu tourne : ce qui est prévu à une heure donnée arrivera vraiment.">
+            <input type="checkbox" bind:checked={timed[s.id]} />
+            <span>Mode chronométré <span class="dim">— s'applique à une nouvelle partie</span></span>
+          </label>
+        {/if}
       </article>
     {:else}
       {#if !os.error}<p class="loading mono">chargement des dossiers…</p>{/if}
@@ -58,6 +66,9 @@
 </div>
 
 <style>
+  .timed { display: flex; align-items: center; gap: 8px; margin-top: 12px; font-size: 12.5px; color: var(--kp-text-1); cursor: pointer; user-select: none; }
+  .timed input { accent-color: var(--kp-amber); }
+  .timed .dim { color: var(--kp-text-2); }
   .menu {
     position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
     gap: 36px; padding: 24px; overflow: auto; background: var(--kp-bg-0);

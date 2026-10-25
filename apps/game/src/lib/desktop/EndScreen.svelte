@@ -18,7 +18,7 @@
     <div class="kp-label">
       Dossier {k.bundle.title} · clos
     </div>
-    <h1 class="mono">{ending?.title ?? 'DOSSIER CLOS'}</h1>
+    <h1 class="mono {reached?.tone ?? 'good'}">{ending?.title ?? 'DOSSIER CLOS'}</h1>
     {#if ending}<p class="text">{ending.text}</p>{/if}
     {#if endings.length > 1}
       <div class="endings" aria-label="Fins découvertes">
@@ -49,6 +49,8 @@
   .end { position: fixed; inset: 0; display: grid; place-items: center; padding: 24px; background: radial-gradient(800px 500px at 50% 30%, rgba(90, 242, 160, 0.08), transparent 70%), var(--kp-bg-0); }
   .box { width: min(640px, 100%); }
   h1 { margin: 10px 0 18px; font-size: clamp(34px, 6vw, 56px); color: var(--kp-green); letter-spacing: 0.06em; text-shadow: 0 0 40px rgba(90, 242, 160, 0.35); }
+  h1.bad { color: var(--kp-red); text-shadow: 0 0 40px rgba(255, 79, 109, 0.35); }
+  h1.mixed { color: var(--kp-amber); text-shadow: 0 0 40px rgba(255, 182, 72, 0.3); }
   .text { color: var(--kp-text-1); font-size: 15.5px; line-height: 1.7; }
   .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 28px 0; }
   .stats div { padding: 14px; border-radius: var(--kp-radius-m); background: var(--kp-bg-2); border: 1px solid var(--kp-line); display: flex; flex-direction: column; gap: 6px; }
