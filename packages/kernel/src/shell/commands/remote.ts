@@ -31,6 +31,10 @@ function reach(ctx: CommandContext, host: string, prog: string): System | null {
     else ctx.err(`${prog}: Could not resolve hostname ${host}: Name or service not known\n`);
     return null;
   }
+  if (game.runtime.hostIsolated(sys.id)) {
+    ctx.err(`${prog}: connect to host ${host} port 22: No route to host\n`);
+    return null;
+  }
   const from = (sys as Host).def?.ssh?.from;
   if (from && !from.includes(ctx.kernel.id)) {
     ctx.err(`${prog}: connect to host ${host} port 22: Connection timed out\n`);

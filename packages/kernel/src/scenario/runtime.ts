@@ -367,7 +367,9 @@ export class ScenarioRuntime {
     if (this.ended) return;
     const now = this.host.now();
     let changed = false;
-    for (const t of this.bundle.timers ?? []) {
+    // Chronological order, so a chain (seed → spread) resolves within one tick after a jump.
+    const timers = [...(this.bundle.timers ?? [])].sort((a, b) => Date.parse(a.at) - Date.parse(b.at));
+    for (const t of timers) {
       if (!this.armed(t)) continue;
       const at = Date.parse(t.at);
       // Only the most recent due warning fires: a reload or a jump must not replay stale ones.

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { os } from '$lib/os/os.svelte';
   import { wm, type WindowState } from '$lib/os/wm.svelte';
-  import { APPS, appById } from '$lib/os/apps';
+  import { appsFor, appById } from '$lib/os/apps';
   import { contextMenu, sep } from '$lib/os/menu.svelte';
   import { notify } from '$lib/os/notify.svelte';
   import { sound } from '$lib/os/sound.svelte';
@@ -37,7 +37,11 @@
     return { label: t.label, text: `${mm}:${ss}`, urgent: left <= 300, at: k.time.hm(t.at) };
   });
   const focusedId = $derived(wm.focused?.id);
-  const pinned = APPS.filter((a) => a.dock);
+  const pinned = $derived(appsFor(k.bundle).filter((a) => a.dock));
+  const socUnseen = $derived.by(() => {
+    void os.version;
+    return k.bundle.soc ? k.runtime.socUnseen() : 0;
+  });
   const running = $derived(new Set(wm.windows.map((w) => w.appId)));
   const chatUnread = $derived.by(() => {
     void os.version;
@@ -109,6 +113,7 @@
       >
         <Icon name={app.icon} size={19} />
         {#if app.id === 'chat' && chatUnread}<span class="pbadge mono">{chatUnread}</span>{/if}
+        {#if app.id === 'soc' && socUnseen}<span class="pbadge mono alert">{socUnseen}</span>{/if}
       </button>
     {/each}
   </div>
@@ -195,6 +200,7 @@
     border-radius: 8px;
     transition: background var(--kp-dur-fast);
   }
+  .pbadge.alert { background: var(--kp-red); color: #fff; }
   .pin:hover { background: rgba(255, 255, 255, 0.06); color: var(--kp-text-0); }
   .pin.focused { color: var(--kp-cyan); background: var(--kp-cyan-dim); }
   .pin.running::after {

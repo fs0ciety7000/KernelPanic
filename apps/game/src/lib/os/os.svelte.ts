@@ -161,6 +161,10 @@ class OS {
       const name = k.bundle.chat?.contacts.find((c) => c.id === e.contact)?.name ?? e.contact;
       notify.push({ kind: 'mail', title: name, body: e.text, action: { label: 'Répondre', run: () => wm.open('chat', { contact: e.contact }) } }, 7000);
     });
+    on('soc.alert', (e) => {
+      const severe = e.severity === 'high' || e.severity === 'critical';
+      notify.push({ kind: severe ? 'error' : 'system', title: `Alerte SOC — ${e.severity}`, body: e.title, action: { label: 'Console', run: () => wm.open('soc') } }, 8000);
+    });
     on('app.open', (e) => {
       if (e.path && /^(https?|file):\/\//.test(e.path)) wm.open('browser', { url: e.path });
       else if (e.path) this.openPath(e.path, e.appId || undefined);

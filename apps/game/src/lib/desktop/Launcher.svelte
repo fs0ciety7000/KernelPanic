@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import { os } from '$lib/os/os.svelte';
   import { wm } from '$lib/os/wm.svelte';
-  import { APPS } from '$lib/os/apps';
+  import { appsFor } from '$lib/os/apps';
   import { help } from '$lib/os/help.svelte';
   import { openEntry, trashFiles } from '$lib/os/fileops.svelte';
   import { fileIcon } from './icons';
@@ -12,6 +12,7 @@
   let { close }: { close: () => void } = $props();
 
   const k = os.kernel!;
+  const APPS = appsFor(k.bundle);
   const home = k.users.get(k.sessionUser)!.home;
   let query = $state('');
   let input: HTMLInputElement;

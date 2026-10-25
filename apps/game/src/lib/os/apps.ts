@@ -1,5 +1,6 @@
 import type { Component } from 'svelte';
 import type { WindowState } from './wm.svelte';
+import type { ScenarioBundle } from '@kp/kernel';
 
 export interface AppProps {
   win: WindowState;
@@ -15,6 +16,8 @@ export interface AppManifest {
   singleton?: boolean;
   defaultSize: { w: number; h: number };
   dock?: boolean;
+  /** Only installed on machines whose scenario needs it. */
+  when?: (bundle: ScenarioBundle) => boolean;
 }
 
 export const APPS: AppManifest[] = [
@@ -90,6 +93,16 @@ export const APPS: AppManifest[] = [
     dock: true,
   },
   {
+    id: 'soc',
+    title: 'Console SOC',
+    icon: 'shield',
+    load: () => import('../apps/soc/Soc.svelte'),
+    singleton: true,
+    defaultSize: { w: 1040, h: 640 },
+    dock: true,
+    when: (b) => !!b.soc,
+  },
+  {
     id: 'case',
     title: 'Dossier',
     icon: 'case',
@@ -116,6 +129,9 @@ export const APPS: AppManifest[] = [
 ];
 
 export const appById = (id: string) => APPS.find((a) => a.id === id);
+
+/** Apps installed for this scenario. */
+export const appsFor = (bundle: ScenarioBundle | undefined) => APPS.filter((a) => !a.when || (bundle && a.when(bundle)));
 
 /** Picks the app for a path: by extension, /var/log → logs, Maildir → mail, else notes. */
 export function appForPath(path: string, isDir: boolean): AppManifest {

@@ -40,7 +40,7 @@ const BINARY_MIME: Record<string, string> = {
 const KNOWN_EVENTS = new Set([
   'fs.read', 'fs.write', 'fs.list', 'cmd.exec', 'auth.sudo', 'auth.su', 'mail.open', 'image.open',
   'app.open', 'scenario.flag', 'objective.complete', 'evidence.found', 'choice.made',
-  'web.visit', 'chat.message', 'chat.reply', 'auth.ssh',
+  'web.visit', 'chat.message', 'chat.reply', 'auth.ssh', 'soc.alert', 'soc.triage', 'soc.action',
 ]);
 
 export class ScenarioError extends Error {
@@ -164,6 +164,33 @@ export function compileScenario(dir: string): ScenarioBundle {
     [commands, ...hosts.map((h) => h.commands)].flatMap((cmds) => Object.values(cmds).flatMap((c) => c.rules.map((r) => r.emit).filter(Boolean) as string[])),
   );
 
+  // ── SOC console: assets, alerts; player actions raise isolated:/triage:/blocked: flags ──
+  const soc = raw.soc;
+  const assetIds = new Set<string>();
+  const alertIds = new Set<string>();
+  if (soc) {
+    for (const a of soc.assets ?? []) {
+      if (assetIds.has(a.id)) problems.push(`soc: duplicate asset '${a.id}'`);
+      assetIds.add(a.id);
+      if (!a.name || !a.ip) problems.push(`soc asset ${a.id}: needs name and ip`);
+      if (a.host && !hostEntries.has(a.host)) problems.push(`soc asset ${a.id}: unknown host '${a.host}'`);
+      flags.add(`isolated:${a.id}`);
+    }
+    for (const al of soc.alerts ?? []) {
+      if (alertIds.has(al.id)) problems.push(`soc: duplicate alert '${al.id}'`);
+      alertIds.add(al.id);
+      if (al.asset && !assetIds.has(al.asset)) problems.push(`soc alert ${al.id}: unknown asset '${al.asset}'`);
+      if (!['low', 'medium', 'high', 'critical'].includes(al.severity)) problems.push(`soc alert ${al.id}: bad severity '${al.severity}'`);
+      for (const leaf of al.trigger ? ('any' in al.trigger ? al.trigger.any : [al.trigger]) : []) {
+        if (!KNOWN_EVENTS.has(leaf.event)) problems.push(`soc alert ${al.id}: unknown event '${leaf.event}'`);
+      }
+      flags.add(`triage:${al.id}:real`);
+      flags.add(`triage:${al.id}:false`);
+    }
+  }
+  /** blocked:<ip> is raised by the player's firewall; any valid IPv4 counts. */
+  const raised = (f: string) => flags.has(f) || (!!soc && /^blocked:\d{1,3}(\.\d{1,3}){3}$/.test(f));
+
   // ── Web: web/<host>/<path>.html (index.html = folder) + scenario.yaml `web:` ──
   const pages: Record<string, WebPage> = {};
   const webDir = join(dir, 'web');
@@ -255,7 +282,7 @@ export function compileScenario(dir: string): ScenarioBundle {
       const p = leaf.where?.path;
       if (typeof p === 'string' && !pathExists(p, leaf.where?.machine)) problems.push(`objective ${o.id}: trigger path '${p}' not in ${leaf.where?.machine ? `hosts/${leaf.where.machine}/` : 'fs/'}`);
       checkMachine(leaf.where?.machine, `objective ${o.id}`);
-      if (leaf.event === 'scenario.flag' && !flags.has(String(leaf.where?.id))) {
+      if (leaf.event === 'scenario.flag' && !raised(String(leaf.where?.id))) {
         problems.push(`objective ${o.id}: flag '${leaf.where?.id}' is never emitted`);
       }
       for (const re of Object.values(leaf.regex ?? {})) {
@@ -316,7 +343,7 @@ export function compileScenario(dir: string): ScenarioBundle {
     for (const fx of [...(t.effects ?? []), ...(t.warnings ?? []).flatMap((w) => w.effects)]) if ('flag' in fx) flags.add(fx.flag);
   }
   for (const t of raw.timers ?? []) {
-    for (const f of t.unlessFlags ?? []) if (!flags.has(f)) problems.push(`timer ${t.id}: unless flag '${f}' is never raised`);
+    for (const f of [...(t.unlessFlags ?? []), ...(t.ifFlags ?? [])]) if (!raised(f)) problems.push(`timer ${t.id}: flag '${f}' is never raised`);
   }
   const allEffects = [
     ...(raw.timers ?? []).flatMap((t) => [...(t.effects ?? []), ...(t.warnings ?? []).flatMap((w) => w.effects)]),
@@ -326,6 +353,7 @@ export function compileScenario(dir: string): ScenarioBundle {
   for (const fx of allEffects) {
     if ('chat' in fx && !chat?.nodes.some((n) => n.id === fx.chat)) problems.push(`effect chat: unknown node '${fx.chat}'`);
     if ('deliver' in fx && !deliveries[fx.deliver]) problems.push(`effect deliver: '${fx.deliver}' not found in deliveries/`);
+    if ('alert' in fx && !alertIds.has(fx.alert)) problems.push(`effect alert: unknown SOC alert '${fx.alert}'`);
     if ('write' in fx && fx.write.machine && fx.write.machine !== 'local' && !hostEntries.has(fx.write.machine)) problems.push(`effect write: unknown machine '${fx.write.machine}'`);
     if ('remove' in fx) {
       const m = fx.remove.machine && fx.remove.machine !== 'local' ? fx.remove.machine : undefined;
@@ -337,7 +365,7 @@ export function compileScenario(dir: string): ScenarioBundle {
   const endings = raw.endings ?? [];
   for (const e of endings) {
     for (const f of [...(e.flags ?? []), ...(e.notFlags ?? [])]) {
-      if (!flags.has(f)) problems.push(`ending ${e.id}: flag '${f}' is never raised`);
+      if (!raised(f)) problems.push(`ending ${e.id}: flag '${f}' is never raised`);
     }
   }
   if (endings.length && !endings.some((e) => !e.flags?.length && !e.notFlags?.length) && !raw.outro) {
@@ -384,6 +412,7 @@ export function compileScenario(dir: string): ScenarioBundle {
     network: raw.network ?? {},
     ...(hosts.length ? { hosts } : {}),
     ...(raw.timers?.length ? { timers: raw.timers } : {}),
+    ...(soc ? { soc } : {}),
     objectives,
     evidence: raw.evidence ?? [],
     web,

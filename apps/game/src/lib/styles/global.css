@@ -51,6 +51,8 @@ button { cursor: pointer; }
 .kp-btn.ghost { background: transparent; border-color: transparent; color: var(--kp-text-1); }
 .kp-btn.ghost:hover { background: var(--kp-bg-4); color: var(--kp-text-0); }
 .kp-btn.active { color: var(--kp-cyan); background: var(--kp-cyan-dim); border-color: transparent; }
+.kp-btn.danger { background: var(--kp-red-dim); color: var(--kp-red); border-color: rgba(255, 79, 109, 0.4); font-weight: 600; }
+.kp-btn.danger:hover { background: rgba(255, 79, 109, 0.22); border-color: var(--kp-red); }
 .kp-btn:disabled { opacity: 0.45; cursor: default; }
 
 .kp-input {
