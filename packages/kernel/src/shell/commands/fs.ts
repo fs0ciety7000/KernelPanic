@@ -2,6 +2,7 @@ import { modeString, type Stat } from '../../vfs/vfs';
 import { basename, dirname, extname } from '../../vfs/path';
 import { c, pad } from '../ansi';
 import { getopt } from '../args';
+import { archiveKind, gunzip, zipInfo } from '../../util/archive';
 import { fsMessage, type CommandContext, type CommandDef } from '../shell';
 
 function colorName(st: Stat, tty: boolean): string {
@@ -432,6 +433,10 @@ export function describeFile(name: string, content: string, st: Stat): string {
     return 'SVG Scalable Vector Graphics image';
   if (content.startsWith('\x7fELF')) return 'ELF 64-bit LSB executable, ARM aarch64, statically linked, stripped';
   if (/^LUMENFW/.test(content)) return 'Lumen firmware image, data';
+  const archive = archiveKind(content);
+  if (archive === 'gzip') return `gzip compressed data, was "${gunzip(content).name}", from Unix`;
+  if (archive === 'tar') return 'POSIX tar archive (GNU)';
+  if (archive === 'zip') return `Zip archive data, at least v2.0 to extract${zipInfo(content).encrypted ? ', encrypted' : ''}`;
   const shebang = content.match(/^#!\s*(\S+)/);
   if (shebang) {
     const interp = basename(shebang[1]!);
@@ -584,13 +589,21 @@ const wc: CommandDef = {
   run(ctx) {
     const { flags, rest } = getopt(ctx.argv, 'lwcm');
     const pick = flags.size ? flags : new Set(['l', 'w', 'c']);
-    return eachInput(ctx, rest, (text, name) => {
+    const total = [0, 0, 0];
+    const line = (counts: number[], name: string) => {
       const cols: string[] = [];
-      if (pick.has('l')) cols.push(String((text.match(/\n/g) ?? []).length));
-      if (pick.has('w')) cols.push(String(text.split(/\s+/).filter(Boolean).length));
-      if (pick.has('c') || pick.has('m')) cols.push(String(new TextEncoder().encode(text).length));
+      if (pick.has('l')) cols.push(String(counts[0]));
+      if (pick.has('w')) cols.push(String(counts[1]));
+      if (pick.has('c') || pick.has('m')) cols.push(String(counts[2]));
       ctx.out(cols.map((x) => x.padStart(cols.length > 1 ? 7 : 0)).join(' ') + (name === '-' ? '' : ` ${name}`) + '\n');
+    };
+    const status = eachInput(ctx, rest, (text, name) => {
+      const counts = [(text.match(/\n/g) ?? []).length, text.split(/\s+/).filter(Boolean).length, new TextEncoder().encode(text).length];
+      counts.forEach((n, k) => (total[k]! += n));
+      line(counts, name);
     });
+    if (rest.length > 1) line(total, 'total');
+    return status;
   },
 };
 

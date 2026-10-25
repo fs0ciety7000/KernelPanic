@@ -23,6 +23,10 @@ import {
   type WebPage,
   type ChatDef,
   type HostDef,
+  type ArchiveEntry,
+  gzip,
+  tar,
+  zip,
 } from '@kp/kernel';
 
 const BINARY_MIME: Record<string, string> = {
@@ -59,8 +63,12 @@ interface RawObjective extends Omit<ObjectiveDef, 'answer'> {
 
 type RawUser = UserDef & { password?: string };
 
+/** Archive options by VFS path, e.g. `/srv/backup/hr.zip: { password: … }`. */
+type RawArchives = Record<string, { password?: string }>;
+
 interface RawHost extends Omit<HostDef, 'fs' | 'users' | 'commands' | 'processes' | 'network'> {
   users: RawUser[];
+  archives?: RawArchives;
   permissions?: RawPermission[];
   defaults?: { mtime?: string };
   commands?: Record<string, ScriptedCommand>;
@@ -70,6 +78,7 @@ interface RawHost extends Omit<HostDef, 'fs' | 'users' | 'commands' | 'processes
 
 interface RawScenario extends Omit<ScenarioBundle, 'format' | 'fs' | 'deliveries' | 'users' | 'objectives' | 'evidence' | 'endings' | 'web' | 'chat' | 'hosts'> {
   hosts?: RawHost[];
+  archives?: RawArchives;
   evidence?: EvidenceDef[];
   endings?: EndingDef[];
   web?: Omit<WebDef, 'pages'>;
@@ -115,7 +124,7 @@ export function compileScenario(dir: string): ScenarioBundle {
   if (!/^[a-z0-9-]+$/.test(raw.id)) problems.push(`id '${raw.id}' must be kebab-case`);
   if (Number.isNaN(Date.parse(raw.machine.clock))) problems.push(`machine.clock is not a valid ISO date`);
 
-  const local = buildMachine(dir, 'fs', raw.id, raw.users, raw.permissions ?? [], raw.defaults, raw.machine.clock, problems, '');
+  const local = buildMachine(dir, 'fs', raw.id, raw.users, raw.permissions ?? [], raw.defaults, raw.machine.clock, problems, '', raw.archives);
   const { users, entries } = local;
   if (!users.some((u) => u.name === raw.session.user)) problems.push(`session.user '${raw.session.user}' is not declared in users`);
 
@@ -126,10 +135,10 @@ export function compileScenario(dir: string): ScenarioBundle {
     if (!/^[a-z0-9-]+$/.test(h.id ?? '')) problems.push(`${label}id must be kebab-case`);
     if (h.id === 'local' || hostEntries.has(h.id)) problems.push(`${label}duplicate or reserved id`);
     if (!h.machine?.hostname || !h.machine.ip) problems.push(`${label}machine needs hostname and ip`);
-    const m = buildMachine(dir, join('hosts', h.id), raw.id, h.users ?? [], h.permissions ?? [], h.defaults, raw.machine.clock, problems, label);
+    const m = buildMachine(dir, join('hosts', h.id), raw.id, h.users ?? [], h.permissions ?? [], h.defaults, raw.machine.clock, problems, label, h.archives);
     hostEntries.set(h.id, m.entries);
     checkCommands(h.commands ?? {}, problems, label);
-    const { permissions: _p, defaults: _d, users: _u, ...rest } = h;
+    const { permissions: _p, defaults: _d, users: _u, archives: _a, ...rest } = h;
     return { ...rest, users: m.users, fs: [...m.entries.values()], commands: h.commands ?? {}, processes: h.processes ?? [], network: h.network ?? {} };
   });
   for (const h of hosts) {
@@ -395,6 +404,7 @@ function buildMachine(
   clock: string,
   problems: string[],
   label: string,
+  archives: RawArchives = {},
 ) {
   const users: UserDef[] = rawUsers.map(({ password, ...u }) => ({
     ...u,
@@ -438,22 +448,55 @@ function buildMachine(
     entries.set(path, entry);
   };
 
+  const readContent = (full: string) => {
+    const mime = BINARY_MIME[extname(full).toLowerCase()];
+    return mime ? `data:${mime};base64,${readFileSync(full).toString('base64')}` : readFileSync(full, 'utf8');
+  };
   if (!existsSync(fsDir)) problems.push(`${label}missing ${fsRel}/ directory`);
   else {
+    let archiveDir: string | null = null;
     for (const full of walk(fsDir)) {
+      if (archiveDir && full.startsWith(archiveDir)) continue; // packed into the archive below
+      archiveDir = null;
       const rel = toPosix(relative(fsDir, full));
+      // Authoring convenience: `name.zip.d/` (or .tar.d / .tgz.d / .tar.gz.d) becomes the archive `name.zip`.
+      const packed = full.endsWith('/') && rel.match(/^(.*\.(zip|tar|tgz|tar\.gz))\.d$/);
+      if (packed) {
+        archiveDir = full;
+        const path = packed[1]!;
+        const members: ArchiveEntry[] = walk(full)
+          .filter((f) => !f.endsWith('/.gitkeep'))
+          .map((f) => {
+            const inner = toPosix(relative(full, f)).slice(1);
+            return f.endsWith('/')
+              ? { path: inner, type: 'dir' as const, mode: 0o755, mtime: defaultMtime }
+              : { path: inner, type: 'file' as const, mode: 0o644, mtime: defaultMtime, content: readContent(f) };
+          });
+        const opts = archives[path];
+        if (opts?.password && packed[2] !== 'zip') problems.push(`${label}archive ${path}: only zip archives take a password`);
+        const content =
+          packed[2] === 'zip'
+            ? zip(members, opts?.password)
+            : packed[2] === 'tar'
+              ? tar(members)
+              : gzip(tar(members), path.split('/').pop()!.replace(/\.(tgz|tar\.gz)$/, '.tar'), defaultMtime);
+        addEntry(path, 'file', content);
+        continue;
+      }
       if (full.endsWith('/')) {
         addEntry(rel, 'dir');
         continue;
       }
       if (rel.endsWith('/.gitkeep')) continue;
-      const mime = BINARY_MIME[extname(full).toLowerCase()];
-      const content = mime
-        ? `data:${mime};base64,${readFileSync(full).toString('base64')}`
-        : readFileSync(full, 'utf8');
-      addEntry(rel, 'file', content);
+      if (rel.endsWith('.gz.src')) {
+        const path = rel.slice(0, -'.src'.length);
+        addEntry(path, 'file', gzip(readContent(full), path.split('/').pop()!.replace(/\.gz$/, ''), defaultMtime));
+        continue;
+      }
+      addEntry(rel, 'file', readContent(full));
     }
   }
+  for (const path of Object.keys(archives)) if (!entries.has(path)) problems.push(`${label}archives: '${path}' is not built (expected ${path}.d/ in ${fsRel}/)`);
   for (const p of perms) {
     const base = p.path.replace(/\/\*\*$/, '');
     if (!entries.has(base)) problems.push(`${label}permissions: '${p.path}' does not exist in ${fsRel}/`);

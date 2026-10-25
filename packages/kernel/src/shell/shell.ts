@@ -2,7 +2,7 @@ import type { Kernel } from '../kernel';
 import type { System } from '../host';
 import { FsError, type Cred } from '../vfs/vfs';
 import { basename, normalize, resolve, tildify } from '../vfs/path';
-import { expandWord, globToRegExp, parse, ParseError, type SimpleCommand } from './parser';
+import { expandWord, globToRegExp, parse, ParseError, tokenize, type SimpleCommand, type Word } from './parser';
 import { c } from './ansi';
 
 export interface ShellIO {
@@ -64,6 +64,9 @@ export class Shell {
   cwd: string;
   env: Record<string, string>;
   lastExit = 0;
+  /** Stdout sinks of running command substitutions (innermost last). */
+  private captures: Array<(t: string) => void> = [];
+  private substDepth = 0;
 
   constructor(
     public game: Kernel,
@@ -172,9 +175,20 @@ export class Shell {
     const trimmed = line.trim();
     if (!trimmed) return this.lastExit;
     this.kernel.pushHistory(trimmed);
+    return this.runLine(trimmed);
+  }
+
+  /** Runs a command line without recording it (loops, substitutions). */
+  private async runLine(line: string): Promise<number> {
+    const loop = line.match(/^for\s+([A-Za-z_][A-Za-z0-9_]*)\s+in\s+(.*?)\s*;\s*do\s+(.*?)\s*;?\s*done\s*(?:;\s*(.*))?$/s);
+    if (loop) return this.runFor(loop[1]!, loop[2]!, loop[3]!, loop[4]);
+    if (/^(for|while|until|if)\b/.test(line)) {
+      this.io.write(`bash: only one-line loops are supported: for VAR in WORDS; do COMMANDS; done\n`);
+      return (this.lastExit = 2);
+    }
     let list;
     try {
-      list = parse(trimmed);
+      list = parse(line);
     } catch (e) {
       if (e instanceof ParseError) {
         this.io.write(`bash: ${e.message}\n`);
@@ -186,12 +200,68 @@ export class Shell {
     let skip = false;
     for (const item of list) {
       if (!skip) {
-        status = await this.runPipeline(item.pipeline.commands, trimmed);
+        status = await this.runPipeline(item.pipeline.commands, line);
         this.lastExit = status;
       }
       skip = (item.next === '&&' && status !== 0) || (item.next === '||' && status === 0);
     }
     return status;
+  }
+
+  private async runFor(name: string, words: string, body: string, after?: string): Promise<number> {
+    let values: string[];
+    try {
+      values = [];
+      for (const t of tokenize(words)) {
+        if (t.kind !== 'word') throw new ParseError(`syntax error near unexpected token \`${t.op}'`);
+        values.push(...expandWord(await this.substitute(t.word), this.expandCtx()));
+      }
+    } catch (e) {
+      if (e instanceof ParseError) {
+        this.io.write(`bash: ${e.message}\n`);
+        return (this.lastExit = 2);
+      }
+      throw e;
+    }
+    let status = 0;
+    for (const v of values.slice(0, 1000)) {
+      this.env[name] = v;
+      status = await this.runLine(body);
+    }
+    if (after?.trim()) status = await this.runLine(after.trim());
+    return (this.lastExit = status);
+  }
+
+  /** Runs $(…) segments of a word and replaces them by their output (trailing newlines removed). */
+  private async substitute(word: Word): Promise<Word> {
+    if (!word.some((s) => s.cmd !== undefined)) return word;
+    const out: Word = [];
+    for (const seg of word) {
+      if (seg.cmd === undefined) {
+        out.push(seg);
+        continue;
+      }
+      let buf = '';
+      if (this.substDepth < 8) {
+        this.substDepth++;
+        this.captures.push((t) => (buf += t));
+        try {
+          await this.runLine(seg.cmd.trim());
+        } finally {
+          this.captures.pop();
+          this.substDepth--;
+        }
+      }
+      out.push({ text: buf.replace(/\n+$/, ''), quote: seg.quote === 'double' ? 'double' : 'none', literal: true });
+    }
+    return out;
+  }
+
+  /** Where a command's terminal stdout goes: the screen, or the enclosing $(…). */
+  private writeOut(t: string): void {
+    const sink = this.captures[this.captures.length - 1];
+    if (sink) sink(t);
+    else this.io.write(t);
   }
 
   private async runPipeline(commands: SimpleCommand[], line: string): Promise<number> {
@@ -220,8 +290,10 @@ export class Shell {
     last: boolean,
     line: string,
   ): Promise<{ stdout: string | null; status: number }> {
+    const words: Word[] = [];
+    for (const w of cmd.words) words.push(await this.substitute(w));
     const ectx = this.expandCtx();
-    const argv = cmd.words.flatMap((w) => expandWord(w, ectx));
+    const argv = words.flatMap((w) => expandWord(w, ectx));
 
     // Leading VAR=value assignments.
     while (argv.length && /^[A-Za-z_][A-Za-z0-9_]*=/.test(argv[0]!)) {
@@ -260,7 +332,7 @@ export class Shell {
 
     const toTerminal = last && !outFile;
     const out = (t: string) => {
-      if (toTerminal) this.io.write(t);
+      if (toTerminal) this.writeOut(t);
       else outBuf += t;
     };
     const err = (t: string) => {
@@ -294,7 +366,7 @@ export class Shell {
   async exec(argv: string[], opts: ExecOptions = {}, line = argv.join(' ')): Promise<number> {
     const [name, ...args] = argv as [string, ...string[]];
     const cred = opts.cred ?? this.cred;
-    const out = opts.out ?? ((t: string) => this.io.write(t));
+    const out = opts.out ?? ((t: string) => this.writeOut(t));
     const err = opts.err ?? ((t: string) => this.io.write(t));
     let status: number;
 

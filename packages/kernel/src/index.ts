@@ -15,3 +15,5 @@ export { parseMail, parseAddress, type ParsedMail } from './util/mail';
 export { imageInfo, imageSrc, type ImageInfo } from './util/image';
 export { GameTime } from './util/time';
 export { parseUrl, fetchPage, type WebResult, type ParsedUrl } from './web';
+export { Host, type System } from './host';
+export { gzip, gunzip, tar, untar, zip, unzip, zipInfo, archiveKind, type ArchiveEntry } from './util/archive';

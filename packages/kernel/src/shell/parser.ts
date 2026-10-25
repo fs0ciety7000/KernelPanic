@@ -1,10 +1,30 @@
 // Bash-like command line parser.
-// Supports: '…' "…" \escapes, $VAR ${VAR} $?, ~, globs, | ; && || &, > >> < 2> 2>> &> 2>&1, # comments.
+// Supports: '…' "…" \escapes, $VAR ${VAR} $?, $(…) `…`, ~, globs, | ; && || &, > >> < 2> 2>> &> 2>&1, # comments.
 // Expansion is deferred to execution time (see expand()), so the parser output is pure syntax.
 
 export interface Segment {
   text: string;
   quote: 'none' | 'single' | 'double';
+  /** Command substitution $(…) / `…`: the shell runs it and puts its output in `text`. */
+  cmd?: string;
+  /** Text produced by a substitution: no further $ expansion, but field-split when unquoted. */
+  literal?: boolean;
+}
+
+/** Index just past the `)` closing a `$(` that starts at `open` (pointing at `(`). Quotes and nesting aware. */
+function closeParen(line: string, open: number): number {
+  let depth = 0;
+  for (let j = open; j < line.length; j++) {
+    const ch = line[j];
+    if (ch === "'") {
+      const end = line.indexOf("'", j + 1);
+      if (end === -1) break;
+      j = end;
+    } else if (ch === '\\') j++;
+    else if (ch === '(') depth++;
+    else if (ch === ')' && --depth === 0) return j + 1;
+  }
+  throw new ParseError('unexpected EOF while looking for matching `)\'');
 }
 export type Word = Segment[];
 
@@ -68,6 +88,15 @@ export function tokenize(line: string): Token[] {
       i += 2;
       continue;
     }
+    if ((c === '$' && line[i + 1] === '(') || c === '`') {
+      flush();
+      const end = c === '`' ? line.indexOf('`', i + 1) + 1 : closeParen(line, i + 1);
+      if (end <= 0) throw new ParseError('unexpected EOF while looking for matching ``\'');
+      word.push({ text: '', quote: 'none', cmd: line.slice(c === '`' ? i + 1 : i + 2, end - 1) });
+      inWord = true;
+      i = end;
+      continue;
+    }
     if (c === "'") {
       flush();
       const end = line.indexOf("'", i + 1);
@@ -82,6 +111,15 @@ export function tokenize(line: string): Token[] {
       let j = i + 1;
       let text = '';
       while (j < line.length && line[j] !== '"') {
+        if ((line[j] === '$' && line[j + 1] === '(') || line[j] === '`') {
+          const end = line[j] === '`' ? line.indexOf('`', j + 1) + 1 : closeParen(line, j + 1);
+          if (end <= 0) throw new ParseError('unexpected EOF while looking for matching ``\'');
+          if (text) word.push({ text, quote: 'double' });
+          word.push({ text: '', quote: 'double', cmd: line.slice(line[j] === '`' ? j + 1 : j + 2, end - 1) });
+          text = '';
+          j = end;
+          continue;
+        }
         if (line[j] === '\\' && /["\\$`]/.test(line[j + 1] ?? '')) {
           // Keep \$ distinguishable from $ for the expander.
           text += line[j + 1] === '$' ? '\u0000' : line[j + 1];
@@ -91,7 +129,7 @@ export function tokenize(line: string): Token[] {
         }
       }
       if (j >= line.length) throw new ParseError('unexpected EOF while looking for matching `"\'');
-      word.push({ text, quote: 'double' });
+      if (text || !word.length || word[word.length - 1]!.quote !== 'double') word.push({ text, quote: 'double' });
       inWord = true;
       i = j + 1;
       continue;
@@ -190,12 +228,12 @@ export function expandWord(word: Word, ctx: ExpandContext): string[] {
   let hasGlob = false;
   word.forEach((seg, idx) => {
     let t = seg.text;
-    if (seg.quote === 'single') {
+    if (seg.quote === 'single' || (seg.literal && seg.quote === 'double')) {
       text += t;
       pattern += t.replace(/[*?[\]]/g, '\\$&');
       return;
     }
-    t = expandVars(t, ctx.env);
+    if (!seg.literal) t = expandVars(t, ctx.env);
     if (seg.quote === 'none') {
       if (idx === 0 && (t === '~' || t.startsWith('~/'))) t = ctx.home + t.slice(1);
       if (/[*?]/.test(t)) hasGlob = true;
@@ -211,7 +249,7 @@ export function expandWord(word: Word, ctx: ExpandContext): string[] {
   }
   const unquoted = word.every((s) => s.quote === 'none');
   // Field splitting: an unquoted expansion splits on whitespace; an empty one disappears.
-  if (unquoted && word.some((s) => s.text.includes('$'))) return text.split(/\s+/).filter(Boolean);
+  if (unquoted && word.some((s) => s.literal || s.text.includes('$'))) return text.split(/\s+/).filter(Boolean);
   return [text];
 }
 
