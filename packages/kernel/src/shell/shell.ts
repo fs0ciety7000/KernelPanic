@@ -1,4 +1,5 @@
 import type { Kernel } from '../kernel';
+import type { System } from '../host';
 import { FsError, type Cred } from '../vfs/vfs';
 import { basename, normalize, resolve, tildify } from '../vfs/path';
 import { expandWord, globToRegExp, parse, ParseError, type SimpleCommand } from './parser';
@@ -20,7 +21,8 @@ export interface CommandContext {
   out(text: string): void;
   err(text: string): void;
   sh: Shell;
-  kernel: Kernel;
+  /** The machine the command runs on (the workstation, or a host reached with ssh). */
+  kernel: System;
   cred: Cred;
   /** True when stdout goes straight to the terminal (enables colors). */
   tty: boolean;
@@ -49,22 +51,38 @@ export function fsMessage(cmd: string, e: unknown, path?: string): string {
   return `${cmd}: ${(e as Error).message}\n`;
 }
 
+/** One level of the session: `su`/`sudo -i` push a user, `ssh` pushes a machine too. */
+interface Frame {
+  sys: System;
+  user: string;
+  /** Set on ssh frames: where to come back on exit. */
+  ssh?: { returnCwd: string; returnEnv: Record<string, string> };
+}
+
 export class Shell {
-  /** su/sudo -i stack; last element is the effective user. */
-  private userStack: string[];
+  private frames: Frame[];
   cwd: string;
   env: Record<string, string>;
   lastExit = 0;
 
   constructor(
-    public kernel: Kernel,
+    public game: Kernel,
     public io: ShellIO,
     opts: { user?: string; cwd?: string } = {},
   ) {
-    const user = opts.user ?? kernel.sessionUser;
-    this.userStack = [user];
-    this.cwd = opts.cwd ?? kernel.users.get(user)?.home ?? '/';
+    const user = opts.user ?? game.sessionUser;
+    this.frames = [{ sys: game, user }];
+    this.cwd = opts.cwd ?? game.users.get(user)?.home ?? '/';
     this.env = this.baseEnv(user);
+  }
+
+  /** The machine this shell currently runs on. */
+  get kernel(): System {
+    return this.frames[this.frames.length - 1]!.sys;
+  }
+  /** Depth of nested ssh sessions (0 = on the workstation). */
+  get sshDepth(): number {
+    return this.frames.filter((f) => f.ssh).length;
   }
 
   private baseEnv(user: string): Record<string, string> {
@@ -83,7 +101,7 @@ export class Shell {
   }
 
   get user(): string {
-    return this.userStack[this.userStack.length - 1]!;
+    return this.frames[this.frames.length - 1]!.user;
   }
   get cred(): Cred {
     return this.kernel.users.cred(this.user);
@@ -96,15 +114,28 @@ export class Shell {
   }
 
   pushUser(user: string): void {
-    this.userStack.push(user);
+    this.frames.push({ sys: this.kernel, user });
     this.env = { ...this.baseEnv(user), PWD: this.cwd };
-    if (user === 'root' || this.userStack.length > 1) this.chdir(this.home, true);
+    if (user === 'root' || this.frames.length > 1) this.chdir(this.home, true);
   }
 
-  /** Returns false when the base session ends. */
-  popUser(): boolean {
-    if (this.userStack.length <= 1) return false;
-    this.userStack.pop();
+  /** Opens a login session on another machine (ssh). */
+  pushHost(sys: System, user: string): void {
+    this.frames.push({ sys, user, ssh: { returnCwd: this.cwd, returnEnv: this.env } });
+    this.cwd = sys.users.get(user)?.home ?? '/';
+    if (!sys.vfs.exists(this.cwd, this.cred)) this.cwd = '/';
+    this.env = this.baseEnv(user);
+  }
+
+  /** Returns false when the base session ends. On an ssh frame, returns the host that was left. */
+  popUser(): boolean | { left: System } {
+    if (this.frames.length <= 1) return false;
+    const frame = this.frames.pop()!;
+    if (frame.ssh) {
+      this.cwd = frame.ssh.returnCwd;
+      this.env = frame.ssh.returnEnv;
+      return { left: frame.sys };
+    }
     this.env = { ...this.baseEnv(this.user), PWD: this.cwd };
     if (!this.kernel.vfs.exists(this.cwd, this.cred)) this.chdir(this.home, true);
     return true;

@@ -1,4 +1,4 @@
-import type { Kernel } from '../../kernel';
+import type { System } from '../../host';
 
 // Hand-written pages for the commands an investigator needs most. Others fall back to usage.
 const PAGES: Record<string, string> = {
@@ -115,9 +115,9 @@ SYNOPSIS
 `,
 };
 
-export function manPage(name: string, kernel: Kernel): string | undefined {
+export function manPage(name: string, kernel: System): string | undefined {
   if (PAGES[name]) return PAGES[name];
-  const scripted = kernel.bundle.commands[name];
+  const scripted = kernel.scripted[name];
   if (scripted) {
     return `${name.toUpperCase()}(1)\n\nNAME\n       ${name} - ${scripted.summary ?? ''}\n\n${(scripted.fallback ?? '').replace(/^/gm, '       ')}\n`;
   }

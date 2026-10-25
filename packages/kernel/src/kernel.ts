@@ -3,10 +3,9 @@ import { ROOT, Vfs, type VfsDiff } from './vfs/vfs';
 import { dirname, normalize } from './vfs/path';
 import { Users } from './users';
 import { Shell, type CommandDef, type ShellIO } from './shell/shell';
-import { makeScripted } from './shell/scripted';
-import { builtinCommands } from './shell/commands';
 import { ScenarioRuntime, type ScenarioState } from './scenario/runtime';
-import { BUNDLE_FORMAT, type MachineDef, type ScenarioBundle } from './scenario/types';
+import { BUNDLE_FORMAT, type MachineDef, type NetworkDef, type ProcessDef, type ScenarioBundle, type ScriptedCommand } from './scenario/types';
+import { Host, machineCommands, SudoTickets, type System } from './host';
 import { GameTime, parseOffset } from './util/time';
 import { parseMail } from './util/mail';
 import { fetchPage, type WebResult } from './web';
@@ -18,26 +17,32 @@ export interface SaveGame {
   scenarioId: string;
   scenarioVersion: number;
   vfs: VfsDiff;
+  /** Remote machines' changes, by host id. */
+  hosts?: Record<string, VfsDiff>;
   scenario: ScenarioState;
   history: string[];
   savedAt: number;
 }
 
-const SUDO_TICKET_MS = 5 * 60_000;
-
-export class Kernel {
+/** The game: the workstation (it is itself a System) plus the remote hosts and the scenario runtime. */
+export class Kernel implements System {
+  readonly id = 'local';
   readonly bus = new EventBus();
   readonly vfs: Vfs;
   readonly users: Users;
   readonly machine: MachineDef;
   readonly time: GameTime;
-  readonly commands = new Map<string, CommandDef>();
+  readonly commands: Map<string, CommandDef>;
+  readonly scripted: Record<string, ScriptedCommand>;
+  readonly network: NetworkDef;
+  readonly processes: ProcessDef[];
   readonly runtime: ScenarioRuntime;
   readonly sessionUser: string;
+  /** Remote machines, by id. */
+  readonly hosts = new Map<string, Host>();
   history: string[] = [];
-  /** user → game-time ms until which sudo won't ask for a password. */
-  private sudoTickets = new Map<string, number>();
-  private scriptedPaths = new Map<string, CommandDef>();
+  private scriptedPaths: Map<string, CommandDef>;
+  private sudo = new SudoTickets(() => this.now());
   private clockStart: number;
 
   constructor(readonly bundle: ScenarioBundle, save?: SaveGame) {
@@ -49,17 +54,16 @@ export class Kernel {
     this.users = new Users(bundle.id, bundle.users);
     this.vfs = new Vfs(this.bus, () => this.now());
     this.vfs.mount(bundle.fs);
-
-    for (const cmd of builtinCommands) this.commands.set(cmd.name, cmd);
-    for (const [name, def] of Object.entries(bundle.commands)) {
-      const cmd = makeScripted(name, def);
-      this.commands.set(name, cmd);
-      if (def.path) this.scriptedPaths.set(normalize(def.path), cmd);
-    }
+    this.network = bundle.network;
+    this.processes = bundle.processes;
+    this.scripted = bundle.commands;
+    ({ commands: this.commands, byPath: this.scriptedPaths } = machineCommands(bundle.commands));
+    for (const def of bundle.hosts ?? []) this.hosts.set(def.id, new Host(this, def));
 
     const compatible = save && save.scenarioId === bundle.id && save.scenarioVersion === bundle.version;
     if (compatible) {
       this.vfs.applyDiff(save.vfs);
+      for (const [id, diff] of Object.entries(save.hosts ?? {})) this.hosts.get(id)?.vfs.applyDiff(diff);
       this.history = [...save.history];
     }
     this.runtime = new ScenarioRuntime(
@@ -80,6 +84,19 @@ export class Kernel {
     return this.clockStart + (this.runtime?.playtime() ?? 0);
   }
 
+  get kernel(): Kernel {
+    return this;
+  }
+
+  /** Resolves a name/IP to a machine, the way ssh would (workstation included). */
+  resolveHost(name: string): System | undefined {
+    const n = name.toLowerCase();
+    const m = this.machine;
+    if ([m.hostname, m.ip, 'localhost', '127.0.0.1', ...(m.domain ? [`${m.hostname}.${m.domain}`] : [])].includes(n)) return this;
+    for (const h of this.hosts.values()) if (h.names().includes(n)) return h;
+    return undefined;
+  }
+
   createShell(io: ShellIO, opts?: { user?: string; cwd?: string }): Shell {
     return new Shell(this, io, { cwd: this.bundle.session.cwd, ...opts });
   }
@@ -94,13 +111,13 @@ export class Kernel {
   }
 
   hasSudoTicket(user: string): boolean {
-    return (this.sudoTickets.get(user) ?? 0) > this.now();
+    return this.sudo.has(user);
   }
   grantSudoTicket(user: string): void {
-    this.sudoTickets.set(user, this.now() + SUDO_TICKET_MS);
+    this.sudo.grant(user);
   }
   dropSudoTicket(user: string): void {
-    this.sudoTickets.delete(user);
+    this.sudo.drop(user);
   }
 
   /** Write performed by the system (scenario effects), owned by `owner` (default root). */
@@ -142,6 +159,7 @@ export class Kernel {
       scenarioId: this.bundle.id,
       scenarioVersion: this.bundle.version,
       vfs: this.vfs.diff(),
+      ...(this.hosts.size ? { hosts: Object.fromEntries([...this.hosts].map(([id, h]) => [id, h.vfs.diff()])) } : {}),
       scenario: this.runtime.checkpoint(),
       history: [...this.history],
       savedAt: Date.now(),

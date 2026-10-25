@@ -22,6 +22,7 @@ import {
   type WebDef,
   type WebPage,
   type ChatDef,
+  type HostDef,
 } from '@kp/kernel';
 
 const BINARY_MIME: Record<string, string> = {
@@ -35,7 +36,7 @@ const BINARY_MIME: Record<string, string> = {
 const KNOWN_EVENTS = new Set([
   'fs.read', 'fs.write', 'fs.list', 'cmd.exec', 'auth.sudo', 'auth.su', 'mail.open', 'image.open',
   'app.open', 'scenario.flag', 'objective.complete', 'evidence.found', 'choice.made',
-  'web.visit', 'chat.message', 'chat.reply',
+  'web.visit', 'chat.message', 'chat.reply', 'auth.ssh',
 ]);
 
 export class ScenarioError extends Error {
@@ -56,12 +57,24 @@ interface RawObjective extends Omit<ObjectiveDef, 'answer'> {
   answer?: { label: string; placeholder?: string; accept: string[]; normalize?: Array<'trim' | 'lower' | 'nospace'> };
 }
 
-interface RawScenario extends Omit<ScenarioBundle, 'format' | 'fs' | 'deliveries' | 'users' | 'objectives' | 'evidence' | 'endings' | 'web' | 'chat'> {
+type RawUser = UserDef & { password?: string };
+
+interface RawHost extends Omit<HostDef, 'fs' | 'users' | 'commands' | 'processes' | 'network'> {
+  users: RawUser[];
+  permissions?: RawPermission[];
+  defaults?: { mtime?: string };
+  commands?: Record<string, ScriptedCommand>;
+  processes?: HostDef['processes'];
+  network?: HostDef['network'];
+}
+
+interface RawScenario extends Omit<ScenarioBundle, 'format' | 'fs' | 'deliveries' | 'users' | 'objectives' | 'evidence' | 'endings' | 'web' | 'chat' | 'hosts'> {
+  hosts?: RawHost[];
   evidence?: EvidenceDef[];
   endings?: EndingDef[];
   web?: Omit<WebDef, 'pages'>;
   chat?: ChatDef;
-  users: Array<UserDef & { password?: string }>;
+  users: RawUser[];
   permissions?: RawPermission[];
   defaults?: { mtime?: string };
   objectives: RawObjective[];
@@ -102,73 +115,29 @@ export function compileScenario(dir: string): ScenarioBundle {
   if (!/^[a-z0-9-]+$/.test(raw.id)) problems.push(`id '${raw.id}' must be kebab-case`);
   if (Number.isNaN(Date.parse(raw.machine.clock))) problems.push(`machine.clock is not a valid ISO date`);
 
-  const users: UserDef[] = raw.users.map(({ password, ...u }) => ({
-    ...u,
-    groups: u.groups ?? [],
-    passwordHash: password ? secretHash(raw.id, password) : undefined,
-  }));
-  const userNames = new Set(users.map((u) => u.name));
-  if (!userNames.has(raw.session.user)) problems.push(`session.user '${raw.session.user}' is not declared in users`);
+  const local = buildMachine(dir, 'fs', raw.id, raw.users, raw.permissions ?? [], raw.defaults, raw.machine.clock, problems, '');
+  const { users, entries } = local;
+  if (!users.some((u) => u.name === raw.session.user)) problems.push(`session.user '${raw.session.user}' is not declared in users`);
 
-  // ── Filesystem ────────────────────────────────────────────────────────
-  const fsDir = join(dir, 'fs');
-  const defaultMtime = Date.parse(raw.defaults?.mtime ?? raw.machine.clock) - (raw.defaults?.mtime ? 0 : 3 * 86400_000);
-  const perms = raw.permissions ?? [];
-  const homeOwner = (path: string) => {
-    const m = path.match(/^\/home\/([^/]+)/) ?? (path.startsWith('/root') ? [null, 'root'] : null);
-    return m && userNames.has(m[1]!) ? m[1]! : 'root';
-  };
-  const entries = new Map<string, FsEntry>();
-  const addEntry = (path: string, type: 'file' | 'dir', content?: string) => {
-    const owner = homeOwner(path);
-    const isHome = /^\/home\/[^/]+$/.test(path) || path === '/root';
-    const entry: FsEntry = {
-      path,
-      type,
-      mode: type === 'dir' ? (isHome ? 0o750 : 0o755) : 0o644,
-      owner,
-      group: owner,
-      mtime: defaultMtime,
-      content,
-    };
-    if (path === '/tmp') entry.mode = 0o1777;
-    for (const p of perms) {
-      if (!matches(p.path, path)) continue;
-      // A recursive rule's mode applies to files; directories keep +x so they stay traversable.
-      if (p.mode) {
-        const m = parseInt(p.mode, 8);
-        entry.mode = p.path.endsWith('/**') && type === 'dir' ? m | ((m & 0o444) >> 2) : m;
-      }
-      if (p.owner) entry.owner = p.owner;
-      if (p.group ?? p.owner) entry.group = p.group ?? p.owner!;
-      if (p.mtime) entry.mtime = Date.parse(p.mtime);
-    }
-    entries.set(path, entry);
-  };
-
-  if (!existsSync(fsDir)) problems.push('missing fs/ directory');
-  else {
-    for (const full of walk(fsDir)) {
-      const rel = toPosix(relative(fsDir, full));
-      if (full.endsWith('/')) {
-        addEntry(rel, 'dir');
-        continue;
-      }
-      if (rel.endsWith('/.gitkeep')) continue;
-      const mime = BINARY_MIME[extname(full).toLowerCase()];
-      const content = mime
-        ? `data:${mime};base64,${readFileSync(full).toString('base64')}`
-        : readFileSync(full, 'utf8');
-      addEntry(rel, 'file', content);
-    }
+  // ── Remote hosts (ADR-009): hosts/<id>/ holds each machine's files ──────
+  const hostEntries = new Map<string, Map<string, FsEntry>>();
+  const hosts: HostDef[] = (raw.hosts ?? []).map((h) => {
+    const label = `host ${h.id}: `;
+    if (!/^[a-z0-9-]+$/.test(h.id ?? '')) problems.push(`${label}id must be kebab-case`);
+    if (h.id === 'local' || hostEntries.has(h.id)) problems.push(`${label}duplicate or reserved id`);
+    if (!h.machine?.hostname || !h.machine.ip) problems.push(`${label}machine needs hostname and ip`);
+    const m = buildMachine(dir, join('hosts', h.id), raw.id, h.users ?? [], h.permissions ?? [], h.defaults, raw.machine.clock, problems, label);
+    hostEntries.set(h.id, m.entries);
+    checkCommands(h.commands ?? {}, problems, label);
+    const { permissions: _p, defaults: _d, users: _u, ...rest } = h;
+    return { ...rest, users: m.users, fs: [...m.entries.values()], commands: h.commands ?? {}, processes: h.processes ?? [], network: h.network ?? {} };
+  });
+  for (const h of hosts) {
+    for (const id of h.ssh?.from ?? []) if (id !== 'local' && !hostEntries.has(id)) problems.push(`host ${h.id}: ssh.from references unknown host '${id}'`);
   }
-  for (const p of perms) {
-    const base = p.path.replace(/\/\*\*$/, '');
-    if (!entries.has(base)) problems.push(`permissions: '${p.path}' does not exist in fs/`);
-  }
-  for (const u of users) {
-    if (!entries.has(u.home)) problems.push(`user ${u.name}: home ${u.home} missing from fs/`);
-  }
+  /** Does `path` exist on the machine an event/evidence refers to? */
+  const pathExists = (path: string, machine?: unknown) =>
+    machine === undefined ? entries.has(path) : hostEntries.get(String(machine))?.has(path) ?? false;
 
   // ── Deliveries ────────────────────────────────────────────────────────
   const deliveries: Record<string, string> = {};
@@ -181,17 +150,10 @@ export function compileScenario(dir: string): ScenarioBundle {
 
   // ── Commands ──────────────────────────────────────────────────────────
   const commands: Record<string, ScriptedCommand> = raw.commands ?? {};
-  for (const [name, cmd] of Object.entries(commands)) {
-    if (!cmd.rules?.length) problems.push(`command ${name}: needs at least one rule`);
-    for (const r of cmd.rules ?? []) {
-      try {
-        new RegExp(r.match);
-      } catch {
-        problems.push(`command ${name}: invalid regex ${r.match}`);
-      }
-    }
-  }
-  const flags = new Set(Object.values(commands).flatMap((c) => c.rules.map((r) => r.emit).filter(Boolean) as string[]));
+  checkCommands(commands, problems, '');
+  const flags = new Set(
+    [commands, ...hosts.map((h) => h.commands)].flatMap((cmds) => Object.values(cmds).flatMap((c) => c.rules.map((r) => r.emit).filter(Boolean) as string[])),
+  );
 
   // ── Web: web/<host>/<path>.html (index.html = folder) + scenario.yaml `web:` ──
   const pages: Record<string, WebPage> = {};
@@ -253,6 +215,9 @@ export function compileScenario(dir: string): ScenarioBundle {
     }
   };
   const leaves = (t: Trigger): TriggerLeaf[] => ('any' in t ? t.any : [t]);
+  const checkMachine = (m: unknown, what: string) => {
+    if (m !== undefined && !hostEntries.has(String(m))) problems.push(`${what}: unknown machine '${m}' (declare it in hosts:)`);
+  };
   for (const o of raw.objectives) {
     if (ids.has(o.id)) problems.push(`duplicate objective id '${o.id}'`);
     ids.add(o.id);
@@ -279,7 +244,8 @@ export function compileScenario(dir: string): ScenarioBundle {
     for (const leaf of o.trigger ? leaves(o.trigger) : []) {
       if (!KNOWN_EVENTS.has(leaf.event)) problems.push(`objective ${o.id}: unknown event '${leaf.event}'`);
       const p = leaf.where?.path;
-      if (typeof p === 'string' && !entries.has(p)) problems.push(`objective ${o.id}: trigger path '${p}' not in fs/`);
+      if (typeof p === 'string' && !pathExists(p, leaf.where?.machine)) problems.push(`objective ${o.id}: trigger path '${p}' not in ${leaf.where?.machine ? `hosts/${leaf.where.machine}/` : 'fs/'}`);
+      checkMachine(leaf.where?.machine, `objective ${o.id}`);
       if (leaf.event === 'scenario.flag' && !flags.has(String(leaf.where?.id))) {
         problems.push(`objective ${o.id}: flag '${leaf.where?.id}' is never emitted`);
       }
@@ -312,12 +278,13 @@ export function compileScenario(dir: string): ScenarioBundle {
     if (seenEv.has(ev.id)) problems.push(`duplicate evidence id '${ev.id}'`);
     seenEv.add(ev.id);
     if (!ev.title || !ev.summary) problems.push(`evidence ${ev.id}: needs title and summary`);
-    if (ev.source && !entries.has(ev.source)) problems.push(`evidence ${ev.id}: source '${ev.source}' not in fs/`);
+    if (ev.source && !pathExists(ev.source, ev.machine)) problems.push(`evidence ${ev.id}: source '${ev.source}' not in ${ev.machine ? `hosts/${ev.machine}/` : 'fs/'}`);
     if (!ev.trigger) problems.push(`evidence ${ev.id}: needs a trigger`);
     for (const leaf of ev.trigger ? leaves(ev.trigger) : []) {
       if (!KNOWN_EVENTS.has(leaf.event)) problems.push(`evidence ${ev.id}: unknown event '${leaf.event}'`);
       const p = leaf.where?.path;
-      if (typeof p === 'string' && !entries.has(p)) problems.push(`evidence ${ev.id}: trigger path '${p}' not in fs/`);
+      if (typeof p === 'string' && !pathExists(p, leaf.where?.machine)) problems.push(`evidence ${ev.id}: trigger path '${p}' not in ${leaf.where?.machine ? `hosts/${leaf.where.machine}/` : 'fs/'}`);
+      checkMachine(leaf.where?.machine, `evidence ${ev.id}`);
     }
   }
   for (const n of chat?.nodes ?? []) {
@@ -385,6 +352,7 @@ export function compileScenario(dir: string): ScenarioBundle {
     commands,
     processes: raw.processes ?? [],
     network: raw.network ?? {},
+    ...(hosts.length ? { hosts } : {}),
     objectives,
     evidence: raw.evidence ?? [],
     web,
@@ -414,4 +382,97 @@ export function findScenarios(root: string): string[] {
     .map((n) => join(root, n))
     .filter((p) => statSync(p).isDirectory() && existsSync(join(p, 'scenario.yaml')))
     .sort();
+}
+
+/** Users + filesystem image of one machine (the workstation from fs/, a remote from hosts/<id>/). */
+function buildMachine(
+  dir: string,
+  fsRel: string,
+  salt: string,
+  rawUsers: RawUser[],
+  perms: RawPermission[],
+  defaults: { mtime?: string } | undefined,
+  clock: string,
+  problems: string[],
+  label: string,
+) {
+  const users: UserDef[] = rawUsers.map(({ password, ...u }) => ({
+    ...u,
+    groups: u.groups ?? [],
+    passwordHash: password ? secretHash(salt, password) : undefined,
+  }));
+  const userNames = new Set(users.map((u) => u.name));
+
+  // ── Filesystem ────────────────────────────────────────────────────────
+  const fsDir = join(dir, fsRel);
+  const defaultMtime = Date.parse(defaults?.mtime ?? clock) - (defaults?.mtime ? 0 : 3 * 86400_000);
+  const homeOwner = (path: string) => {
+    const m = path.match(/^\/home\/([^/]+)/) ?? (path.startsWith('/root') ? [null, 'root'] : null);
+    return m && userNames.has(m[1]!) ? m[1]! : 'root';
+  };
+  const entries = new Map<string, FsEntry>();
+  const addEntry = (path: string, type: 'file' | 'dir', content?: string) => {
+    const owner = homeOwner(path);
+    const isHome = /^\/home\/[^/]+$/.test(path) || path === '/root';
+    const entry: FsEntry = {
+      path,
+      type,
+      mode: type === 'dir' ? (isHome ? 0o750 : 0o755) : 0o644,
+      owner,
+      group: owner,
+      mtime: defaultMtime,
+      content,
+    };
+    if (path === '/tmp') entry.mode = 0o1777;
+    for (const p of perms) {
+      if (!matches(p.path, path)) continue;
+      // A recursive rule's mode applies to files; directories keep +x so they stay traversable.
+      if (p.mode) {
+        const m = parseInt(p.mode, 8);
+        entry.mode = p.path.endsWith('/**') && type === 'dir' ? m | ((m & 0o444) >> 2) : m;
+      }
+      if (p.owner) entry.owner = p.owner;
+      if (p.group ?? p.owner) entry.group = p.group ?? p.owner!;
+      if (p.mtime) entry.mtime = Date.parse(p.mtime);
+    }
+    entries.set(path, entry);
+  };
+
+  if (!existsSync(fsDir)) problems.push(`${label}missing ${fsRel}/ directory`);
+  else {
+    for (const full of walk(fsDir)) {
+      const rel = toPosix(relative(fsDir, full));
+      if (full.endsWith('/')) {
+        addEntry(rel, 'dir');
+        continue;
+      }
+      if (rel.endsWith('/.gitkeep')) continue;
+      const mime = BINARY_MIME[extname(full).toLowerCase()];
+      const content = mime
+        ? `data:${mime};base64,${readFileSync(full).toString('base64')}`
+        : readFileSync(full, 'utf8');
+      addEntry(rel, 'file', content);
+    }
+  }
+  for (const p of perms) {
+    const base = p.path.replace(/\/\*\*$/, '');
+    if (!entries.has(base)) problems.push(`${label}permissions: '${p.path}' does not exist in ${fsRel}/`);
+  }
+  for (const u of users) {
+    if (!entries.has(u.home)) problems.push(`${label}user ${u.name}: home ${u.home} missing from ${fsRel}/`);
+  }
+  return { users, entries };
+}
+
+function checkCommands(commands: Record<string, ScriptedCommand>, problems: string[], label: string) {
+  for (const [name, cmd] of Object.entries(commands)) {
+    if (!cmd.rules?.length) problems.push(`${label}command ${name}: needs at least one rule`);
+    for (const r of cmd.rules ?? []) {
+      try {
+        new RegExp(r.match);
+      } catch {
+        problems.push(`${label}command ${name}: invalid regex ${r.match}`);
+      }
+    }
+  }
 }

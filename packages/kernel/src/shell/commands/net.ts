@@ -2,14 +2,19 @@ import { c, pad } from '../ansi';
 import type { CommandContext, CommandDef } from '../shell';
 
 function hostInfo(ctx: CommandContext, host: string) {
-  return ctx.kernel.bundle.network.hosts?.[host.replace(/^https?:\/\//, '').split(/[/:?]/)[0]!];
+  const name = host.replace(/^https?:\/\//, '').split(/[/:?]/)[0]!;
+  const known = ctx.kernel.network.hosts?.[name];
+  if (known) return known;
+  // Remote machines of the scenario resolve and answer ping (ssh decides who may log in).
+  const sys = ctx.kernel.kernel.resolveHost(name);
+  return sys ? { ip: sys.machine.ip, reachable: true, http: undefined as string | undefined } : undefined;
 }
 
 const ifconfig: CommandDef = {
   name: 'ifconfig',
   summary: 'configure a network interface',
   run(ctx) {
-    const ifs = ctx.kernel.bundle.network.interfaces ?? [{ name: 'eth0', ip: ctx.kernel.machine.ip }];
+    const ifs = ctx.kernel.network.interfaces ?? [{ name: 'eth0', ip: ctx.kernel.machine.ip }];
     for (const i of ifs) {
       ctx.out(
         `${i.name}: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500\n` +
@@ -28,7 +33,7 @@ const ip: CommandDef = {
   summary: 'show routing, devices and tunnels',
   run(ctx) {
     const sub = ctx.argv[0] ?? '';
-    const ifs = ctx.kernel.bundle.network.interfaces ?? [{ name: 'eth0', ip: ctx.kernel.machine.ip }];
+    const ifs = ctx.kernel.network.interfaces ?? [{ name: 'eth0', ip: ctx.kernel.machine.ip }];
     if (sub.startsWith('a')) {
       ctx.out('1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536\n    inet 127.0.0.1/8 scope host lo\n');
       ifs.forEach((i, n) => {
@@ -52,7 +57,7 @@ const netstat: CommandDef = {
   name: 'netstat',
   summary: 'print network connections',
   run(ctx) {
-    const conns = ctx.kernel.bundle.network.connections ?? [];
+    const conns = ctx.kernel.network.connections ?? [];
     ctx.out('Active Internet connections (servers and established)\n');
     ctx.out(`${pad('Proto', 6)}${pad('Local Address', 24)}${pad('Foreign Address', 24)}${pad('State', 13)}PID/Program name\n`);
     for (const x of conns) {
@@ -144,27 +149,7 @@ const wget: CommandDef = {
   },
 };
 
-const ssh: CommandDef = {
-  name: 'ssh',
-  summary: 'OpenSSH remote login client',
-  run(ctx) {
-    const target = ctx.argv.find((a) => !a.startsWith('-'));
-    if (!target) {
-      ctx.err('usage: ssh [-p port] destination\n');
-      return 255;
-    }
-    const host = target.split('@').pop()!;
-    const info = hostInfo(ctx, host);
-    if (!info) {
-      ctx.err(`ssh: Could not resolve hostname ${host}: Name or service not known\n`);
-      return 255;
-    }
-    ctx.err(`ssh: connect to host ${host} port 22: ${info.reachable === false ? 'Connection timed out' : 'Connection refused'}\n`);
-    return 255;
-  },
-};
-
 export const netCommands: CommandDef[] = [
   ifconfig, ip, netstat, { ...netstat, name: 'ss', hidden: true }, ping, nslookup, { ...nslookup, name: 'host', hidden: true },
-  { ...nslookup, name: 'dig', hidden: true }, curl, wget, ssh,
+  { ...nslookup, name: 'dig', hidden: true }, curl, wget,
 ];

@@ -23,6 +23,7 @@ export const ICONS: Record<string, string> = {
   'chevron-up': '<path d="m6 14.5 6-6 6 6"/>',
   home: '<path d="M4 10.5 12 4l8 6.5V19a1.5 1.5 0 0 1-1.5 1.5H15v-6H9v6H5.5A1.5 1.5 0 0 1 4 19z"/>',
   'hard-drive': '<rect x="3" y="13" width="18" height="7" rx="2"/><path d="M5.5 13 8 5h8l2.5 8M7 16.5h.01M10.5 16.5h.01"/>',
+  server: '<rect x="3" y="4" width="18" height="7" rx="2"/><rect x="3" y="13" width="18" height="7" rx="2"/><path d="M7 7.5h.01M7 16.5h.01"/>',
   search: '<circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/>',
   x: '<path d="M6 6l12 12M18 6 6 18"/>',
   minus: '<path d="M6 12h12"/>',

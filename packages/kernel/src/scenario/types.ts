@@ -110,6 +110,8 @@ export interface EvidenceDef {
   summary: string;
   /** VFS path the player can reopen from the case file. */
   source?: string;
+  /** Host id when `source` lives on a remote machine (shown, not opened). */
+  machine?: string;
   /** Free label shown as a badge (e.g. "vecteur", "témoin", "contradiction"). */
   tag?: string;
   trigger: Trigger;
@@ -211,6 +213,29 @@ export interface ObjectiveDef {
   onComplete?: Effect[];
 }
 
+/** A remote machine reachable with `ssh` (ADR-009). Same building blocks as the local one. */
+export interface HostDef {
+  /** Stable id, carried by events from this machine as `machine`. */
+  id: string;
+  /** No clock: every machine shares the scenario's game time. */
+  machine: Omit<MachineDef, 'clock'>;
+  users: UserDef[];
+  fs: FsEntry[];
+  commands: Record<string, ScriptedCommand>;
+  processes: ProcessDef[];
+  network: NetworkDef;
+  /** Other names that resolve to this machine (FQDN, DNS aliases). Hostname and IP always do. */
+  aliases?: string[];
+  ssh?: {
+    /** Shown before the password prompt (legal notice…). */
+    banner?: string;
+    /** Printed after login. */
+    motd?: string;
+    /** Reachable only from these machine ids ("local" = the player's workstation). Default: everywhere. */
+    from?: string[];
+  };
+}
+
 export interface ScenarioBundle {
   format: typeof BUNDLE_FORMAT;
   id: string;
@@ -235,6 +260,8 @@ export interface ScenarioBundle {
   commands: Record<string, ScriptedCommand>;
   processes: ProcessDef[];
   network: NetworkDef;
+  /** Remote machines (ssh). */
+  hosts?: HostDef[];
   objectives: ObjectiveDef[];
   evidence?: EvidenceDef[];
   web?: WebDef;

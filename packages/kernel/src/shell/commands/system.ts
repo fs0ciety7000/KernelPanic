@@ -108,7 +108,7 @@ const ps: CommandDef = {
   summary: 'report a snapshot of the current processes',
   usage: 'ps [aux]',
   run(ctx) {
-    const procs = [...ctx.kernel.bundle.processes, { pid: 31337, user: ctx.cred.user, cmd: 'ps ' + ctx.argv.join(' ') }];
+    const procs = [...ctx.kernel.processes, { pid: 31337, user: ctx.cred.user, cmd: 'ps ' + ctx.argv.join(' ') }];
     if (!ctx.argv.length) {
       ctx.out('    PID TTY          TIME CMD\n   4242 pts/0    00:00:00 bash\n  31337 pts/0    00:00:00 ps\n');
       return 0;
@@ -201,7 +201,7 @@ const which: CommandDef = {
   run(ctx) {
     let status = 0;
     for (const name of ctx.argv) {
-      const scripted = ctx.kernel.bundle.commands[name];
+      const scripted = ctx.kernel.scripted[name];
       if (scripted?.path) ctx.out(scripted.path + '\n');
       else if (ctx.kernel.commands.has(name)) {
         const sbin = ['sudo', 'ifconfig', 'ip'].includes(name);
@@ -217,7 +217,9 @@ const exit: CommandDef = {
   summary: 'exit the shell',
   run(ctx) {
     ctx.out('logout\n');
-    if (!ctx.sh.popUser()) ctx.sh.io.exit?.();
+    const r = ctx.sh.popUser();
+    if (!r) ctx.sh.io.exit?.();
+    else if (r !== true) ctx.out(`Connection to ${r.left.machine.hostname} closed.\n`);
     return 0;
   },
 };
@@ -318,6 +320,10 @@ const open: CommandDef = {
   summary: 'open a file with its default application',
   usage: 'open [-a APP] [FILE|URL]',
   run(ctx) {
+    if (ctx.kernel.id !== 'local') {
+      ctx.err(`${ctx.name}: cannot open display: remote session on ${ctx.kernel.machine.hostname} (copy the file locally with scp)\n`);
+      return 1;
+    }
     const { values, rest } = getopt(ctx.argv, '', 'a');
     if (!rest.length && values.a) {
       ctx.kernel.open(values.a);
@@ -352,6 +358,10 @@ const edit: (name: string) => CommandDef = (name) => ({
   summary: 'edit a text file (opens Notes)',
   hidden: name !== 'nano',
   run(ctx) {
+    if (ctx.kernel.id !== 'local') {
+      ctx.err(`${name}: remote session: no editor available on ${ctx.kernel.machine.hostname} (read with cat, or copy the file with scp)\n`);
+      return 1;
+    }
     const f = ctx.argv.find((a) => !a.startsWith('-'));
     if (!f) {
       ctx.kernel.open('notes');
@@ -470,7 +480,7 @@ const help: CommandDef = {
         if (def) ctx.out(`  ${pad(c.green(n), 20)}${c.gray(def.summary)}\n`);
       }
     }
-    const scripted = Object.entries(ctx.kernel.bundle.commands);
+    const scripted = Object.entries(ctx.kernel.scripted);
     if (scripted.length) {
       ctx.out(c.bold(c.magenta('Outils installés')) + '\n');
       for (const [n, d] of scripted) ctx.out(`  ${pad(c.green(n), 20)}${c.gray(d.summary ?? '')}\n`);

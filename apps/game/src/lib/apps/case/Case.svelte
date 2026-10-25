@@ -189,7 +189,12 @@
               {#if ev.tag}<span class="kp-badge cyan">{ev.tag}</span>{/if}
             </div>
             <div class="ev-sum">{ev.summary}</div>
-            {#if ev.source}
+            {#if ev.source && ev.machine}
+              {@const host = os.kernel?.hosts.get(ev.machine)?.machine.hostname ?? ev.machine}
+              <span class="ev-src mono" title="Sur la machine distante {host} — consultable par ssh">
+                <Icon name="server" size={12} /> {host}:{ev.source}
+              </span>
+            {:else if ev.source}
               <button class="ev-src mono" onclick={() => os.openPath(ev.source!)} title="Ouvrir la source">
                 <Icon name="file" size={12} /> {P.tildify(ev.source, home)}
               </button>

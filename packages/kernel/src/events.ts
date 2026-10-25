@@ -1,13 +1,16 @@
 // Typed event bus. Everything observable by the scenario runtime flows through here.
 
 export interface KernelEvents {
-  'fs.read': { path: string; user: string };
-  'fs.write': { path: string; user: string };
-  'fs.list': { path: string; user: string };
-  'fs.change': { path: string };
-  'cmd.exec': { name: string; argv: string[]; line: string; exit: number; user: string };
-  'auth.sudo': { user: string; ok: boolean };
-  'auth.su': { user: string; target: string; ok: boolean };
+  // `machine` is set on events that happen on a remote host (ADR-009); absent = the workstation.
+  'fs.read': { path: string; user: string; machine?: string };
+  'fs.write': { path: string; user: string; machine?: string };
+  'fs.list': { path: string; user: string; machine?: string };
+  'fs.change': { path: string; machine?: string };
+  'cmd.exec': { name: string; argv: string[]; line: string; exit: number; user: string; machine?: string };
+  'auth.sudo': { user: string; ok: boolean; machine?: string };
+  'auth.su': { user: string; target: string; ok: boolean; machine?: string };
+  /** ssh/scp login attempt from `machine` (absent = workstation) to `target`. */
+  'auth.ssh': { user: string; target: string; ok: boolean; method: 'password' | 'key'; machine?: string };
   'mail.open': { path: string; messageId: string; subject: string; from: string };
   'mail.delivered': { path: string; subject: string; from: string };
   'image.open': { path: string };

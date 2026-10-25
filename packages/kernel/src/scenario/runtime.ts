@@ -62,6 +62,9 @@ export function normalizeAnswer(value: string, ops: Array<'trim' | 'lower' | 'no
 function matchLeaf(t: TriggerLeaf, e: AnyEvent): boolean {
   if (t.event !== e.type) return false;
   const p = e.payload as Record<string, unknown>;
+  // An event from a remote machine only matches triggers that name that machine,
+  // so `where: { path: /var/log/auth.log }` keeps meaning the workstation's file.
+  if (p.machine !== undefined && t.where?.machine === undefined && e.type !== 'auth.ssh') return false;
   for (const [k, v] of Object.entries(t.where ?? {})) {
     if (p[k] !== v) return false;
   }
