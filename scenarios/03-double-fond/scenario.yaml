@@ -1,0 +1,488 @@
+# ─────────────────────────────────────────────────────────────────────────────
+#  Kernel_Panic — Scénario 03 : DOUBLE FOND
+#  Difficulté : avancé · ~50 min · 3 machines · 4 fins
+#  Le journal dit une chose, la sauvegarde une autre. Une seule des deux a été réécrite.
+#  Solution complète : SOLUTION.md (spoilers)
+# ─────────────────────────────────────────────────────────────────────────────
+id: double-fond
+version: 1
+title: Double fond
+subtitle: Le journal dit qu'elle a signé. La sauvegarde dit le contraire.
+summary: >
+  Orbis Assurances a versé 2,4 millions d'euros pour l'incendie d'un entrepôt. D'après
+  l'application, c'est la responsable de l'indemnisation qui a validé le dossier. Elle
+  jure l'avoir refusé. Trois machines, deux versions de l'histoire, une seule vraie :
+  remontez de serveur en serveur jusqu'aux sauvegardes.
+difficulty: advanced
+estimatedMinutes: 50
+locale: fr
+
+machine:
+  hostname: ws-audit-02
+  domain: orbis.local
+  os: LumenOS 22.04.4 LTS
+  kernel: 6.8.0-41-lumen
+  ip: 10.40.5.12
+  clock: 2026-06-08T09:00:00+02:00
+
+defaults:
+  mtime: 2026-06-05T18:00:00+02:00
+
+session:
+  user: audit
+  email: audit@ws-audit-02.orbis.local
+  cwd: /home/audit
+  autostart:
+    - { app: mail }
+
+users:
+  - { name: root, uid: 0, home: /root, shell: /bin/bash }
+  - name: audit
+    uid: 1060
+    fullName: Analyste Ironveil
+    home: /home/audit
+    shell: /bin/bash
+    groups: [sudo]
+    password: Iv-Audit-26
+
+permissions:
+  - { path: /root, mode: "0700" }
+  - { path: /home/audit/.ssh, mode: "0700" }
+  - { path: /home/audit/.ssh/id_ed25519, mode: "0600" }
+  - { path: /home/audit/Maildir, mode: "0700" }
+  - { path: /home/audit/Maildir/**, mode: "0600" }
+
+processes:
+  - { pid: 1, user: root, cmd: /sbin/init splash, start: Jun08 }
+  - { pid: 702, user: root, cmd: "sshd: /usr/sbin/sshd -D [listener]", start: Jun08 }
+  - { pid: 2240, user: audit, cmd: /usr/bin/kp-session --audit, start: "09:00" }
+  - { pid: 4242, user: audit, cmd: -bash, start: "09:00" }
+
+network:
+  interfaces:
+    - { name: eth0, ip: 10.40.5.12, mac: "3c:52:82:7a:05:12" }
+  hosts:
+    orbis-assurances.fr: { ip: 51.159.61.10, http: "<!doctype html><title>Orbis Assurances</title>" }
+    laposte.example: { ip: 192.0.2.80, reachable: false }
+
+# ─── Machines distantes (fichiers dans hosts/<id>/) ──────────────────────────
+hosts:
+  - id: claims
+    machine: { hostname: srv-claims, domain: orbis.local, os: LumenOS Server 22.04.4 LTS, kernel: 6.8.0-41-lumen, ip: 10.40.1.20 }
+    defaults: { mtime: "2026-05-20T10:00:00+02:00" }
+    ssh:
+      banner: "Orbis Assurances — système d'information. Accès réservé, toute connexion est journalisée."
+      motd: |
+        claims-app 3.4 — LECTURE SEULE (audit en cours, demande h.vasseur)
+        Documentation : /opt/claims/README
+    users:
+      - { name: root, uid: 0, home: /root, shell: /bin/bash }
+      - { name: fmarchal, uid: 1010, fullName: Fabien Marchal, home: /home/fmarchal, shell: /bin/bash, groups: [adm, sudo, claims] }
+      - { name: jruiz, uid: 1011, fullName: Julie Ruiz, home: /home/jruiz, shell: /bin/bash }
+      - { name: audit, uid: 1060, fullName: Audit Ironveil, home: /home/audit, shell: /bin/bash, groups: [adm, sudo], password: Orb1s-Audit-0608 }
+    permissions:
+      - { path: /root, mode: "0700" }
+      - { path: /tmp, mode: "1777" }
+      - { path: /home/audit/.ssh, mode: "0700" }
+      - { path: /home/audit/.ssh/authorized_keys, mode: "0600", mtime: "2026-06-08T08:20:00+02:00" }
+      - { path: /var/log/auth.log, group: adm, mode: "0640", mtime: "2026-06-08T08:30:00+02:00" }
+      - { path: /var/log/claims, group: adm, mode: "0750" }
+      - { path: /var/log/claims/app.log, owner: claims, group: adm, mode: "0640", mtime: "2026-06-08T08:30:01+02:00" }
+      - { path: /var/mail/fmarchal, owner: fmarchal, mode: "0600", mtime: "2026-06-06T11:02:44+02:00" }
+      - { path: /opt/claims/keys, group: adm, mode: "0750" }
+      - { path: /opt/claims/keys/backup_ed25519, group: adm, mode: "0640", mtime: "2025-11-14T16:20:00+01:00" }
+      - { path: /opt/claims/keys/backup_ed25519.pub, mtime: "2025-11-14T16:20:00+01:00" }
+      - { path: /opt/claims/scripts/nightly-backup.sh, group: adm, mode: "0750" }
+      - { path: /opt/claims/bin/claimsctl, mode: "0755" }
+      - { path: /opt/claims/db/claims.csv, owner: claims, group: claims, mode: "0640", mtime: "2026-06-05T10:03:27+02:00" }
+    processes:
+      - { pid: 1, user: root, cmd: /sbin/init, start: May20 }
+      - { pid: 640, user: root, cmd: /usr/sbin/cron -f, start: May20 }
+      - { pid: 702, user: root, cmd: "sshd: /usr/sbin/sshd -D [listener]", start: May20 }
+      - { pid: 1180, user: claims, cmd: /opt/claims/bin/claims-app --read-only, cpu: 1.2, start: May20 }
+    network:
+      interfaces:
+        - { name: eth0, ip: 10.40.1.20 }
+    commands:
+      claimsctl:
+        path: /opt/claims/bin/claimsctl
+        summary: claims-app administration tool
+        rules:
+          - match: "^show SIN-2026-0412$"
+            output: |
+              dossier      SIN-2026-0412
+              assuré       SCI Entrepot Delcourt
+              montant      2 400 000,00 EUR
+              statut       PAYE
+              décision     APPROUVE par jruiz le 2026-06-03 14:02
+              règle R-12   seconde validation : ABSENTE
+              paiement     2026-06-05 10:03 (compta-batch)
+          - match: "^show (SIN-\\d{4}-\\d{4})$"
+            output: "claimsctl: voir /opt/claims/db/claims.csv pour les dossiers hors périmètre d'audit"
+          - match: "^list$"
+            output: |
+              SIN-2026-0388  PAYE        18 400,00
+              SIN-2026-0397  PAYE         7 350,00
+              SIN-2026-0401  APPROUVE    52 000,00
+              SIN-2026-0412  PAYE     2 400 000,00
+              SIN-2026-0415  REFUSE       1 290,00
+              SIN-2026-0420  EXPERTISE   96 000,00
+          - match: "^history SIN-2026-0412$"
+            output: |
+              claim_events SIN-2026-0412 : 0 ligne
+              (table purgée le 2026-06-03 23:42 par fmarchal — purge-events)
+          - match: "^history"
+            output: "claimsctl: usage: claimsctl history SIN-AAAA-NNNN"
+            exit: 2
+          - match: "^(set-status|purge-events)"
+            output: "claimsctl: base en lecture seule (audit en cours)"
+            exit: 1
+        fallback: |
+          usage: claimsctl show SIN-AAAA-NNNN | list | history SIN-AAAA-NNNN
+
+  - id: backup
+    machine: { hostname: srv-backup, domain: orbis.local, os: LumenOS Server 22.04.4 LTS, kernel: 6.8.0-41-lumen, ip: 10.40.1.30 }
+    defaults: { mtime: "2026-06-05T20:00:31+02:00" }
+    ssh:
+      from: [claims]
+      motd: "srv-backup — rétention 30 jours. Ne rien modifier à la main (voir /srv/backups/README.txt)."
+    users:
+      - { name: root, uid: 0, home: /root, shell: /bin/bash }
+      - { name: svc-backup, uid: 1100, fullName: Sauvegardes nocturnes, home: /home/svc-backup, shell: /bin/bash }
+    permissions:
+      - { path: /root, mode: "0700" }
+      - { path: /tmp, mode: "1777" }
+      - { path: /home/svc-backup/.ssh, mode: "0700" }
+      - { path: /home/svc-backup/.ssh/authorized_keys, mode: "0600" }
+      - { path: /srv/backups/**, owner: svc-backup }
+      - { path: /srv/backups/claims/claims-db-2026-06-02_0200.tgz, mtime: "2026-06-02T02:00:41+02:00" }
+      - { path: /srv/backups/claims/logs-2026-06-02_2000.tgz, mtime: "2026-06-02T20:00:37+02:00" }
+      - { path: /srv/backups/claims/claims-db-2026-06-03_0200.tgz, mtime: "2026-06-03T02:00:39+02:00" }
+      - { path: /srv/backups/claims/logs-2026-06-03_2000.tgz, mtime: "2026-06-03T20:00:35+02:00" }
+      - { path: /srv/backups/claims/claims-db-2026-06-04_0200.tgz, mtime: "2026-06-04T02:00:44+02:00" }
+      - { path: /srv/backups/claims/logs-2026-06-04_2000.tgz, mtime: "2026-06-04T20:00:36+02:00" }
+      - { path: /srv/backups/documents/rapport-expertise-SIN-2026-0412.zip, mtime: "2026-06-01T15:31:03+02:00" }
+    archives:
+      /srv/backups/documents/rapport-expertise-SIN-2026-0412.zip: { password: sin20260412 }
+    processes:
+      - { pid: 1, user: root, cmd: /sbin/init, start: May02 }
+      - { pid: 702, user: root, cmd: "sshd: /usr/sbin/sshd -D [listener]", start: May02 }
+
+# ─── Pièces à conviction ────────────────────────────────────────────────────
+evidence:
+  - id: app-log
+    title: La version officielle
+    summary: "app.log (srv-claims) : le 03/06 à 14:02, SIN-2026-0412 passe de EXPERTISE à APPROUVE « par=jruiz »."
+    source: /var/log/claims/app.log
+    machine: claims
+    tag: version officielle
+    trigger:
+      any:
+        - { event: fs.read, where: { path: /var/log/claims/app.log, machine: claims } }
+        - { event: cmd.exec, where: { name: claimsctl, machine: claims }, regex: { line: "show SIN-2026-0412" } }
+  - id: r12
+    title: La règle R-12 contournée
+    summary: "Au-delà d'un million, une double validation est obligatoire. Le 04/06, l'ordre de paiement est passé en batch, contrôle désactivé."
+    source: /opt/claims/README
+    machine: claims
+    tag: procédure
+    trigger: { event: fs.read, where: { path: /opt/claims/README, machine: claims } }
+  - id: expert-report
+    title: Le rapport de l'expert
+    summary: "Cabinet Lazare, 01/06 : deux foyers, traces d'essence, télésurveillance résiliée. Origine volontaire, recommandation de suspendre l'indemnisation."
+    source: /srv/backups/documents/rapport-expertise-SIN-2026-0412.zip
+    machine: backup
+    tag: fait
+    trigger:
+      any:
+        - { event: cmd.exec, where: { name: unzip, exit: 0, machine: backup }, regex: { line: "rapport-expertise" } }
+        - { event: cmd.exec, where: { name: unzip, exit: 0, machine: claims }, regex: { line: "rapport-expertise" } }
+        - { event: cmd.exec, where: { name: unzip, exit: 0 }, regex: { line: "rapport-expertise" } }
+  - id: db-snapshots
+    title: Deux nuits, deux statuts
+    summary: "Base sauvegardée le 03/06 à 02:00 : EXPERTISE. Le 04/06 à 02:00 : APPROUVE, « jruiz, 14:02 ». Le changement a eu lieu entre les deux."
+    source: /srv/backups/claims
+    machine: backup
+    tag: chronologie
+    trigger:
+      any:
+        - { event: cmd.exec, where: { name: tar, machine: backup }, regex: { line: "claims-db-2026-06-0[34]" } }
+        - { event: cmd.exec, where: { name: tar, machine: claims }, regex: { line: "claims-db-2026-06-0[34]" } }
+        - { event: cmd.exec, where: { name: tar }, regex: { line: "claims-db-2026-06-0[34]" } }
+  - id: original-log
+    title: Le journal d'origine
+    summary: "Sauvegarde des journaux du 03/06 à 20:00 : à 14:02, Julie Ruiz a REFUSÉ le dossier (« origine volontaire suspectée ») et généré le courrier de refus."
+    source: /srv/backups/claims/logs-2026-06-03_2000.tgz
+    machine: backup
+    tag: contradiction
+    trigger:
+      any:
+        - { event: cmd.exec, where: { name: tar, machine: backup }, regex: { line: "logs-2026-06-03_2000" } }
+        - { event: cmd.exec, where: { name: tar, machine: claims }, regex: { line: "logs-2026-06-03_2000" } }
+        - { event: cmd.exec, where: { name: tar }, regex: { line: "logs-2026-06-03_2000" } }
+        - { event: cmd.exec, where: { name: zcat, machine: backup }, regex: { line: "logs-2026-06-03_2000" } }
+  - id: sudo-trail
+    title: La nuit du 3 juin
+    summary: "auth.log (srv-claims) : fmarchal se connecte à 23:39, force le statut « --as jruiz » à 23:41, purge l'historique à 23:42, ouvre app.log dans vi à 23:44, efface son .bash_history à 23:47."
+    source: /var/log/auth.log
+    machine: claims
+    tag: aveu technique
+    trigger: { event: fs.read, where: { path: /var/log/auth.log, machine: claims } }
+  - id: purge
+    title: L'historique purgé
+    summary: "claimsctl history : la table des événements du dossier a été vidée le 03/06 à 23:42 par fmarchal."
+    machine: claims
+    tag: dissimulation
+    trigger: { event: cmd.exec, where: { name: claimsctl, machine: claims }, regex: { line: "history SIN-2026-0412" } }
+  - id: kickback
+    title: Le cousin
+    summary: "/var/mail/fmarchal : Christophe Delcourt, gérant de la SCI, demande à Fabien d'« arranger » le statut contre 10 % versés à Nadège. Le 06/06 : « Reçu hier. Merci, cousin. »"
+    source: /var/mail/fmarchal
+    machine: claims
+    tag: mobile
+    trigger: { event: fs.read, where: { path: /var/mail/fmarchal, machine: claims } }
+
+# ─── Objectifs ───────────────────────────────────────────────────────────────
+objectives:
+  - id: briefing
+    title: Lire la mission
+    description: La directrice de l'audit interne d'Orbis vous a écrit.
+    trigger: { event: mail.open, where: { messageId: mission-0608.hv@orbis-assurances.fr } }
+    hints:
+      - L'app Mail est ouverte au démarrage.
+
+  - id: claims-in
+    title: Entrer sur srv-claims
+    description: Le dossier vit sur le serveur de l'application sinistres. Votre clé SSH y est autorisée.
+    requires: [briefing]
+    trigger: { event: auth.ssh, where: { target: claims, ok: true } }
+    hints:
+      - Le terminal sait se connecter à une autre machine avec `ssh utilisateur@machine`.
+      - "ssh audit@srv-claims — la clé dans ~/.ssh est utilisée automatiquement, pas de mot de passe."
+
+  - id: official
+    title: La version officielle
+    description: D'après l'application, qui a validé le dossier SIN-2026-0412 ? Donnez son identifiant.
+    requires: [claims-in]
+    answer:
+      label: Identifiant
+      placeholder: ex. dupont
+      accept: [jruiz, julie ruiz, ruiz]
+      normalize: [trim, lower, nospace]
+    hints:
+      - Lisez /opt/claims/README sur srv-claims, il dit où tout se trouve.
+      - "Le journal applicatif est dans /var/log/claims/app.log, et l'outil `claimsctl show SIN-2026-0412` résume le dossier."
+      - "grep 0412 /var/log/claims/app.log"
+
+  - id: backup-in
+    title: Atteindre les sauvegardes
+    description: srv-backup n'est joignable que depuis srv-claims, et vous n'y avez pas de compte. Pourtant, quelque chose y entre chaque nuit.
+    requires: [claims-in]
+    trigger: { event: auth.ssh, where: { target: backup, ok: true } }
+    hints:
+      - Les sauvegardes sont planifiées sur srv-claims. Regardez /etc/cron.d, puis le script qu'il lance.
+      - Le script se connecte avec une clé de service. Votre compte audit est dans le groupe qui peut la lire.
+      - "Depuis srv-claims : ssh -i /opt/claims/keys/backup_ed25519 svc-backup@srv-backup"
+
+  - id: report
+    title: Ce que disait l'expert
+    description: Le rapport d'expertise est archivé chiffré sur srv-backup. Selon l'expert, quelle est l'origine de l'incendie ?
+    requires: [backup-in]
+    answer:
+      label: Origine de l'incendie
+      placeholder: un mot
+      accept: [volontaire, origine volontaire, incendie volontaire, criminelle, criminel, origine criminelle, incendie criminel]
+      normalize: [trim, lower, nospace]
+    hints:
+      - "`unzip -l` liste une archive sans l'ouvrir. Pour l'extraire, il faut un dossier où vous avez le droit d'écrire (votre home, /tmp)."
+      - Le mot de passe suit une convention du service indemnisation. Julie Ruiz la connaît, écrivez-lui (Messages).
+      - "cd /tmp && unzip /srv/backups/documents/rapport-expertise-SIN-2026-0412.zip — mot de passe : sin20260412"
+
+  - id: original
+    title: Ce qui s'est vraiment passé à 14:02
+    description: Les journaux sont sauvegardés chaque soir. Quelle décision Julie Ruiz a-t-elle réellement enregistrée le 3 juin à 14:02 ?
+    requires: [backup-in]
+    answer:
+      label: Décision
+      placeholder: un mot
+      accept: [refuse, refusé, refus, refused, refusal, rejet, rejeté]
+      normalize: [trim, lower, nospace]
+    hints:
+      - Les journaux du 3 juin au soir sont dans /srv/backups/claims. `tar -tzf` en liste le contenu.
+      - "Extrayez-les ailleurs que dans /srv/backups : mkdir /tmp/j && tar -xzf /srv/backups/claims/logs-2026-06-03_2000.tgz -C /tmp/j"
+      - "Comparez avec la version du lendemain : diff /tmp/j3/claims/app.log /tmp/j4/claims/app.log"
+
+  - id: forger
+    title: La main qui a réécrit
+    description: Le journal actuel a été modifié après 20:00 le 3 juin. Qui l'a fait ?
+    requires: [original]
+    answer:
+      label: Identifiant
+      placeholder: ex. dupont
+      accept: [fmarchal, fabien marchal, marchal]
+      normalize: [trim, lower, nospace]
+    hints:
+      - Pour modifier un journal appartenant à claims, il faut être root. Les élévations de privilèges sont journalisées.
+      - "Sur srv-claims : grep sudo /var/log/auth.log"
+    onComplete:
+      - { deliver: 02-vasseur-marchal.eml }
+
+  - id: when
+    title: L'heure exacte
+    description: À quelle heure le journal applicatif a-t-il été ouvert pour être réécrit ? (HH:MM)
+    requires: [forger]
+    answer:
+      label: Heure
+      placeholder: HH:MM
+      accept: ["23:44", "23h44", "23:44:37"]
+      normalize: [trim, lower, nospace]
+    hints:
+      - Cherchez la commande qui édite /var/log/claims/app.log dans auth.log.
+
+  - id: verdict
+    title: Votre rapport
+    description: >
+      Hélène Vasseur attend un nom. Vous pouvez rendre le rapport dès que vous savez ce
+      que disent l'application et l'expert ; à vous de juger quand vous en savez assez.
+    requires: [official, report]
+    choice:
+      prompt: Que conclut votre rapport ?
+      options:
+        - id: blame-ruiz
+          label: « Julie Ruiz a validé le dossier malgré le rapport d'expertise et sans double validation. »
+          detail: C'est ce que dit l'application.
+          requiresEvidence: [app-log]
+          flags: [blamed-ruiz]
+        - id: name-marchal
+          label: « Fabien Marchal a falsifié la décision et réécrit le journal. »
+          detail: La sauvegarde et auth.log se recoupent.
+          requiresEvidence: [original-log, sudo-trail]
+          flags: [forger-named]
+        - id: collusion
+          label: « Fabien Marchal a falsifié le dossier au profit de son cousin Christophe Delcourt, contre 10 %. »
+          detail: La falsification, la preuve technique et le mobile.
+          requiresEvidence: [original-log, sudo-trail, kickback]
+          flags: [fraud-exposed]
+        - id: inconclusive
+          label: « Les éléments ne permettent pas de conclure. »
+          detail: Un rapport prudent. Peut-être trop.
+    onComplete:
+      - { end: true }
+
+  # ── Bonus ──
+  - id: motive
+    title: "Bonus — pourquoi ?"
+    description: On ne réécrit pas un journal à 23 h 44 sans raison.
+    optional: true
+    requires: [forger]
+    trigger: { event: fs.read, where: { path: /var/mail/fmarchal, machine: claims } }
+    hints:
+      - Les boîtes aux lettres locales d'un serveur sont dans /var/mail. Il faut être root pour lire celle d'un autre.
+      - "Sur srv-claims : sudo cat /var/mail/fmarchal (mot de passe du compte audit dans le mail de mission)"
+
+  - id: purge-found
+    title: "Bonus — l'historique effacé"
+    description: L'application garde un historique des événements de chaque dossier. Que reste-t-il de celui-ci ?
+    optional: true
+    requires: [claims-in]
+    trigger: { event: cmd.exec, where: { name: claimsctl, machine: claims }, regex: { line: "history SIN-2026-0412" } }
+    hints:
+      - "claimsctl sans argument affiche son aide."
+
+endings:
+  - id: double-fond
+    title: DOUBLE FOND
+    flags: [fraud-exposed]
+    text: >
+      Orbis dépose plainte le jour même. Le virement est gelé sur le compte de la SCI avant
+      que la part de Nadège ne parte. Christophe Delcourt est placé en garde à vue pour
+      escroquerie à l'assurance et destruction volontaire ; Fabien Marchal pour faux et
+      accès frauduleux. Julie Ruiz reçoit une lettre d'excuses de la direction, puis une
+      promotion. Hélène Vasseur vous envoie un seul mot : « Merci. »
+  - id: faussaire
+    title: LE FAUSSAIRE
+    flags: [forger-named]
+    text: >
+      Fabien Marchal est mis à pied et l'escroquerie est signalée. Mais sans le mobile,
+      l'enquête piétine sur la SCI : Christophe Delcourt plaide la bonne foi, l'argent est
+      déjà ailleurs. Julie Ruiz est blanchie. Il manquait une pièce à votre rapport, et
+      quelqu'un, quelque part, a touché ses 10 %.
+  - id: mauvaise-signature
+    title: LA MAUVAISE SIGNATURE
+    flags: [blamed-ruiz]
+    text: >
+      Julie Ruiz est licenciée pour faute grave le 12 juin. Elle conteste, et son avocat
+      demande les sauvegardes. Trois semaines plus tard, le journal du 3 juin au soir
+      ressort de srv-backup devant les prud'hommes. Orbis transige, Ironveil perd le
+      client, et votre nom apparaît dans les conclusions adverses.
+  - id: classe
+    title: CLASSÉ SANS SUITE
+    text: >
+      Votre rapport ne conclut pas. Orbis passe la perte en provision, Julie Ruiz reste
+      suspecte aux yeux de tous, et les sauvegardes de juin disparaissent à l'échéance de
+      la rétention, le 3 juillet. Personne ne saura ce qu'elles disaient.
+
+# ─── Messagerie interne ──────────────────────────────────────────────────────
+chat:
+  contacts:
+    - { id: julie, name: Julie Ruiz, role: Responsable indemnisation · Orbis }
+    - { id: yasmine, name: Yasmine Haddad, role: Analyste senior · Ironveil }
+  history:
+    yasmine:
+      - { from: yasmine, text: "Première mission sur plusieurs machines. Prends des notes de qui est où : on se perd vite entre les prompts.", at: "2026-06-08T08:50:00+02:00" }
+    julie:
+      - { from: julie, text: "Bonjour. Hélène m'a dit que vous enquêtiez. Je n'ai JAMAIS validé ce dossier. Je l'ai refusé, le 3 juin, en début d'après-midi.", at: "2026-06-08T08:56:00+02:00" }
+  nodes:
+    - id: julie-convention
+      contact: julie
+      trigger: { event: objective.complete, where: { id: claims-in } }
+      messages:
+        - "Pour le rapport de l'expert : nos pièces jointes sont chiffrées avec le numéro de dossier, en minuscules et sans tirets. C'est la convention du service."
+      replies:
+        - { id: who-admin, text: "Qui peut modifier un dossier après une décision ?", next: julie-admins }
+        - { id: thanks, text: "Merci, je regarde." }
+    - id: julie-admins
+      contact: julie
+      messages:
+        - "En principe, personne. En pratique, les administrateurs de la base. Chez nous, c'est Fabien Marchal : il est root sur srv-claims depuis douze ans."
+      replies:
+        - { id: ok, text: "C'est noté.", flags: [knows-admin] }
+    - id: julie-proof
+      contact: julie
+      trigger: { event: objective.complete, where: { id: original } }
+      messages:
+        - "Hélène me dit que vous avez avancé. Vous avez trouvé quelque chose ?"
+      replies:
+        - id: show
+          text: "La sauvegarde des journaux du 3 juin à 20:00 montre votre refus à 14:02."
+          requiresEvidence: [original-log]
+          next: julie-relief
+        - { id: wait, text: "Je ne peux encore rien dire." }
+    - id: julie-relief
+      contact: julie
+      messages:
+        - "…Merci. Ça fait cinq jours que tout le monde me regarde comme une voleuse."
+        - "Si le journal a été réécrit, quelqu'un est entré après 20:00. Ce n'est pas moi : je suis partie à 18:00."
+    - id: yasmine-pivot
+      contact: yasmine
+      trigger: { event: auth.ssh, where: { target: backup, ok: false } }
+      messages:
+        - "srv-backup te refuse ? Normal, tu n'y as pas de compte. Mais quelque chose y dépose les sauvegardes chaque nuit. Demande-toi comment il s'authentifie."
+    - id: yasmine-diff
+      contact: yasmine
+      trigger: { event: objective.complete, where: { id: backup-in } }
+      messages:
+        - "Tu es sur les sauvegardes. Rappel : on n'extrait jamais sur place. Copie ou extrais dans /tmp, puis compare deux versions avec diff."
+
+intro:
+  title: DOUBLE FOND
+  lines:
+    - "Lundi 8 juin 2026 — 09:00 — Valmont."
+    - "Vendredi, Orbis Assurances a versé 2,4 millions d'euros pour l'incendie d'un entrepôt."
+    - "L'application dit que Julie Ruiz a validé le dossier. Julie jure l'avoir refusé."
+    - "Vous êtes sur un poste d'audit. Le dossier vit sur srv-claims. Les sauvegardes, plus loin encore."
+    - "Hélène Vasseur, directrice de l'audit interne, vous a laissé vos accès."
+
+outro:
+  title: DOSSIER CLOS
+  text: Le rapport est parti.

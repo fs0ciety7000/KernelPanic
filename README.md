@@ -15,6 +15,7 @@
 | 00 | **Premier jour** | Tutoriel · ~12 min | Premier matin chez Ironveil, cabinet de réponse à incident. Votre mentore vous a préparé une machine d'entraînement. |
 | 01 | **Ghost Shift** | Débutant → intermédiaire · ~40 min | 03:12 : le compte de l'admin d'un opérateur électrique programme un firmware non signé sur 14 sous-stations. Exécution à 09:00. |
 | 02 | **Canary** | Intermédiaire · ~40 min · 4 fins | On vous paie pour démasquer la source d'une fuite dans la presse. Les fichiers racontent une autre histoire, et c'est vous qui décidez ce que dira votre rapport. |
+| 03 | **Double fond** | Avancé · ~50 min · 3 machines · 4 fins | 2,4 M€ versés pour un incendie. Le journal dit que la responsable a validé, elle jure avoir refusé. De serveur en serveur, jusqu'aux sauvegardes. |
 
 Comme dans *Orwell*, chaque enquête accumule des **pièces à conviction** sourcées, dont certaines sont trompeuses. Les **décisions** finales ne sont possibles qu'avec les bonnes pièces, et mènent à des **fins différentes**, mémorisées d'une partie à l'autre.
 

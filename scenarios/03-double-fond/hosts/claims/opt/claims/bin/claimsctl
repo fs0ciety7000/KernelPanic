@@ -1,0 +1,3 @@
+#!/usr/bin/env python3
+# claimsctl — claims-app 3.4 administration tool (bytecode bundle)
+# usage: claimsctl show|list|history|set-status|purge-events …

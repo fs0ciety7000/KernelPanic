@@ -701,7 +701,7 @@ class AwkParser {
       return e;
     }
     if (t.t === 'name') {
-      const fn = BUILTINS[t.v];
+      const fn = Object.hasOwn(BUILTINS, t.v) ? BUILTINS[t.v] : undefined;
       if (fn && this.peek('(')) {
         this.i++;
         const args: Expr[] = [];

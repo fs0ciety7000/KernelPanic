@@ -150,6 +150,7 @@ trigger:
 | `web.visit` | `url, host, path, title, status` | Navigateur |
 | `chat.message` | `contact, text` | runtime (un PNJ écrit) |
 | `chat.reply` | `contact, node, reply` | Messagerie (réponse du joueur) |
+| `auth.ssh` | `user, target, ok, method, machine?` | `ssh`/`scp` (connexion à une machine distante) |
 
 ### 3.2 Effets `onComplete`
 
@@ -270,6 +271,42 @@ chat:
 - Un nœud avec `trigger` se joue tout seul (une fois) ; sans trigger, il est atteint par `next` ou par l'effet `{ chat: <nœud> }` (utilisable dans tous les `onComplete`/`onSelect`).
 - Les réponses peuvent exiger des pièces (`requiresEvidence`), lever des flags (pour les fins) et lancer des effets.
 - Événements : `chat.message` `{ contact, text }`, `chat.reply` `{ contact, node, reply }`.
+
+### 3.7 Machines distantes (`ssh`, `scp`)
+
+Un scénario peut déclarer d'autres machines. Leurs fichiers vivent dans `hosts/<id>/`, comme `fs/` pour le poste du joueur.
+
+```yaml
+hosts:
+  - id: claims                              # identifiant stable (événements : machine: claims)
+    machine: { hostname: srv-claims, domain: orbis.local, os: LumenOS Server 22.04, kernel: 6.8.0, ip: 10.40.1.20 }
+    aliases: [claims.orbis.local]           # facultatif (hostname, FQDN et IP résolvent toujours)
+    ssh:
+      banner: "Accès réservé."              # avant le mot de passe
+      motd: "claims-app 3.4"                # après la connexion
+      from: [local]                         # machines d'où elle est joignable ("local" = le poste). Défaut : partout
+    users:                                  # comme pour le poste (password haché à la compilation)
+      - { name: audit, uid: 1060, home: /home/audit, groups: [adm, sudo], password: ... }
+    permissions: [...]                      # mêmes règles que pour fs/
+    defaults: { mtime: ... }
+    processes: [...]
+    network: { interfaces: [...] }
+    commands: { claimsctl: { ... } }        # outils scénarisés propres à cette machine
+    archives:                               # mots de passe des zip construits depuis hosts/<id>/…/x.zip.d/
+      /srv/backups/documents/rapport.zip: { password: ... }
+```
+
+- **Authentification réelle** : une clé dont le `.pub` (à côté de la clé privée, lisible par le joueur) figure dans `~/.ssh/authorized_keys` du compte visé, sinon le mot de passe (3 essais). `ssh -i <clé>` choisit la clé ; sans `-i`, `~/.ssh/id_ed25519`, `id_ecdsa`, `id_rsa`.
+- Chaque connexion écrit une ligne `sshd` dans `/var/log/auth.log` de la machine visée, et `sudo` journalise sur la machine où il s'exécute : le joueur laisse des traces, comme un vrai administrateur.
+- `ssh hôte commande` exécute puis rend la main ; `exit` ferme la connexion (« Connection to … closed. ») et rend le dossier courant du poste. `scp [-r]` copie dans les deux sens. Les applications du bureau ne montrent que le poste : pour lire un fichier distant dans Images ou Notes, il faut le rapatrier avec `scp`.
+- **Événements** : tout ce qui se passe sur une machine distante (`fs.*`, `cmd.exec`, `auth.sudo`…) porte `machine: <id>`. Un trigger ne les voit **que s'il nomme la machine** : `{ event: fs.read, where: { path: /var/log/auth.log, machine: claims } }`. Sans `machine`, il ne concerne que le poste.
+- Nouvel événement `auth.ssh` `{ user, target, ok, method: password|key, machine? }`, où `target` est l'id de la machine visée et `machine` celle d'où part la connexion (absente = le poste).
+- Une pièce dont la source est distante déclare `machine: <id>` ; le Dossier l'affiche `hôte:/chemin` (sans l'ouvrir).
+- Sauvegardes : les modifications de chaque machine sont conservées (`SaveGame.hosts`).
+
+### 3.8 Archives
+
+Dans `fs/` ou `hosts/<id>/`, un dossier `nom.zip.d/`, `nom.tar.d/`, `nom.tgz.d/` ou `nom.tar.gz.d/` devient l'archive `nom.zip` (etc.) avec son contenu ; un fichier `x.log.gz.src` devient `x.log.gz`. Les zip peuvent être chiffrés (section `archives:` ci-dessus, ou à la racine pour le poste) : le contenu n'apparaît pas en clair dans le bundle. Côté joueur : `tar -tzf / -xzf -C`, `gzip`, `gunzip`, `zcat`, `zip [-e|-P]`, `unzip [-l] [-P] [-d]`.
 
 ## 4. Commandes scénarisées
 

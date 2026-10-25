@@ -37,8 +37,8 @@ Agents : voir `AGENTS.md`.
 | 2.1 | ✅ **Scénario 02 « Canary »** (intermédiaire) : fuite vers la presse, client complice, 8 pièces dont une trompeuse, 4 fins | scenario-writer |
 | 2.1b | ✅ Moteur « à la *Orwell* » : pièces à conviction, décisions conditionnées par les pièces, fins multiples mémorisées entre parties | os-engine |
 | 2.1c | ✅ **Scénario 00 « Premier jour »** : tutoriel (toutes les apps, sudo, pièces, choix) | scenario-writer |
-| 2.1d | Scénario 03 (avancé) : plusieurs machines (dépend de 3.1), pièces contradictoires entre machines | scenario-writer |
-| 2.2 | Commandes : `tar`/`unzip`/`gzip` simulés, `diff`, `awk` minimal, substitution `$(…)`, `for` simple (✅ déjà : `sort -t -k`, `xxd -p/-r`) | os-engine |
+| 2.1d | ✅ **Scénario 03 « Double fond »** (avancé) : 3 machines, pivot par clé de service, sauvegardes qui contredisent le journal, zip chiffré, 4 fins | scenario-writer |
+| 2.2 | ✅ Shell : substitution `$(…)` et backticks, `for … in …; do …; done` ; outils `awk` (sous-ensemble), `sed`, `diff` (-u), `seq`, `tee`, `xargs`, `tar`/`gzip`/`zcat`, `zip`/`unzip` (chiffrement réel), `wc` total ; `sort -t -k`, `xxd -p/-r` | os-engine |
 | 2.3 | ✅ App **Navigateur** : sites des scénarios (`web/`), iframe sandboxée sans scripts, routes de formulaires, DNS/timeout/blocage, `file://`, historique-fichier | apps-developer |
 | 2.4 | ✅ App **Messages** : PNJ déclenchés par l'enquête, réponses à choix (pièces requises, flags) | apps-developer |
 | 2.4b | ✅ Écran d'ouverture de session + verrouillage (vrai mot de passe ou accès forensique) | design-system |
@@ -50,7 +50,8 @@ Agents : voir `AGENTS.md`.
 
 | # | Tâche | Agent |
 |---|---|---|
-| 3.1 | **Serveurs distants** : `ssh host` ouvre une seconde machine (VFS propre) — d'abord locale (bundle multi-machines), puis côté serveur (WebSocket) | architect + os-engine |
+| 3.1 | ✅ **Machines distantes locales** (ADR-009) : `hosts:` dans le scénario, `ssh` (clé ou mot de passe, bannière, known_hosts, auth.log), `scp -r`, `ssh.from` pour les réseaux cloisonnés, événements étiquetés `machine` | architect + os-engine |
+| 3.1b | Machines distantes côté serveur (WebSocket, état partagé, leaderboard anti-triche) | backend |
 | 3.2 | Validation serveur des réponses + **leaderboard** (temps, indices) | backend |
 | 3.3 | Mode chronométré (JOB qui s'exécute vraiment à l'heure de jeu) et fins alternatives | scenario-writer |
 | 3.4 | Workshop : chargement de scénarios communautaires (bundle signé, sandbox stricte) | architect |
@@ -61,4 +62,5 @@ Agents : voir `AGENTS.md`.
 
 - Rendu de listes longues (Logs > 5 000 lignes) : virtualiser si un scénario l'exige.
 - `localStorage` limité (~5 Mo) : passer à IndexedDB si les diffs VFS grossissent (scénarios avec gros fichiers créés par le joueur).
-- Le shell n'a pas de substitution de commande ni de boucles : volontaire au MVP, à réévaluer avec 2.2.
+- Le shell n'a que des boucles `for` sur une ligne (pas de `while`, `if`, fonctions) : suffisant pour l'enquête, à réévaluer si un scénario l'exige.
+- `awk` est un sous-ensemble (pas de tableaux associatifs ni de `getline`) ; `sort | uniq -c` couvre les comptages.

@@ -1,0 +1,3 @@
+# Orbis — sauvegardes nocturnes vers srv-backup
+0 2 * * *  root  /opt/claims/scripts/nightly-backup.sh db
+0 20 * * * root  /opt/claims/scripts/nightly-backup.sh logs

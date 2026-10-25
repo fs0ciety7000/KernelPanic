@@ -1,0 +1,4 @@
+127.0.0.1	localhost
+10.40.5.12	ws-audit-02.orbis.local ws-audit-02
+10.40.1.20	srv-claims.orbis.local srv-claims
+# srv-backup (10.40.1.30) : réseau de sauvegarde, accès depuis srv-claims uniquement

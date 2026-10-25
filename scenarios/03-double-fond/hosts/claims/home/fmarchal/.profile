@@ -1,0 +1,2 @@
+# ~/.profile
+export EDITOR=vi
