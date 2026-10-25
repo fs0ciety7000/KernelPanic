@@ -103,3 +103,8 @@ on ne dramatise qu'avec des preuves en main.
   piéger. Les réponses attendues sont hachées dans le bundle (aucun spoil lisible).
 - Bruit modéré (tutoriel) : mail d'adieu de Léo, newsletter café, invitation au point d'équipe,
   photo d'équipe, antisèche de commandes, charte du lab — ils humanisent sans égarer.
+
+## Bonus — navigateur et messagerie
+
+- **Bonus — ouvrir le navigateur** : globe de la barre des tâches → favori « Aide-mémoire » (`lab.ironveil.local/wiki/aide-memoire`).
+- **Bonus — répondre à Yasmine** : après l'objectif « ticket », Yasmine écrit dans Messages ; choisir l'une des deux réponses valide le bonus.

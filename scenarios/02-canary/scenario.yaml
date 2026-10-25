@@ -113,6 +113,70 @@ commands:
       usage: accesslog --date YYYY-MM-DD
       Building B (laboratoire qualité) — badge readers B-LAB-ENTRY / B-LAB-EXIT
 
+# ─── Navigateur (pages dans web/) ────────────────────────────────────────────
+web:
+  home: aqualis.fr
+  bookmarks:
+    - { label: Aqualis, url: "https://aqualis.fr/" }
+    - { label: Résultats publiés T1, url: "https://aqualis.fr/qualite" }
+    - { label: Le Veilleur, url: "https://leveilleur.fr/" }
+    - { label: LIMS, url: "http://lims.aqualis.local/" }
+
+# ─── Messagerie interne ──────────────────────────────────────────────────────
+chat:
+  contacts:
+    - { id: sorel, name: Laurent Sorel, role: Directeur juridique · votre client }
+    - { id: samir, name: Samir Rahmani, role: Responsable du laboratoire qualité }
+  history:
+    sorel:
+      - { from: sorel, text: "Votre compte est actif. Je vous rappelle que cette mission est strictement confidentielle.", at: "2026-05-13T09:12:00+02:00" }
+  nodes:
+    - id: samir-hello
+      contact: samir
+      trigger: { event: objective.complete, where: { id: root } }
+      messages:
+        - "Bonjour. Samir Rahmani, je dirige le labo. On m'a dit que vous auditiez le poste partagé."
+        - "Si vous avez besoin d'un protocole ou d'un export, demandez-moi."
+      replies:
+        - { id: ask-night, text: "Qui était au laboratoire le 6 mai au soir ?", next: samir-night }
+        - { id: nothing, text: "Rien pour l'instant, merci." }
+    - id: samir-night
+      contact: samir
+      messages:
+        - "Moi. Je suis repassé tard pour… un étalonnage. Je n'ai croisé personne."
+      replies:
+        - { id: noted, text: "C'est noté.", flags: [samir-evasive] }
+    - id: samir-mails
+      contact: samir
+      trigger: { event: evidence.found, where: { id: order-mail } }
+      messages:
+        - "Vous avez ouvert ma boîte mail. Je l'ai vu dans les journaux."
+      replies:
+        - id: why-keep
+          text: "Vous avez gardé les originaux, et vous les avez copiés le 6 mai. Pourquoi ?"
+          requiresEvidence: [original-results, usb-copy]
+          next: samir-truth
+        - { id: silent, text: "Je ne peux rien vous dire." }
+    - id: samir-truth
+      contact: samir
+      messages:
+        - "Parce qu'un jour quelqu'un poserait la question, et que je ne voulais pas être celui qui avait signé des chiffres faux."
+        - "La clé est chez moi. Je n'ai rien donné à la presse. Ce soir-là, je n'étais pas seul à vouloir que ça se sache."
+      onComplete:
+        - { flag: samir-confided }
+    - id: sorel-pressure
+      contact: sorel
+      trigger: { event: objective.complete, where: { id: night } }
+      messages:
+        - "Le conseil d'administration se réunit jeudi. Il me faut un nom, pas une hypothèse."
+      replies:
+        - { id: working, text: "Mon rapport sera prêt aujourd'hui." }
+        - { id: careful, text: "Les chiffres originaux posent un vrai problème sanitaire.", next: sorel-cold }
+    - id: sorel-cold
+      contact: sorel
+      messages:
+        - "Ce n'est pas l'objet de votre mission. Tenez-vous-en au périmètre du contrat."
+
 # ─── Pièces à conviction ────────────────────────────────────────────────────
 evidence:
   - id: article

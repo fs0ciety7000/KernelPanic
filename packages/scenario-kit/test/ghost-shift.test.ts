@@ -139,3 +139,33 @@ describe('ghost-shift playthrough', () => {
     expect(k2.vfs.readdir('/home/elias/Maildir/new', k2.users.cred('root')).length).toBe(2);
   });
 });
+
+describe('ghost-shift web and chat', () => {
+  it('serves the intranet, blocks the phishing domain and keeps the browser history as a clue', async () => {
+    const p = play();
+    const k = p.kernel;
+    expect(k.fetch(bundle.web!.home!)).toMatchObject({ status: 'ok', title: 'Intranet Lumen Grid' });
+    for (const b of bundle.web!.bookmarks!) expect(k.fetch(b.url).status).toBe('ok');
+    expect(k.fetch('https://vpn.lumengr1d.com/renew')).toMatchObject({ status: 'blocked', message: expect.stringContaining('SOC') });
+    expect(k.fetch('http://ot-deploy.lumengrid.local/')).toMatchObject({ html: expect.stringContaining('JOB-0417') });
+    expect((await p.run('cat ~/.local/share/kp-browser/history')).out).toContain('vpn.lumengr1d.com/renew');
+  });
+
+  it('Tomás reacts to progress and only acts on proof', async () => {
+    const p = play();
+    const rt = p.kernel.runtime;
+    expect(rt.state.chat.log.tomas).toHaveLength(4); // pre-existing history
+    p.openMail('/home/elias/Maildir/new/1776406020.M412P2210.ws-varga.eml');
+    expect(rt.state.chat.unread.tomas).toBe(2);
+    expect(rt.chatReply('tomas', 'ask-vpn')).toBe(true);
+    expect(rt.chatReply('tomas', 'ok')).toBe(true);
+    expect(rt.state.flags).toContain('tomas-vpn-tip');
+    p.kernel.bus.emit('fs.read', { path: '/var/log/auth.log', user: 'elias' });
+    rt.submit('intrusion-ip', '185.220.101.47');
+    p.kernel.bus.emit('fs.read', { path: '/home/elias/.cache/.sync/sync.sh', user: 'elias' });
+    expect(rt.chatReplies('tomas').find((r) => r.id === 'proof')!.missing).toEqual(['firmware']);
+    await p.run('strings /tmp/.fw/lumen-fw-4.2.1-hotfix.img');
+    expect(rt.chatReply('tomas', 'proof')).toBe(true);
+    expect(rt.state.flags).toContain('substations-manual');
+  });
+});

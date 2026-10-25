@@ -193,6 +193,78 @@ commands:
       See ~/Documents/procedures/runbook-lumenctl.md
 
 # ─── Pièces à conviction ────────────────────────────────────────────────────
+# ─── Navigateur (pages dans web/) ────────────────────────────────────────────
+web:
+  home: intranet.lumengrid.local
+  bookmarks:
+    - { label: Intranet, url: "https://intranet.lumengrid.local/" }
+    - { label: Astreinte OT, url: "https://intranet.lumengrid.local/astreinte" }
+    - { label: Passerelle OT, url: "http://ot-deploy.lumengrid.local/" }
+    - { label: lumengrid.fr, url: "https://lumengrid.fr/" }
+  blocked:
+    lumengr1d.com: "Domaine usurpant Lumen Grid — bloqué par le SOC le 17/04 à 07:55."
+    vpn.lumengr1d.com: "Domaine usurpant Lumen Grid — bloqué par le SOC le 17/04 à 07:55."
+    drop.k4de.net: "Destination d'exfiltration connue — bloquée par le SOC."
+
+# ─── Messagerie interne ──────────────────────────────────────────────────────
+chat:
+  contacts:
+    - { id: tomas, name: Tomás Ferreira, role: Technicien OT · astreinte }
+    - { id: nadia, name: Nadia Kessler, role: RSSI }
+  history:
+    tomas:
+      - { from: tomas, text: "Tu pars toujours demain ? Le GR20 en avril, t'es fou 😄", at: "2026-04-16T17:31:00+02:00" }
+      - { from: me, text: "Ce soir même. Plus de réseau jusqu'au 26, c'est le principe.", at: "2026-04-16T17:33:00+02:00" }
+      - { from: tomas, text: "Ok. Je suis d'astreinte, rien de prévu sur les sous-stations de toute façon.", at: "2026-04-16T17:34:00+02:00" }
+      - { from: me, text: "Je dois encore renouveler mon VPN, le support m'a relancé. Après ça je coupe tout.", at: "2026-04-16T18:49:00+02:00" }
+    nadia:
+      - { from: nadia, text: "Je vous ai envoyé le briefing par mail. Lisez-le en premier.", at: "2026-04-17T08:10:00+02:00" }
+  nodes:
+    - id: tomas-hello
+      contact: tomas
+      trigger: { event: objective.complete, where: { id: briefing } }
+      messages:
+        - "Salut, c'est Tomás, l'astreinte OT. Nadia m'a prévenu que vous étiez sur le poste d'Elias."
+        - "Je confirme : personne chez nous n'a programmé JOB-0417. Elias est parti hier soir, injoignable."
+      replies:
+        - { id: ask-vpn, text: "Il parlait d'un renouvellement de VPN hier soir ?", next: tomas-vpn }
+        - { id: thanks, text: "Merci, je m'en occupe." }
+    - id: tomas-vpn
+      contact: tomas
+      messages:
+        - "Oui, un mail du « support » qui le relançait. On n'a pas lancé de renouvellement cette semaine…"
+        - "Regardez son historique de navigation, il a dû cliquer depuis ce poste."
+      replies:
+        - { id: ok, text: "Je regarde.", flags: [tomas-vpn-tip] }
+    - id: tomas-ip
+      contact: tomas
+      trigger: { event: objective.complete, where: { id: intrusion-ip } }
+      messages:
+        - "185.220.101.47 ? Ce n'est pas une de nos plages. Je le bloque au pare-feu de bordure."
+    - id: tomas-firmware
+      contact: tomas
+      trigger: { event: objective.complete, where: { id: persistence } }
+      messages:
+        - "Avant de toucher à quoi que ce soit : vous êtes sûr que le firmware est mauvais ? Si je bloque une vraie mise à jour, on me le reprochera."
+      replies:
+        - id: proof
+          text: "Version 4.2.1 inexistante, non signée, watchdog désactivé. Voilà la preuve."
+          requiresEvidence: [firmware]
+          next: tomas-convinced
+        - { id: later, text: "Je vérifie et je reviens vers vous." }
+    - id: tomas-convinced
+      contact: tomas
+      messages:
+        - "OK, là c'est clair. Je mets les 14 sous-stations en mode manuel, au cas où."
+      onComplete:
+        - { flag: substations-manual }
+    - id: nadia-abort
+      contact: nadia
+      trigger: { event: objective.complete, where: { id: abort } }
+      messages:
+        - "La passerelle confirme : JOB-0417 annulé. Merci."
+        - "Il me manque un nom pour le rapport. Trouvez-moi qui a signé ça."
+
 evidence:
   - id: phishing
     title: Le faux mail du support IT

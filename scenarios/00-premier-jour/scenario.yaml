@@ -128,6 +128,45 @@ commands:
         submit <JETON>      valider l'exercice avec le jeton du corrigé
         version             version de l'outil
 
+# ─── Navigateur (pages dans web/) ────────────────────────────────────────────
+web:
+  home: lab.ironveil.local
+  bookmarks:
+    - { label: Portail du lab, url: "http://lab.ironveil.local/" }
+    - { label: Aide-mémoire, url: "http://lab.ironveil.local/wiki/aide-memoire" }
+    - { label: Ironveil, url: "https://ironveil.fr/" }
+
+# ─── Messagerie interne ──────────────────────────────────────────────────────
+chat:
+  contacts:
+    - { id: yasmine, name: Yasmine Haddad, role: Analyste senior · votre mentore }
+  history:
+    yasmine:
+      - { from: yasmine, text: "Bienvenue ! Je t'ai envoyé un mail pour démarrer. Tu peux aussi m'écrire ici.", at: "2026-04-06T08:58:00+02:00" }
+  nodes:
+    - id: yasmine-browser
+      contact: yasmine
+      trigger: { event: objective.complete, where: { id: ticket } }
+      messages:
+        - "Bien vu pour le numéro d'exercice 👍"
+        - "Petit conseil : le navigateur a un aide-mémoire du terminal dans ses favoris. Garde-le ouvert à côté."
+      replies:
+        - { id: thanks, text: "Merci, je regarde !", next: yasmine-thanks }
+        - { id: fine, text: "Ça va, je connais le terminal." , next: yasmine-fine }
+    - id: yasmine-thanks
+      contact: yasmine
+      messages:
+        - "Avec plaisir. Si tu bloques, le Dossier propose aussi des indices. Aucune honte à les utiliser."
+    - id: yasmine-fine
+      contact: yasmine
+      messages:
+        - "Parfait. Alors je ne te dis rien de plus 😉"
+    - id: yasmine-root
+      contact: yasmine
+      trigger: { event: objective.complete, where: { id: droits-root } }
+      messages:
+        - "Te voilà root. Règle de la maison : on ne garde ces droits que le temps nécessaire, et on ne modifie rien sur une machine qu'on analyse."
+
 # ─── Objectifs ───────────────────────────────────────────────────────────────
 objectives:
   - id: bienvenue
@@ -285,6 +324,24 @@ objectives:
     hints:
       - "`strings` extrait le texte lisible d'un fichier binaire."
       - "Essayez : `strings /opt/ledgerlite/bin/ledgerlited` (le nom de code commence par IRON…)."
+
+  - id: bonus-navigateur
+    title: "Bonus — ouvrir le navigateur"
+    description: Le lab a un wiki interne. Trouvez l'aide-mémoire du terminal.
+    optional: true
+    requires: [bienvenue]
+    trigger: { event: web.visit, regex: { url: "lab\\.ironveil\\.local/wiki/aide-memoire" } }
+    hints:
+      - Le navigateur est dans la barre des tâches (le globe). Regardez ses favoris.
+
+  - id: bonus-messagerie
+    title: "Bonus — répondre à Yasmine"
+    description: Yasmine vous écrit sur la messagerie interne. Répondez-lui.
+    optional: true
+    requires: [ticket]
+    trigger: { event: chat.reply, where: { contact: yasmine } }
+    hints:
+      - L'app Messages est dans la barre des tâches. Les réponses possibles apparaissent sous la conversation.
 
 # ─── Pièces à conviction ───────────────────────────────────────────────────────
 evidence:

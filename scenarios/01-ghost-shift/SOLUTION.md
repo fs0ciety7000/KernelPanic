@@ -50,3 +50,11 @@ Lumen Grid, opérateur électrique de Valmont. À 03:12, le compte de l'admin OT
 - `wget`/`curl` vers le C2 → bloqués (egress filtré, domaine sinkholé).
 - Exécuter `sync.sh` → bloqué par la politique forensique.
 - Les actions `sudo` du joueur sont ajoutées à `/var/log/auth.log` (la machine enregistre aussi l'enquêteur).
+
+## Navigateur et messagerie
+
+- **Historique du navigateur** (`~/.local/share/kp-browser/history`, ou bouton Historique du Navigateur) : le 16/04 à 18:52, Elias a ouvert `https://vpn.lumengr1d.com/renew`, quatre minutes avant sa réponse au faux support. Le domaine est désormais bloqué par le SOC.
+- **Intranet** (`intranet.lumengrid.local`) : alerte phishing publiée le 15/04, consignes (session ≠ VPN), annuaire (Elias en congé), planning d'astreinte (aucun déploiement prévu).
+- **Passerelle OT** (`ot-deploy.lumengrid.local`) : JOB-0417, image 4.2.1, « signature: NONE ».
+- **Tomás** (messagerie) écrit après le briefing ; il oriente vers l'historique de navigation. Après l'objectif « persistance », il demande une preuve : la réponse n'est disponible qu'avec la pièce *Firmware piégé* (`strings` sur l'image), et il passe alors les sous-stations en manuel (drapeau d'ambiance `substations-manual`).
+- **Nadia** confirme l'annulation de JOB-0417 et relance pour l'attribution.

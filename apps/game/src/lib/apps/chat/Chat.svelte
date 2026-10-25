@@ -25,9 +25,14 @@
     });
   });
 
+  // The runtime mutates its state in place: snapshot it so dependents see a new value on each change.
   const chatState = $derived.by(() => {
     void os.version;
-    return k.runtime.state.chat;
+    const c = k.runtime.state.chat;
+    return {
+      log: Object.fromEntries(Object.entries(c.log).map(([id, lines]) => [id, [...lines]])),
+      unread: { ...c.unread },
+    };
   });
   const log = $derived(selected ? (chatState.log[selected] ?? []) : []);
   const replies = $derived.by(() => {
@@ -67,7 +72,8 @@
   $effect(() => {
     void visible.length;
     void typing;
-    if (selected && wm.focused?.id === win.id) untrack(() => k.runtime.markChatRead(selected!));
+    const c = selected;
+    if (c && wm.focused?.id === win.id && chatState.unread[c]) untrack(() => k.runtime.markChatRead(c));
     tick().then(() => scroller?.scrollTo({ top: scroller.scrollHeight, behavior: 'smooth' }));
   });
 

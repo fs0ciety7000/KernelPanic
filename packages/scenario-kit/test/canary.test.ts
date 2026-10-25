@@ -104,3 +104,26 @@ describe('canary playthrough', () => {
     expect(p.rt.state.ending).toBe('fog');
   });
 });
+
+describe('canary web and chat', () => {
+  it('serves the company site, the published results and the article', () => {
+    const k = new Kernel(structuredClone(bundle));
+    for (const b of bundle.web!.bookmarks!) expect(k.fetch(b.url).status).toBe('ok');
+    expect(k.fetch('https://aqualis.fr/qualite')).toMatchObject({ html: expect.stringContaining('rév. B') });
+    expect(k.fetch('https://leveilleur.fr/2026/05/12/eau-saint-ambroise')).toMatchObject({ html: expect.stringContaining('remis sous forme imprimée') });
+  });
+
+  it('Samir only confides when confronted with the originals and the USB copy', async () => {
+    const p = play();
+    await p.investigate();
+    const rt = p.rt;
+    expect(rt.state.chat.log.samir!.length).toBeGreaterThan(0);
+    expect(rt.state.chat.log.sorel!.at(-1)!.text).toContain('conseil');
+    await p.run('sudo cat /home/srahmani/Maildir/cur/1775115600.M201P1300.lab-qa-03.eml');
+    expect(rt.chatReplies('samir').find((r) => r.id === 'why-keep')!.missing).toEqual(['usb-copy']); // originals already read by `sort`
+    await p.run('sudo cat /home/srahmani/.bash_history');
+    expect(rt.chatReply('samir', 'why-keep')).toBe(true);
+    expect(rt.state.flags).toContain('samir-confided');
+    expect(rt.state.ending).toBeUndefined(); // flavour only: the report is still the player's call
+  });
+});

@@ -194,3 +194,17 @@ describe('premier-jour playthrough', () => {
     expect(k2.vfs.readdir('/home/recrue/Maildir/new', k2.users.cred('root')).length).toBe(2);
   });
 });
+
+describe('premier-jour web and chat', () => {
+  it('rewards opening the lab wiki and answering Yasmine', async () => {
+    const p = play();
+    const k = p.kernel;
+    p.openMail(WELCOME);
+    for (const b of bundle.web!.bookmarks!) expect(k.fetch(b.url).status).toBe('ok');
+    expect(p.done()).toContain('bonus-navigateur');
+    expect(k.runtime.submit('ticket', 'IV-2026-0006')).toBe(true);
+    expect(k.runtime.state.chat.unread.yasmine).toBe(2);
+    expect(k.runtime.chatReply('yasmine', 'thanks')).toBe(true);
+    expect(p.done()).toContain('bonus-messagerie');
+  });
+});

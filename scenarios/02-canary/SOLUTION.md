@@ -49,3 +49,11 @@ Bonus : **motive** (le mail de Ferrand, via `sudo grep -rl Ferrand /home/srahman
 - La copie USB de Samir a lieu la même nuit et vise les mêmes fichiers. C'est la pièce trompeuse : il se protégeait, il n'a rien divulgué. Rien dans la machine ne relie Samir à la journaliste, alors que l'article parle d'un document **imprimé**.
 - Le client (Sorel) est nommé dans l'ordre de falsification. La relance et le mail « canary » invitent le joueur à se demander pour qui il travaille.
 - Le compte d'audit voit tout, mais les apps graphiques (Fichiers, Mail) respectent les droits : les dossiers des techniciens ne s'ouvrent qu'au terminal avec `sudo`.
+
+## Navigateur et messagerie
+
+- **aqualis.fr/qualite** : les résultats publiés (tous < 0,1 µg/L, « rév. B ») — ce sont les chiffres « validés ».
+- **leveilleur.fr** : l'article en ligne, qui précise que le document a été « remis sous forme imprimée ».
+- **Historique** : le compte d'audit a déjà consulté l'article et la page qualité le 12/05.
+- **Samir Rahmani** écrit dès que vous êtes root ; il élude la nuit du 6 mai. Après la lecture de son mail (pièce *L'ordre*), une réponse se débloque avec *Les relevés originaux* et *La clé USB de Samir* : il explique pourquoi il a gardé les originaux et qu'il n'a rien donné à la presse (drapeau d'ambiance `samir-confided`, sans effet sur les fins).
+- **Laurent Sorel** met la pression après « La nuit du 6 mai » et recadre si vous évoquez le risque sanitaire.
