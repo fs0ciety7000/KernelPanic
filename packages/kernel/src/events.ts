@@ -23,6 +23,9 @@ export interface KernelEvents {
   'chat.message': { contact: string; text: string };
   'chat.reply': { contact: string; node: string; reply: string };
   'choice.made': { objective: string; option: string };
+  'soc.alert': { id: string; severity: string; title: string; asset?: string };
+  'soc.triage': { alert: string; verdict: 'real' | 'false' };
+  'soc.action': { action: 'isolate' | 'block'; target: string };
   'scenario.notify': { title: string; body: string };
   'scenario.end': Record<string, never>;
   'shell.clear': Record<string, never>;

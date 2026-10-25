@@ -26,6 +26,8 @@
     choice: { icon: 'check-circle', label: 'Décision' },
     timer: { icon: 'clock', label: 'Événement' },
     end: { icon: 'source', label: 'Fin' },
+    alert: { icon: 'alert', label: 'Alerte' },
+    action: { icon: 'shield', label: 'Action' },
   };
   const count = (kind: JournalKind) => journal.filter((j) => j.kind === kind).length;
   const summary = [
@@ -122,6 +124,8 @@
   .k-ssh .mark { color: var(--kp-green); background: var(--kp-green-dim); }
   .k-hint .mark { color: var(--kp-amber); background: var(--kp-amber-dim); }
   .k-wrong .mark, .k-timer .mark { color: var(--kp-red); background: var(--kp-red-dim); }
+  .k-alert .mark { color: var(--kp-amber); background: var(--kp-amber-dim); }
+  .k-action .mark { color: var(--kp-green); background: var(--kp-green-dim); }
   .k-choice .mark, .k-end .mark { color: var(--kp-text-0); background: var(--kp-bg-4); }
   .endings { display: flex; align-items: center; gap: 6px; margin-top: 18px; flex-wrap: wrap; }
   .dot { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; font-family: var(--kp-font-mono); font-size: 11px; border: 1px solid var(--kp-line-strong); color: var(--kp-text-2); }

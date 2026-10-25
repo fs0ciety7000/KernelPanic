@@ -1,5 +1,5 @@
 import type { AnyEvent, EventBus } from '../events';
-import type { ChatReply, ChoiceOption, EndingDef, Effect, EvidenceDef, ObjectiveDef, ScenarioBundle, TimerDef, Trigger, TriggerLeaf, WriteEffect } from './types';
+import type { ChatReply, ChoiceOption, EndingDef, Effect, EvidenceDef, ObjectiveDef, ScenarioBundle, SocAlert, SocAsset, TimerDef, Trigger, TriggerLeaf, WriteEffect } from './types';
 import { secretHash } from '../util/sha256';
 
 export interface ScenarioState {
@@ -20,6 +20,8 @@ export interface ScenarioState {
   journal?: JournalEntry[];
   /** Timed mode chosen at the start of the game. */
   timed?: boolean;
+  /** SOC console: raised alerts (game time), triage verdicts, alerts already looked at. */
+  soc?: { alerts: Array<{ id: string; at: number }>; triage: Record<string, 'real' | 'false'>; seen: string[] };
   /** Timer ids already fired / warning keys ("id@before") already shown. */
   timers?: { fired: string[]; warned: string[] };
   endedAt?: number;
@@ -48,7 +50,7 @@ export interface ObjectiveView extends ObjectiveDef {
   hintsShown: number;
 }
 
-export type JournalKind = 'objective' | 'evidence' | 'hint' | 'wrong' | 'ssh' | 'choice' | 'timer' | 'end';
+export type JournalKind = 'objective' | 'evidence' | 'hint' | 'wrong' | 'ssh' | 'choice' | 'timer' | 'end' | 'alert' | 'action';
 
 export interface JournalEntry {
   kind: JournalKind;
@@ -128,6 +130,7 @@ export class ScenarioRuntime {
     };
     this.state.timers ??= { fired: [], warned: [] };
     this.state.journal ??= [];
+    this.state.soc ??= { alerts: [], triage: {}, seen: [] };
     if (!saved?.chat) this.seedChatHistory();
     bus.onAny((e) => this.onEvent(e));
   }
@@ -172,6 +175,9 @@ export class ScenarioRuntime {
     }
     if (e.type === 'auth.ssh' && e.payload.ok) {
       this.log('ssh', `${e.payload.login}@${this.hostname(e.payload.target)}`, e.payload.method === 'key' ? 'clé SSH' : 'mot de passe');
+    }
+    for (const a of this.bundle.soc?.alerts ?? []) {
+      if (a.trigger && matchTrigger(a.trigger, e)) this.raiseAlert(a.id);
     }
     for (const node of this.bundle.chat?.nodes ?? []) {
       if (node.trigger && !this.state.chat.fired.includes(node.id) && matchTrigger(node.trigger, e)) this.fireChat(node.id);
@@ -330,6 +336,7 @@ export class ScenarioRuntime {
     else if ('chat' in fx) this.fireChat(fx.chat);
     else if ('notify' in fx) this.bus.emit('scenario.notify', fx.notify);
     else if ('write' in fx) this.host.write(fx.write);
+    else if ('alert' in fx) this.raiseAlert(fx.alert);
     else if ('remove' in fx) this.host.remove(fx.remove.path, fx.remove.machine);
     else if ('flag' in fx) this.bus.emit('scenario.flag', { id: fx.flag });
     else if ('end' in fx) {
@@ -351,6 +358,7 @@ export class ScenarioRuntime {
   private armed(t: TimerDef): boolean {
     if (t.timedOnly && !this.state.timed) return false;
     if (this.state.timers!.fired.includes(t.id)) return false;
+    if ((t.ifFlags ?? []).some((f) => !this.state.flags.includes(f))) return false;
     return !(t.unlessFlags ?? []).some((f) => this.state.flags.includes(f));
   }
 
@@ -390,6 +398,96 @@ export class ScenarioRuntime {
       .map((t) => ({ id: t.id, label: t.label!, at: Date.parse(t.at) }))
       .sort((a, b) => a.at - b.at)[0];
     return this.ended ? null : (next ?? null);
+  }
+
+  // ── SOC console ──────────────────────────────────────────────────────
+
+  private flag(id: string): void {
+    if (!this.state.flags.includes(id)) this.bus.emit('scenario.flag', { id });
+  }
+
+  raiseAlert(id: string): void {
+    const def = this.bundle.soc?.alerts.find((a) => a.id === id);
+    const soc = this.state.soc!;
+    if (!def || soc.alerts.some((a) => a.id === id)) return;
+    soc.alerts.push({ id, at: this.host.now() });
+    this.log('alert', def.title, def.asset ? this.assetName(def.asset) : undefined);
+    this.bus.emit('soc.alert', { id, severity: def.severity, title: def.title, asset: def.asset });
+    this.changed();
+  }
+
+  /** Raised alerts, newest first, with their definition and verdict. */
+  socAlerts(): Array<SocAlert & { at: number; verdict?: 'real' | 'false'; seen: boolean }> {
+    const soc = this.state.soc!;
+    return soc.alerts
+      .map((a) => ({ ...this.bundle.soc!.alerts.find((d) => d.id === a.id)!, at: a.at, verdict: soc.triage[a.id], seen: soc.seen.includes(a.id) }))
+      .reverse();
+  }
+
+  socUnseen(): number {
+    const soc = this.state.soc!;
+    return soc.alerts.filter((a) => !soc.seen.includes(a.id)).length;
+  }
+
+  markAlertsSeen(): void {
+    const soc = this.state.soc!;
+    const unseen = soc.alerts.filter((a) => !soc.seen.includes(a.id));
+    if (!unseen.length) return;
+    soc.seen.push(...unseen.map((a) => a.id));
+    this.changed();
+  }
+
+  /** Incident or false positive. Final, like a real ticket closure. Raises `triage:<id>:real|false`. */
+  triage(alertId: string, verdict: 'real' | 'false'): boolean {
+    const soc = this.state.soc!;
+    if (!soc.alerts.some((a) => a.id === alertId) || soc.triage[alertId]) return false;
+    soc.triage[alertId] = verdict;
+    this.flag(`triage:${alertId}:${verdict}`);
+    this.bus.emit('soc.triage', { alert: alertId, verdict });
+    this.changed();
+    return true;
+  }
+
+  assetState(id: string): 'isolated' | 'infected' | 'ok' {
+    if (this.state.flags.includes(`isolated:${id}`)) return 'isolated';
+    if (this.state.flags.includes(`infected:${id}`)) return 'infected';
+    return 'ok';
+  }
+
+  /** Cuts a machine off the network (irreversible for the rest of the game). Raises `isolated:<id>`. */
+  isolate(assetId: string): boolean {
+    const asset = this.bundle.soc?.assets.find((a) => a.id === assetId);
+    if (!asset || this.ended || this.state.flags.includes(`isolated:${assetId}`)) return false;
+    this.log('action', `Isolement de ${asset.name}`, asset.ip);
+    this.flag(`isolated:${assetId}`);
+    this.bus.emit('soc.action', { action: 'isolate', target: assetId });
+    this.changed();
+    return true;
+  }
+
+  /** Perimeter firewall rule. Raises `blocked:<ip>`. */
+  block(ip: string): boolean {
+    const value = ip.trim();
+    if (this.ended || !/^\d{1,3}(\.\d{1,3}){3}$/.test(value) || value.split('.').some((n) => Number(n) > 255)) return false;
+    if (this.state.flags.includes(`blocked:${value}`)) return false;
+    this.log('action', `Blocage de ${value} au pare-feu`);
+    this.flag(`blocked:${value}`);
+    this.bus.emit('soc.action', { action: 'block', target: value });
+    this.changed();
+    return true;
+  }
+
+  blocked(): string[] {
+    return this.state.flags.filter((f) => f.startsWith('blocked:')).map((f) => f.slice(8));
+  }
+
+  /** Is the ssh host behind this id isolated on the SOC map? */
+  hostIsolated(hostId: string): boolean {
+    return (this.bundle.soc?.assets ?? []).some((a) => a.host === hostId && this.assetState(a.id) === 'isolated');
+  }
+
+  private assetName(id: string): string {
+    return this.bundle.soc?.assets.find((a: SocAsset) => a.id === id)?.name ?? id;
   }
 
   // ── Journal (end-of-game replay) ──────────────────────────────────────

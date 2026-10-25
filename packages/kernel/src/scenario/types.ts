@@ -87,6 +87,8 @@ export type Effect =
   | { chat: string }
   | { notify: { title: string; body: string } }
   | { write: WriteEffect }
+  /** Raise a SOC alert (see SocDef). */
+  | { alert: string }
   /** Delete a file (evidence destroyed by an NPC, retention…). */
   | { remove: { path: string; machine?: string } }
   | { flag: string }
@@ -232,11 +234,48 @@ export interface TimerDef {
   timedOnly?: boolean;
   /** Defused as soon as one of these flags is raised. */
   unlessFlags?: string[];
+  /** Only fires if all these flags are raised by then (chains: propagation from an infected asset…). */
+  ifFlags?: string[];
   /** Line shown in the end-of-game replay when it fires (default: label or id). */
   journal?: string;
   /** Fired `before` minutes ahead (notifications, NPC messages…). */
   warnings?: Array<{ before: number; effects: Effect[] }>;
   effects: Effect[];
+}
+
+// ── SOC console (live incident response) ───────────────────────────────
+
+/** A machine on the network map. State is read from flags: `infected:<id>`, `isolated:<id>`. */
+export interface SocAsset {
+  id: string;
+  name: string;
+  ip: string;
+  role: string;
+  /** Network zone (column on the map). */
+  zone?: string;
+  /** HostDef id when the player can also ssh into it (isolated = unreachable). */
+  host?: string;
+  /** What isolating it breaks, shown before confirming. */
+  impact?: string;
+}
+
+export interface SocAlert {
+  id: string;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  title: string;
+  asset?: string;
+  detail: string;
+  /** Raised automatically when this matches (otherwise via an `alert` effect, e.g. from a timer). */
+  trigger?: Trigger;
+}
+
+export interface SocDef {
+  /** Console title, e.g. "SOC — Clinique des Tilleuls". */
+  name?: string;
+  assets: SocAsset[];
+  alerts: SocAlert[];
+  /** Zone order on the map (default: order of appearance). */
+  zones?: string[];
 }
 
 /** A remote machine reachable with `ssh` (ADR-009). Same building blocks as the local one. */
@@ -289,6 +328,7 @@ export interface ScenarioBundle {
   /** Remote machines (ssh). */
   hosts?: HostDef[];
   timers?: TimerDef[];
+  soc?: SocDef;
   objectives: ObjectiveDef[];
   evidence?: EvidenceDef[];
   web?: WebDef;
