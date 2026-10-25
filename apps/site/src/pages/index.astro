@@ -13,6 +13,7 @@ const apps = [
   { id: 'logs', name: 'Logs', tone: 'amber', desc: 'Journaux colorés par niveau, filtres regex, saut à l’horodatage. La nuit, minute par minute.', icon: 'M5 4h14v16H5zM8 8h8M8 12h8M8 16h5' },
   { id: 'browser', name: 'Navigateur', tone: 'cyan', desc: 'L’intranet, la presse locale, le site de l’entreprise… et les domaines que le SOC a bloqués.', icon: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z' },
   { id: 'chat', name: 'Messages', tone: 'green', desc: 'Les collègues écrivent pendant l’enquête. Certaines réponses exigent une preuve.', icon: 'M4 5h16v11H9l-5 4z' },
+  { id: 'soc', name: 'Console SOC', tone: 'amber', desc: 'La carte du réseau en direct : alertes à trier, machines à isoler, adresses à bloquer. Chaque geste a un prix.', icon: 'M12 3l7 3v6c0 4.4-3 7.6-7 9-4-1.4-7-4.6-7-9V6z' },
   { id: 'case', name: 'Dossier', tone: 'violet', desc: 'Le dossier d’enquête : objectifs, pièces à conviction, indices, et le rapport que vous signerez.', icon: 'M5 4h14v16H5zM9 9l2 2 4-4M9 15h6' },
 ];
 
@@ -21,6 +22,7 @@ const scenarios = [
   { n: '01', t: 'Ghost Shift', d: 'Débutant', m: '~40 min · mode chronométré', s: 'Un firmware non signé part vers 14 sous-stations à 09:00. Le compte qui l’a programmé est en congé.' },
   { n: '02', t: 'Canary', d: 'Intermédiaire', m: '~40 min · 4 fins', s: 'On vous paie pour trouver la source d’une fuite. Les fichiers disent pourquoi elle a parlé. Votre rapport, votre choix.' },
   { n: '03', t: 'Double fond', d: 'Avancé', m: '~50 min · 3 machines · 4 fins', s: '2,4 M€ versés pour un incendie. Le journal accuse une responsable, les sauvegardes la défendent. De serveur en serveur.' },
+  { n: '04', t: 'Effet domino', d: 'Intermédiaire', m: '~40 min · en direct · Console SOC', s: '04:15, les systèmes des transports de Valmont tombent un par un. Premier tram à 05:00. Arrêtez la chute sans tout casser.' },
 ];
 
 const pillars = [
@@ -81,7 +83,7 @@ const pillars = [
     <section id="apps" class="section">
       <div class="wrap">
         <p class="label">Applications système</p>
-        <h2>Neuf outils. Une machine. Parfois trois.</h2>
+        <h2>Dix outils. Une machine. Parfois trois.</h2>
         <ul class="apps">
           {apps.map((a) => (
             <li class={`app tone-${a.tone}`}>
@@ -119,7 +121,7 @@ const pillars = [
     <section id="scenarios" class="section">
       <div class="wrap">
         <p class="label">Dossiers</p>
-        <h2>Quatre enquêtes.<br /><span class="muted">Chacune ment d'une façon différente.</span></h2>
+        <h2>Cinq enquêtes.<br /><span class="muted">Chacune ment d'une façon différente.</span></h2>
         <ul class="cases">
           {scenarios.map((c) => (
             <li class="case">

@@ -1,0 +1,465 @@
+# ─────────────────────────────────────────────────────────────────────────────
+#  Kernel_Panic — Scénario 04 : EFFET DOMINO
+#  Difficulté : intermédiaire · ~40 min · en direct · 5 fins
+#  Pas d'attaquant : une mise à jour bâclée, un réseau qui tombe, un premier tram à 05:00.
+#  Solution complète : SOLUTION.md (spoilers)
+# ─────────────────────────────────────────────────────────────────────────────
+id: effet-domino
+version: 1
+title: Effet domino
+subtitle: Personne n'attaque. Tout tombe quand même.
+summary: >
+  04:15, régulation de Valmobilis, les transports de Valmont. Depuis dix minutes, les
+  systèmes tombent l'un après l'autre et le premier tram part à 05:00. Arrêtez la
+  chute sans casser ce qui tient encore, remettez le réseau debout, puis trouvez
+  pourquoi une mise à jour est partie en pleine nuit, et qui l'a voulue.
+difficulty: intermediate
+estimatedMinutes: 40
+locale: fr
+
+machine:
+  hostname: ws-astreinte
+  domain: valmobilis.local
+  os: LumenOS 22.04.4 LTS
+  kernel: 6.8.0-41-lumen
+  ip: 10.60.9.5
+  clock: 2026-09-14T04:15:00+02:00
+
+defaults:
+  mtime: 2026-09-10T18:00:00+02:00
+
+session:
+  user: astreinte
+  email: astreinte@ws-astreinte.valmobilis.local
+  cwd: /home/astreinte
+  autostart:
+    - { app: mail }
+    - { app: soc }
+
+users:
+  - { name: root, uid: 0, home: /root, shell: /bin/bash }
+  - { name: astreinte, uid: 1070, fullName: Astreinte Ironveil, home: /home/astreinte, shell: /bin/bash, groups: [sudo], password: Iv-Nuit-0914 }
+
+permissions:
+  - { path: /root, mode: "0700" }
+  - { path: /home/astreinte/.ssh, mode: "0700" }
+  - { path: /home/astreinte/.ssh/id_ed25519, mode: "0600" }
+  - { path: /home/astreinte/Maildir, mode: "0700" }
+  - { path: /home/astreinte/Maildir/**, mode: "0600" }
+
+processes:
+  - { pid: 1, user: root, cmd: /sbin/init splash, start: Sep14 }
+  - { pid: 2310, user: astreinte, cmd: /usr/bin/kp-session --oncall, start: "04:15" }
+  - { pid: 4242, user: astreinte, cmd: -bash, start: "04:15" }
+
+network:
+  interfaces:
+    - { name: eth0, ip: 10.60.9.5 }
+  hosts:
+    repo.transitsoft.example: { ip: 198.51.100.40, http: "TransitSoft package mirror — authorized customers only" }
+
+hosts:
+  - id: deploy
+    machine: { hostname: srv-deploy, domain: valmobilis.local, os: LumenOS Server 22.04.4 LTS, kernel: 6.8.0-41-lumen, ip: 10.60.1.10 }
+    defaults: { mtime: "2026-09-10T18:00:00+02:00" }
+    ssh:
+      motd: "rollout 2.1 — aide : /opt/rollout/README"
+    users:
+      - { name: root, uid: 0, home: /root, shell: /bin/bash }
+      - { name: astreinte, uid: 1070, fullName: Astreinte Ironveil, home: /home/astreinte, shell: /bin/bash, groups: [adm, sudo], password: Astr31nte-0914 }
+      - { name: tdumas, uid: 1020, fullName: Thomas Dumas, home: /home/tdumas, shell: /bin/bash, groups: [adm, sudo] }
+    permissions:
+      - { path: /root, mode: "0700" }
+      - { path: /tmp, mode: "1777" }
+      - { path: /home/astreinte/.ssh, mode: "0700" }
+      - { path: /home/astreinte/.ssh/authorized_keys, mode: "0600" }
+      - { path: /var/log/auth.log, group: adm, mode: "0640", mtime: "2026-09-14T04:03:30+02:00" }
+      - { path: /var/log/rollout/**, group: adm, mode: "0640", mtime: "2026-09-14T04:05:30+02:00" }
+      - { path: /var/mail/tdumas, owner: tdumas, mode: "0600", mtime: "2026-09-13T23:48:20+02:00" }
+      - { path: /opt/rollout/bin/rollout, mode: "0755" }
+    processes:
+      - { pid: 1, user: root, cmd: /sbin/init, start: Sep01 }
+      - { pid: 911, user: root, cmd: "/opt/rollout/bin/rollout worker JOB-0914", cpu: 3.1, start: "04:02" }
+    commands:
+      rollout:
+        path: /opt/rollout/bin/rollout
+        summary: Valmobilis configuration deployment
+        group: adm
+        rules:
+          - match: "^status$"
+            ifFlag: rolled-back
+            output: |
+              JOB-0914 horaires-v2.0.0  ANNULÉ — configuration v1.8.3 réinstallée sur les cibles atteintes
+          - match: "^status$"
+            ifFlag: job-paused
+            output: |
+              JOB-0914 horaires-v2.0.0  EN PAUSE (aucune nouvelle cible ne sera traitée)
+              → rollout rollback JOB-0914 pour réinstaller la configuration précédente
+          - match: "^status$"
+            output: |
+              JOB-0914 horaires-v2.0.0  EN COURS — options : --skip-canary --force
+              cibles : srv-info, srv-billet, pc-depot-nord, pc-depot-sud, srv-sae (une toutes les 5 min)
+              journal : /var/log/rollout/jobs.log
+          - match: "^log JOB-0914$"
+            output: |
+              lancé le 2026-09-14 à 04:02:11 par tdumas (sudo, depuis 10.60.7.44)
+              paquet  horaires-v2.0.0 (miroir repo.transitsoft.example)
+              recette NON — canary AUCUN — options --skip-canary --force
+              accord  plagarde, par TÉLÉPHONE, saisi par tdumas (voir /var/log/rollout/approvals.log)
+          - match: "^diff JOB-0914$"
+            output: |
+              --- horaires-v1.8.3/config.yaml
+              +++ horaires-v2.0.0/config.yaml
+              -source_horaires: https://sae.valmobilis.local/api/v1/passages
+              +source_horaires: https://sae.valmobilis.local/api/v2/passages
+              -refresh_interval_ms: 15000
+              +refresh_interval_ms: 0        # TODO remettre 15000 avant livraison !!!
+          - match: "^pause JOB-0914$"
+            requireRoot: true
+            unlessFlag: job-paused
+            emit: job-paused
+            output: "JOB-0914 mis en pause. Les cibles restantes ne seront pas traitées."
+          - match: "^pause JOB-0914$"
+            requireRoot: true
+            output: "JOB-0914 est déjà en pause."
+          - match: "^rollback JOB-0914$"
+            requireRoot: true
+            ifFlag: job-paused
+            unlessFlag: rolled-back
+            emit: rolled-back
+            output: |
+              rollback JOB-0914 : réinstallation de horaires-v1.8.3 sur les cibles atteintes…
+              (les machines isolées du réseau ne peuvent pas être jointes)
+              terminé.
+          - match: "^rollback JOB-0914$"
+            requireRoot: true
+            ifFlag: rolled-back
+            output: "JOB-0914 a déjà été annulé."
+          - match: "^rollback JOB-0914$"
+            requireRoot: true
+            exit: 1
+            output: "rollout: le job est encore en cours. Mettez-le d'abord en pause (rollout pause JOB-0914)."
+          - match: "^(log|diff|pause|rollback) "
+            exit: 1
+            output: "rollout: job inconnu (seul JOB-0914 est actif)"
+        fallback: |
+          usage: rollout status | log JOB-ID | diff JOB-ID | pause JOB-ID | rollback JOB-ID
+          aide : /opt/rollout/README
+
+# ─── Console SOC ─────────────────────────────────────────────────────────────
+soc:
+  name: Supervision — Valmobilis
+  faultLabel: défaillant
+  zones: [Voyageurs, Exploitation, Dépôts, Outillage]
+  assets:
+    - { id: info, name: srv-info, ip: 10.60.2.20, role: "Panneaux d'information voyageurs", zone: Voyageurs, impact: "écrans noirs dans toutes les stations." }
+    - { id: billet, name: srv-billet, ip: 10.60.2.30, role: "Billettique : valideurs et distributeurs", zone: Voyageurs, impact: "plus aucun titre vendu ni validé ce matin." }
+    - { id: sae, name: srv-sae, ip: 10.60.3.10, role: "Aide à l'exploitation : positions des trams, radio, départs", zone: Exploitation, impact: "aucun tram ne pourra quitter le dépôt." }
+    - { id: nord, name: pc-depot-nord, ip: 10.60.4.11, role: "Poste du dépôt nord (prise de service)", zone: Dépôts, impact: "prise de service des conducteurs sur papier." }
+    - { id: sud, name: pc-depot-sud, ip: 10.60.4.12, role: "Poste du dépôt sud (prise de service)", zone: Dépôts, impact: "prise de service des conducteurs sur papier." }
+    - { id: deploy, name: srv-deploy, ip: 10.60.1.10, role: "Outil de déploiement rollout", zone: Outillage, host: deploy, impact: "plus de déploiement, mais plus de retour arrière non plus : ce qui est cassé le reste." }
+  alerts:
+    - { id: a-info, severity: high, title: "srv-info : service horaires en boucle de redémarrage", asset: info, detail: "Le service redémarre 40 fois par minute depuis 04:05. Dernière modification de configuration : 04:04 (rollout)." }
+    - { id: a-billet, severity: high, title: "srv-billet : valideurs hors ligne", asset: billet, detail: "Les valideurs ne reçoivent plus les horaires et se bloquent. Configuration modifiée par rollout il y a une minute." }
+    - { id: a-nord, severity: medium, title: "pc-depot-nord : application de prise de service figée", asset: nord, detail: "Configuration modifiée par rollout. L'application recharge les horaires en continu." }
+    - { id: a-sud, severity: medium, title: "pc-depot-sud : application de prise de service figée", asset: sud, detail: "Configuration modifiée par rollout. L'application recharge les horaires en continu." }
+    - { id: a-sae, severity: critical, title: "srv-sae : aide à l'exploitation saturée", asset: sae, detail: "La position des trams n'est plus mise à jour. Aucun départ possible sans le SAE." }
+    - { id: a-backup, severity: medium, title: "srv-deploy : pic de trafic sortant vers 198.51.100.40", asset: deploy, detail: "rollout télécharge des paquets depuis le miroir de l'éditeur (repo.transitsoft.example). Volume inhabituel pour un lundi 04:00.", trigger: { event: objective.complete, where: { id: briefing } } }
+    - { id: a-late, severity: critical, title: "05:00 — le premier tram ne peut pas partir", asset: sae, detail: "La régulation déclare le départ de la ligne A retardé. Les systèmes défaillants n'ont pas été remis en état." }
+
+# ─── Le déroulé de la nuit (minuteries) ──────────────────────────────────────
+# Le job touche une cible toutes les 5 minutes, sauf s'il est en pause, s'il ne peut plus
+# télécharger le paquet (miroir bloqué), si srv-deploy est isolé ou si la cible l'est.
+timers:
+  - id: t-info
+    at: "2026-09-14T04:15:05+02:00"
+    effects: [{ flag: "infected:info" }, { alert: a-info }]
+  - id: t-billet
+    at: "2026-09-14T04:20:00+02:00"
+    journal: "rollout atteint srv-billet"
+    unlessFlags: [job-paused, "blocked:198.51.100.40", "isolated:deploy", "isolated:billet"]
+    effects: [{ flag: "infected:billet" }, { alert: a-billet }]
+  - id: t-nord
+    at: "2026-09-14T04:25:00+02:00"
+    journal: "rollout atteint pc-depot-nord"
+    unlessFlags: [job-paused, "blocked:198.51.100.40", "isolated:deploy", "isolated:nord"]
+    effects: [{ flag: "infected:nord" }, { alert: a-nord }]
+  - id: t-sud
+    at: "2026-09-14T04:30:00+02:00"
+    journal: "rollout atteint pc-depot-sud"
+    unlessFlags: [job-paused, "blocked:198.51.100.40", "isolated:deploy", "isolated:sud"]
+    effects: [{ flag: "infected:sud" }, { alert: a-sud }]
+  - id: t-sae
+    at: "2026-09-14T04:40:00+02:00"
+    journal: "rollout atteint srv-sae"
+    unlessFlags: [job-paused, "blocked:198.51.100.40", "isolated:deploy", "isolated:sae"]
+    effects: [{ flag: "infected:sae" }, { alert: a-sae }, { chat: karim-sae }]
+  - id: first-tram
+    at: "2026-09-14T05:00:00+02:00"
+    label: Premier tram
+    journal: "05:00 — heure du premier tram"
+    unlessFlags: [rolled-back]
+    warnings:
+      - { before: 15, effects: [{ chat: karim-15 }] }
+    effects: [{ flag: first-tram-late }, { alert: a-late }, { chat: karim-late }]
+
+# ─── Pièces ──────────────────────────────────────────────────────────────────
+evidence:
+  - id: job-log
+    title: Le job de 04:02
+    summary: "JOB-0914 (horaires-v2.0.0) lancé par tdumas à 04:02:11, sans recette ni canary, options --skip-canary --force."
+    source: /var/log/rollout/jobs.log
+    machine: deploy
+    tag: chronologie
+    trigger:
+      any:
+        - { event: fs.read, where: { path: /var/log/rollout/jobs.log, machine: deploy } }
+        - { event: cmd.exec, where: { name: rollout, machine: deploy }, regex: { line: "log JOB-0914" } }
+  - id: bad-param
+    title: La valeur oubliée
+    summary: "horaires-v2.0.0 : refresh_interval_ms passe de 15000 à 0 (« TODO remettre 15000 avant livraison »). Les services rechargent les horaires sans fin."
+    source: /srv/rollout/packages
+    machine: deploy
+    tag: cause
+    trigger:
+      any:
+        - { event: cmd.exec, where: { name: rollout, machine: deploy }, regex: { line: "diff JOB-0914" } }
+        - { event: cmd.exec, where: { name: tar, machine: deploy }, regex: { line: "horaires-v2" } }
+  - id: approvals
+    title: L'accord par téléphone
+    summary: "approvals.log : pour JOB-0914, second accord « plagarde, TÉLÉPHONE », saisi par tdumas lui-même. Tous les jobs précédents avaient un accord écrit."
+    source: /var/log/rollout/approvals.log
+    machine: deploy
+    tag: procédure
+    trigger: { event: fs.read, where: { path: /var/log/rollout/approvals.log, machine: deploy } }
+  - id: lagarde-order
+    title: L'ordre de la veille
+    summary: "23:48, Pascal Lagarde à Thomas Dumas : « Pousse la v2 vers 4 h, sans canary […] Si ça coince, on dira que le déploiement était prévu au planning. »"
+    source: /var/mail/tdumas
+    machine: deploy
+    tag: responsabilité
+    trigger: { event: fs.read, where: { path: /var/mail/tdumas, machine: deploy } }
+
+# ─── Objectifs ───────────────────────────────────────────────────────────────
+objectives:
+  - id: briefing
+    title: Prendre le poste
+    description: Le régulateur de nuit vous a écrit.
+    trigger: { event: mail.open, where: { messageId: prise-poste-0914.kb@valmobilis.fr } }
+    hints:
+      - L'app Mail est ouverte au démarrage.
+
+  - id: qualify
+    title: Qualifier la première alerte
+    description: Dans la Console SOC, décidez si l'alerte sur srv-info est un incident ou un faux positif.
+    requires: [briefing]
+    trigger: { event: soc.triage, where: { alert: a-info, verdict: real } }
+    hints:
+      - Ouvrez la Console SOC, dépliez l'alerte srv-info et lisez son détail.
+      - "Un service qui redémarre 40 fois par minute juste après un changement de configuration, ce n'est pas un faux positif : « Incident »."
+
+  - id: stop
+    title: Arrêter la chute
+    description: Les systèmes tombent l'un après l'autre. Empêchez la suite sans casser ce qui tient encore.
+    requires: [briefing]
+    trigger:
+      any:
+        - { event: scenario.flag, where: { id: job-paused } }
+        - { event: scenario.flag, where: { id: "blocked:198.51.100.40" } }
+        - { event: scenario.flag, where: { id: "isolated:deploy" } }
+    hints:
+      - Toutes les alertes parlent du même outil. Allez voir sur srv-deploy (ssh, puis /opt/rollout/README).
+      - "Trois façons d'arrêter un déploiement : le mettre en pause, l'empêcher de télécharger son paquet, ou couper la machine qui déploie. Une seule permet de réparer ensuite."
+      - "ssh astreinte@srv-deploy, puis sudo rollout pause JOB-0914 (mot de passe dans le mail de Karim)"
+
+  - id: cause
+    title: Ce qui fait tomber les systèmes
+    description: Quel paramètre de la nouvelle configuration fait planter les services ?
+    requires: [briefing]
+    answer:
+      label: Nom du paramètre
+      placeholder: ex. cache_ttl_s
+      accept: [refresh_interval_ms, refresh_interval, "refresh_interval_ms: 0", "refresh_interval_ms=0"]
+      normalize: [trim, lower, nospace]
+    hints:
+      - Comparez l'ancienne et la nouvelle configuration.
+      - "Sur srv-deploy : rollout diff JOB-0914 (ou les paquets dans /srv/rollout/packages)"
+
+  - id: restore
+    title: Remettre le réseau debout
+    description: Réinstallez la configuration précédente sur les systèmes touchés avant 05:00.
+    requires: [stop]
+    trigger: { event: scenario.flag, where: { id: rolled-back } }
+    hints:
+      - "rollout sait défaire ce qu'il a fait, à condition que le job soit en pause et que srv-deploy soit joignable."
+      - "sudo rollout pause JOB-0914 puis sudo rollout rollback JOB-0914"
+    onComplete:
+      - { flag: "restored:info" }
+      - { flag: "restored:billet" }
+      - { flag: "restored:nord" }
+      - { flag: "restored:sud" }
+      - { flag: "restored:sae" }
+      - { chat: karim-ok }
+
+  - id: who
+    title: Qui a lancé le déploiement ?
+    description: Personne ne devait travailler cette nuit. Donnez l'identifiant de celui qui a lancé JOB-0914.
+    requires: [briefing]
+    answer:
+      label: Identifiant
+      placeholder: ex. jlefevre
+      accept: [tdumas, thomas dumas, dumas]
+      normalize: [trim, lower, nospace]
+    hints:
+      - L'outil garde un journal de ses jobs.
+      - "rollout log JOB-0914, ou /var/log/rollout/jobs.log"
+
+  - id: verdict
+    title: Le rapport d'incident
+    description: >
+      La direction veut savoir d'ici 8 h ce qui s'est passé et qui en porte la
+      responsabilité. Vous pouvez rendre le rapport à tout moment.
+    requires: [who]
+    choice:
+      prompt: Que dit votre rapport ?
+      options:
+        - id: junior
+          label: « Thomas Dumas a déployé de nuit sans recette ni canary. »
+          detail: C'est ce que montrent les journaux de rollout.
+          requiresEvidence: [job-log]
+          flags: [blamed-junior]
+        - id: manager
+          label: « Le déploiement a été imposé par Pascal Lagarde, hors procédure, avec un accord par téléphone saisi par l'exécutant. »
+          detail: L'ordre écrit de la veille et le journal des accords se recoupent.
+          requiresEvidence: [job-log, approvals, lagarde-order]
+          flags: [named-manager]
+        - id: process
+          label: "« La procédure PR-07 a pu être contournée : un accord “par téléphone” saisi par le demandeur suffit à l'outil. »"
+          detail: Un rapport sur la faille de procédure, sans désigner de personne.
+          requiresEvidence: [approvals]
+          flags: [blamed-process]
+        - id: none
+          label: « Incident technique, causes en cours d'analyse. »
+          detail: Prudent. Personne n'est nommé, rien n'est corrigé.
+    onComplete:
+      - { end: true }
+
+  # ── Bonus ──
+  - id: order
+    title: "Bonus — pourquoi en pleine nuit ?"
+    description: Un junior ne déploie pas en production à 4 h du matin de sa propre initiative.
+    optional: true
+    requires: [who]
+    trigger: { event: fs.read, where: { path: /var/mail/tdumas, machine: deploy } }
+    hints:
+      - Les boîtes aux lettres locales sont dans /var/mail. Il faut être root pour lire celle d'un autre.
+      - "Sur srv-deploy : sudo cat /var/mail/tdumas"
+
+  - id: careful
+    title: "Bonus — sans casser"
+    description: Arrêtez la chute sans isoler une seule machine.
+    optional: true
+    requires: [briefing]
+    trigger: { event: scenario.flag, where: { id: job-paused } }
+    hints:
+      - Mettre le job en pause ne coupe personne.
+
+endings:
+  - id: trams-arret
+    title: TRAMS À L'ARRÊT
+    tone: bad
+    flags: ["isolated:sae"]
+    text: >
+      Vous avez coupé l'aide à l'exploitation pour la protéger. À 05:00, aucun tram ne
+      sait où sont les autres : la régulation interdit tout départ. Valmont attend son
+      premier tram jusqu'à 07:40, et la presse titre sur « la panne informatique ». Elle
+      n'avait pourtant rien d'inévitable.
+  - id: fusible
+    title: LE FUSIBLE
+    tone: bad
+    flags: [blamed-junior]
+    text: >
+      Thomas Dumas est licencié pour faute. Pascal Lagarde signe la note de service qui
+      rappelle la procédure PR-07. Six semaines plus tard, un autre déploiement part de
+      nuit « à la demande de la métropole ». Vous n'êtes plus là pour le voir.
+  - id: retard
+    title: RETARD À L'ALLUMAGE
+    tone: mixed
+    flags: [first-tram-late]
+    text: >
+      Le réseau finit par se relever, mais trop tard : la ligne A part à 05:55, la
+      billettique ne redémarre qu'à 06:30. Votre rapport sera lu, il arrivera simplement
+      après les excuses publiques de la direction.
+  - id: premier-tram
+    title: PREMIER TRAM
+    flags: [rolled-back]
+    notFlags: [blamed-junior]
+    text: >
+      05:00:00. La rame 2014 quitte le dépôt nord à l'heure, les panneaux affichent les
+      bons horaires et les valideurs bipent. À 08:00, votre rapport est sur le bureau de
+      la direction : la procédure PR-07 interdit désormais les accords par téléphone, et
+      Thomas Dumas garde son poste.
+  - id: rapport
+    title: RAPPORT RENDU
+    tone: mixed
+    text: >
+      La nuit est passée. Le rapport aussi. Il reste dans un dossier « incidents », entre
+      deux autres qui disent à peu près la même chose.
+
+# ─── Messagerie ──────────────────────────────────────────────────────────────
+chat:
+  contacts:
+    - { id: karim, name: Karim Benali, role: Régulateur de nuit · Valmobilis }
+    - { id: yasmine, name: Yasmine Haddad, role: Analyste senior · Ironveil }
+  history:
+    karim:
+      - { from: karim, text: "Vous êtes là ? Les panneaux de la station Gare affichent 00:00 partout, puis s'éteignent.", at: "2026-09-14T04:11:00+02:00" }
+    yasmine:
+      - { from: yasmine, text: "Astreinte de nuit chez Valmobilis : avant d'isoler quoi que ce soit, demande-toi ce que ça casse.", at: "2026-09-14T04:00:00+02:00" }
+  nodes:
+    - id: karim-billet
+      contact: karim
+      trigger: { event: soc.alert, where: { id: a-billet } }
+      messages:
+        - "La billettique vient de tomber aussi. Les valideurs clignotent. C'est le même problème ?"
+      replies:
+        - { id: same, text: "Oui, une mise à jour se propage. Je m'en occupe." }
+        - { id: unsure, text: "Je ne sais pas encore." }
+    - id: karim-sae
+      contact: karim
+      messages:
+        - "LE SAE. Je n'ai plus la position des trams. S'il ne revient pas avant 5 h, rien ne sort du dépôt."
+    - id: karim-15
+      contact: karim
+      messages:
+        - "Premier départ dans 15 minutes. Où on en est ?"
+    - id: karim-late
+      contact: karim
+      messages:
+        - "05:00. Je retiens la ligne A au dépôt. J'appelle la direction."
+    - id: karim-ok
+      contact: karim
+      messages:
+        - "Les panneaux repartent ! La billettique aussi. Merci. Vous me direz ce qui s'est passé ?"
+    - id: yasmine-isolate
+      contact: yasmine
+      trigger: { event: soc.action, where: { action: isolate, target: deploy } }
+      messages:
+        - "Tu as isolé srv-deploy. Ça arrête la propagation… mais c'est aussi l'outil qui sait revenir en arrière. Tu as un plan pour réparer ?"
+    - id: yasmine-stop
+      contact: yasmine
+      trigger: { event: objective.complete, where: { id: stop } }
+      messages:
+        - "Bien, la chute est arrêtée. Maintenant, ce qui est tombé ne se relèvera pas tout seul."
+
+intro:
+  title: EFFET DOMINO
+  lines:
+    - "Lundi 14 septembre 2026 — 04:15 — Valmont."
+    - "Vous êtes d'astreinte de nuit pour Valmobilis, les trams et bus de la ville."
+    - "Depuis dix minutes, les systèmes tombent l'un après l'autre. Personne ne devait travailler sur le réseau cette nuit."
+    - "Le premier tram part à 05:00."
+
+outro:
+  title: NUIT TERMINÉE
+  text: Le rapport est parti.

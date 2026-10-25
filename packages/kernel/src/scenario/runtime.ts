@@ -88,7 +88,8 @@ function matchLeaf(t: TriggerLeaf, e: AnyEvent): boolean {
   const p = e.payload as Record<string, unknown>;
   // An event from a remote machine only matches triggers that name that machine,
   // so `where: { path: /var/log/auth.log }` keeps meaning the workstation's file.
-  if (p.machine !== undefined && t.where?.machine === undefined && e.type !== 'auth.ssh') return false;
+  // Flags are scenario-wide whatever machine raised them; auth.ssh says where it came from, not where it is.
+  if (p.machine !== undefined && t.where?.machine === undefined && e.type !== 'auth.ssh' && e.type !== 'scenario.flag') return false;
   for (const [k, v] of Object.entries(t.where ?? {})) {
     if (p[k] !== v) return false;
   }
@@ -452,7 +453,8 @@ export class ScenarioRuntime {
 
   assetState(id: string): 'isolated' | 'infected' | 'ok' {
     if (this.state.flags.includes(`isolated:${id}`)) return 'isolated';
-    if (this.state.flags.includes(`infected:${id}`)) return 'infected';
+    // `restored:<id>` (a repair, a rollback) wins over the fault.
+    if (this.state.flags.includes(`infected:${id}`) && !this.state.flags.includes(`restored:${id}`)) return 'infected';
     return 'ok';
   }
 

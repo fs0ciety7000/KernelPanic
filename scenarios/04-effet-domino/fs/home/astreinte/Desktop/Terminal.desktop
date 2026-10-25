@@ -1,0 +1,6 @@
+[Desktop Entry]
+Type=Application
+Name=Terminal
+Comment=Interpréteur de commandes
+Exec=terminal
+Icon=terminal

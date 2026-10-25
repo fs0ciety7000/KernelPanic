@@ -7,7 +7,7 @@
 html, body {
   margin: 0;
   height: 100%;
-  overflow: hidden;
+  overflow: clip;
   background: var(--kp-bg-0);
   color: var(--kp-text-0);
   font-family: var(--kp-font-ui);

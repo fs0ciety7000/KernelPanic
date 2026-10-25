@@ -245,7 +245,7 @@ export interface TimerDef {
 
 // ── SOC console (live incident response) ───────────────────────────────
 
-/** A machine on the network map. State is read from flags: `infected:<id>`, `isolated:<id>`. */
+/** A machine on the network map. State is read from flags: `infected:<id>` (unless `restored:<id>`), `isolated:<id>`. */
 export interface SocAsset {
   id: string;
   name: string;
@@ -276,6 +276,8 @@ export interface SocDef {
   alerts: SocAlert[];
   /** Zone order on the map (default: order of appearance). */
   zones?: string[];
+  /** Wording of the `infected` state on the map (default "compromis"). */
+  faultLabel?: string;
 }
 
 /** A remote machine reachable with `ssh` (ADR-009). Same building blocks as the local one. */

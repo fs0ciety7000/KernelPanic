@@ -85,7 +85,8 @@
 </main>
 
 <style>
-  .desktop { position: fixed; inset: 0; overflow: hidden; }
+  /* clip, not hidden: a focused field must never scroll the whole desktop. */
+  .desktop { position: fixed; inset: 0; overflow: clip; }
   .wallpaper { position: absolute; inset: 0; background: radial-gradient(120% 90% at 50% 40%, #0d1420 0%, #080b11 55%, #05070b 100%); }
   .wp-aurora { background: linear-gradient(160deg, #0b1d2a 0%, #0a0e14 45%, #1a1030 100%); }
   .wp-circuit {

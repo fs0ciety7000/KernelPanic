@@ -8,7 +8,7 @@
   const k = os.kernel!;
   const soc = k.bundle.soc!;
   const SEV: Record<string, string> = { low: 'faible', medium: 'moyenne', high: 'haute', critical: 'critique' };
-  const STATE: Record<string, string> = { ok: 'sain', infected: 'compromis', isolated: 'isolé' };
+  const STATE: Record<string, string> = { ok: 'sain', infected: soc.faultLabel ?? 'compromis', isolated: 'isolé' };
 
   // The runtime mutates in place: derive fresh copies on each change.
   const alerts = $derived.by(() => {
@@ -89,7 +89,7 @@
     <div class="title"><Icon name="shield" size={16} /> {soc.name ?? 'Console SOC'}</div>
     <div class="stats mono">
       <span class:hot={counts.open}><b>{counts.open}</b> alertes ouvertes</span>
-      <span class:hot={counts.infected}><b>{counts.infected}</b> compromis</span>
+      <span class:hot={counts.infected}><b>{counts.infected}</b> {STATE.infected}</span>
       <span><b>{counts.isolated}</b> isolés</span>
       <span><b>{blocked.length}</b> règles pare-feu</span>
       <span class="clock">{clock}</span>

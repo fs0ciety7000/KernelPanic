@@ -150,7 +150,8 @@ trigger:
 | `web.visit` | `url, host, path, title, status` | Navigateur |
 | `chat.message` | `contact, text` | runtime (un PNJ écrit) |
 | `chat.reply` | `contact, node, reply` | Messagerie (réponse du joueur) |
-| `auth.ssh` | `user, login, target, ok, method, machine?` | `ssh`/`scp` (connexion à une machine distante) |
+| `auth.ssh` | `user, login, target, ok, method, machine?` |
+| `soc.alert` / `soc.triage` / `soc.action` | voir §3.6d | Console SOC | `ssh`/`scp` (connexion à une machine distante) |
 
 ### 3.2 Effets `onComplete`
 
@@ -159,6 +160,7 @@ trigger:
 | `deliver` | `{ deliver: 03-final.eml }` | nouveau mail + notification « Nouveau message » |
 | `notify` | `{ notify: { title, body } }` | toast narratif |
 | `write` | `{ write: { path, content, mode?, owner?, append?, machine? } }` | fichier créé/remplacé (en root) ; `append: true` ajoute (lignes de journal) ; `machine: <id>` vise une machine distante |
+| `alert` | `{ alert: a-sae }` | lève une alerte de la Console SOC |
 | `remove` | `{ remove: { path, machine? } }` | supprime un fichier (preuve détruite par un PNJ, rétention…) ; le chemin doit exister à la compilation |
 | `flag` | `{ flag: alarm-raised }` | émet `scenario.flag` (chaînage) |
 | `end` | `{ end: true }` | écran de fin (score, temps, indices utilisés) |
@@ -295,6 +297,28 @@ timers:
 ### 3.6c Déroulé de partie (replay)
 
 Le runtime tient un journal (`state.journal`, sauvegardé) affiché sur l'écran de fin, « Revoir la partie » : objectifs atteints, pièces trouvées **avec ce qui les a révélées** (la commande tapée et sa machine, le fichier lu, le mail ouvert), connexions `ssh` (`compte@machine`, clé ou mot de passe), indices demandés, réponses refusées (la valeur saisie), décisions, minuteries déclenchées et fin. Heure de jeu pour chaque ligne, temps de jeu en infobulle. Rien à déclarer côté scénario : soignez les titres des objectifs et des pièces, c'est ce qui se lit.
+
+### 3.6d Console SOC (crise en direct)
+
+Un scénario qui déclare `soc:` installe l'app « Console SOC » sur le poste : carte du réseau par zone, flux d'alertes, triage, isolement, pare-feu.
+
+```yaml
+soc:
+  name: Supervision — Valmobilis
+  faultLabel: défaillant          # libellé de l'état « infected » (défaut : compromis)
+  zones: [Voyageurs, Exploitation]
+  assets:
+    - { id: sae, name: srv-sae, ip: 10.60.3.10, role: "…", zone: Exploitation, impact: "aucun tram ne pourra partir." }
+    - { id: deploy, name: srv-deploy, ip: 10.60.1.10, role: "…", host: deploy }   # host = machine ssh (isolée → No route to host)
+  alerts:
+    - { id: a-sae, severity: critical, title: "…", asset: sae, detail: "…" }                      # levée par un effet { alert: a-sae }
+    - { id: a-x, severity: medium, title: "…", detail: "…", trigger: { event: …, where: … } }    # ou par un déclencheur
+```
+
+- L'état d'une machine se lit dans les flags : `infected:<id>` (sauf `restored:<id>`), `isolated:<id>`. Les minuteries et les effets `flag` font vivre la carte.
+- Actions du joueur, toutes définitives : triage (`triage:<alerte>:real|false`), isolement (`isolated:<id>`, avec confirmation qui affiche `impact`), blocage d'une IPv4 au pare-feu (`blocked:<ip>`). Le compilateur considère ces flags comme « levables ».
+- Propagation : des minuteries avec `ifFlags` (la source doit être atteinte) et `unlessFlags` (pause, blocage, isolement) ; une minuterie sans `timedOnly` fait partie du scénario, mode chronométré ou non.
+- Événements : `soc.alert` `{ id, severity, title, asset? }`, `soc.triage` `{ alert, verdict }`, `soc.action` `{ action: isolate|block, target }`.
 
 ### 3.7 Machines distantes (`ssh`, `scp`)
 
