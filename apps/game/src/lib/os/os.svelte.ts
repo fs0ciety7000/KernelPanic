@@ -9,7 +9,7 @@ import { appForPath, appById } from './apps';
 import { wm, type WindowSnapshot } from './wm.svelte';
 import { desktop, type Cell } from './desktop.svelte';
 
-type Phase = 'boot' | 'select' | 'intro' | 'desktop' | 'ended';
+type Phase = 'boot' | 'select' | 'intro' | 'login' | 'desktop' | 'ended';
 
 interface StoredGame {
   save: SaveGame;
@@ -32,6 +32,10 @@ class OS {
   /** Wall-clock tick for the top bar clock. */
   tick = $state(0);
   error = $state<string | null>(null);
+  /** Screen lock over a running desktop (Ctrl+Alt+L, launcher). */
+  locked = $state(false);
+  /** True until the first login of a fresh game (autostart apps run once). */
+  private firstSession = false;
 
   private pending = false;
   private timers: ReturnType<typeof setInterval>[] = [];
@@ -75,26 +79,44 @@ class OS {
     this.kernel = kernel;
     wm.reset();
     desktop.reset();
+    this.locked = false;
     if (stored && stored.save.scenarioVersion === bundle.version) {
-      this.phase = kernel.runtime.ended ? 'ended' : 'desktop';
+      this.firstSession = false;
+      this.phase = kernel.runtime.ended ? 'ended' : 'login';
       wm.restore(stored.windows);
       desktop.positions = stored.desktop ?? {};
     } else {
-      this.phase = bundle.intro ? 'intro' : 'desktop';
+      this.firstSession = true;
+      this.phase = bundle.intro ? 'intro' : 'login';
     }
     this.startTimers();
   }
 
-  /** Called when the intro is dismissed. */
+  /** Called when the intro is dismissed: show the session login screen. */
+  toLogin(): void {
+    this.phase = 'login';
+  }
+
+  /** Login screen → desktop. Autostart apps only on the very first session. */
   enterDesktop(): void {
     const k = this.kernel;
     if (!k) return;
     this.phase = 'desktop';
-    for (const a of k.bundle.session.autostart ?? []) {
-      if (a.path) this.openPath(a.path);
-      else wm.open(a.app);
+    this.locked = false;
+    if (this.firstSession) {
+      this.firstSession = false;
+      for (const a of k.bundle.session.autostart ?? []) {
+        if (a.path) this.openPath(a.path);
+        else wm.open(a.app);
+      }
     }
     this.save();
+  }
+
+  lock(): void {
+    if (this.phase !== 'desktop') return;
+    this.save();
+    this.locked = true;
   }
 
   private wire(k: Kernel): void {
@@ -135,8 +157,13 @@ class OS {
         sound.play('end');
       }, 2500);
     });
+    on('chat.message', (e) => {
+      const name = k.bundle.chat?.contacts.find((c) => c.id === e.contact)?.name ?? e.contact;
+      notify.push({ kind: 'mail', title: name, body: e.text, action: { label: 'Répondre', run: () => wm.open('chat', { contact: e.contact }) } }, 7000);
+    });
     on('app.open', (e) => {
-      if (e.path) this.openPath(e.path, e.appId || undefined);
+      if (e.path && /^(https?|file):\/\//.test(e.path)) wm.open('browser', { url: e.path });
+      else if (e.path) this.openPath(e.path, e.appId || undefined);
       else if (e.appId && appById(e.appId)) wm.open(e.appId);
       else if (e.appId) notify.push({ kind: 'error', title: 'open', body: `Application inconnue : ${e.appId}` });
     });

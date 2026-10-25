@@ -79,6 +79,8 @@ export interface AnswerDef {
 
 export type Effect =
   | { deliver: string }
+  /** Start a chat conversation node (an NPC writes to the player). */
+  | { chat: string }
   | { notify: { title: string; body: string } }
   | { write: WriteEffect }
   | { flag: string }
@@ -123,6 +125,78 @@ export interface EndingDef {
   notFlags?: string[];
 }
 
+// ── Web (simulated browser) ────────────────────────────────────────────
+
+export interface WebPage {
+  /** "host/path" without scheme, e.g. "intranet.lumengrid.local/wiki/vpn". */
+  key: string;
+  title: string;
+  html: string;
+}
+
+export interface WebRoute {
+  /** Regex on "host/path?query" (no scheme). First match wins, before static pages. */
+  match: string;
+  /** Page key to display instead. */
+  page?: string;
+  /** Or an inline response. */
+  title?: string;
+  html?: string;
+  /** Raises a scenario flag (form submissions, searches…). */
+  emit?: string;
+}
+
+export interface WebDef {
+  home?: string;
+  bookmarks?: Array<{ label: string; url: string }>;
+  pages: Record<string, WebPage>;
+  routes?: WebRoute[];
+  /** host → reason shown on the "blocked by policy" page. */
+  blocked?: Record<string, string>;
+}
+
+// ── Internal chat ──────────────────────────────────────────────────────
+
+export interface ChatContact {
+  id: string;
+  name: string;
+  role?: string;
+  status?: string;
+}
+
+export interface ChatMessage {
+  /** Contact id, or "me". */
+  from: string;
+  text: string;
+  /** ISO timestamp (pre-existing history) — live messages use game time. */
+  at?: string;
+}
+
+export interface ChatReply {
+  id: string;
+  text: string;
+  next?: string;
+  flags?: string[];
+  requiresEvidence?: string[];
+  onSelect?: Effect[];
+}
+
+export interface ChatNode {
+  id: string;
+  contact: string;
+  /** Fires on its own when this trigger matches (once). Nodes without trigger are reached via `next` or a `chat` effect. */
+  trigger?: Trigger;
+  messages: string[];
+  replies?: ChatReply[];
+  onComplete?: Effect[];
+}
+
+export interface ChatDef {
+  contacts: ChatContact[];
+  history?: Record<string, ChatMessage[]>;
+  nodes: ChatNode[];
+}
+
 export interface ObjectiveDef {
   id: string;
   title: string;
@@ -163,6 +237,8 @@ export interface ScenarioBundle {
   network: NetworkDef;
   objectives: ObjectiveDef[];
   evidence?: EvidenceDef[];
+  web?: WebDef;
+  chat?: ChatDef;
   /** Evaluated in order when an `end` effect fires; first match wins, else `outro`. */
   endings?: EndingDef[];
   intro?: { title: string; lines: string[] };

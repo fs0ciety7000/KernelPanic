@@ -43,6 +43,7 @@ const STEPS = [
   await page.waitForTimeout(300);
   if (await page.getByText('Passer').isVisible().catch(() => false)) await page.getByText('Passer').click();
   await page.getByText('Ouvrir la session').click();
+  await page.locator('.lock .forensic').click(); // login screen: SOC forensic access
   await page.waitForTimeout(800);
 
   for (const [i, [name, action]] of STEPS.entries()) {

@@ -6,6 +6,7 @@
   import Intro from '$lib/desktop/Intro.svelte';
   import Desktop from '$lib/desktop/Desktop.svelte';
   import EndScreen from '$lib/desktop/EndScreen.svelte';
+  import LockScreen from '$lib/desktop/LockScreen.svelte';
 </script>
 
 {#if os.phase === 'boot'}
@@ -14,8 +15,11 @@
   <Menu />
 {:else if os.phase === 'intro' && os.kernel}
   <Intro />
+{:else if os.phase === 'login' && os.kernel}
+  <LockScreen mode="login" />
 {:else if os.phase === 'desktop' && os.kernel}
   <Desktop />
+  {#if os.locked}<LockScreen mode="lock" />{/if}
 {:else if os.phase === 'ended' && os.kernel}
   <EndScreen />
 {/if}

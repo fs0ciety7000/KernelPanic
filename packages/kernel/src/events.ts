@@ -16,6 +16,9 @@ export interface KernelEvents {
   'objective.available': { id: string };
   'objective.complete': { id: string; title: string };
   'evidence.found': { id: string; title: string };
+  'web.visit': { url: string; host: string; path: string; title: string; status: string };
+  'chat.message': { contact: string; text: string };
+  'chat.reply': { contact: string; node: string; reply: string };
   'choice.made': { objective: string; option: string };
   'scenario.notify': { title: string; body: string };
   'scenario.end': Record<string, never>;

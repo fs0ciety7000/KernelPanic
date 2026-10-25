@@ -9,6 +9,7 @@ import { ScenarioRuntime, type ScenarioState } from './scenario/runtime';
 import { BUNDLE_FORMAT, type MachineDef, type ScenarioBundle } from './scenario/types';
 import { GameTime, parseOffset } from './util/time';
 import { parseMail } from './util/mail';
+import { fetchPage, type WebResult } from './web';
 
 export const SAVE_VERSION = 1;
 
@@ -67,6 +68,7 @@ export class Kernel {
       {
         deliver: (name) => this.deliver(name),
         write: (path, content, mode, owner) => this.systemWrite(path, content, mode, owner),
+        now: () => this.now(),
       },
       compatible ? save.scenario : undefined,
     );
@@ -122,6 +124,11 @@ export class Kernel {
     const mail = parseMail(content);
     this.bus.emit('mail.delivered', { path: file, subject: mail.subject, from: mail.from });
     return file;
+  }
+
+  /** Simulated browser request (see web.ts). */
+  fetch(url: string, cred = this.users.cred(this.sessionUser)): WebResult {
+    return fetchPage(this, url, cred);
   }
 
   /** Ask the desktop to open a file or app (terminal `open`, scenario autostart…). */

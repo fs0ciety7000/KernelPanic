@@ -89,7 +89,9 @@ NAME
 
 SYNOPSIS
        open FILE            open with the default app (by extension)
-       open -a APP [FILE]   force an app: files, terminal, notes, mail, images, logs, case
+       open URL             open a web page in the browser (https://…, file://…)
+       open -a APP [FILE]   force an app: files, terminal, notes, mail, images, logs,
+                            browser, chat, case, settings
 `,
   ls: `LS(1)
 

@@ -1,5 +1,5 @@
 import type { AnyEvent, EventBus } from '../events';
-import type { ChoiceOption, EndingDef, Effect, EvidenceDef, ObjectiveDef, ScenarioBundle, Trigger, TriggerLeaf } from './types';
+import type { ChatReply, ChoiceOption, EndingDef, Effect, EvidenceDef, ObjectiveDef, ScenarioBundle, Trigger, TriggerLeaf } from './types';
 import { secretHash } from '../util/sha256';
 
 export interface ScenarioState {
@@ -14,10 +14,27 @@ export interface ScenarioState {
   choices: Record<string, string>;
   /** Ending reached (when the scenario defines several). */
   ending?: string;
+  chat: ChatState;
   startedAt: number;
   endedAt?: number;
   /** Accumulated play time in ms (excludes time the game was closed). */
   playtime: number;
+}
+
+export interface ChatLine {
+  from: string;
+  text: string;
+  /** Game time (ms). */
+  at: number;
+}
+
+export interface ChatState {
+  log: Record<string, ChatLine[]>;
+  /** contact → node awaiting the player's reply. */
+  pending: Record<string, string>;
+  /** Nodes already played (each node plays once). */
+  fired: string[];
+  unread: Record<string, number>;
 }
 
 export interface ObjectiveView extends ObjectiveDef {
@@ -28,6 +45,8 @@ export interface ObjectiveView extends ObjectiveDef {
 export interface RuntimeHost {
   deliver(name: string): void;
   write(path: string, content: string, mode?: string, owner?: string): void;
+  /** Current game time (ms). */
+  now(): number;
 }
 
 export function normalizeAnswer(value: string, ops: Array<'trim' | 'lower' | 'nospace'>): string {
@@ -68,7 +87,19 @@ export class ScenarioRuntime {
     private host: RuntimeHost,
     saved?: ScenarioState,
   ) {
-    this.state = { completed: {}, hints: {}, flags: [], early: [], evidence: [], choices: {}, startedAt: Date.now(), playtime: 0, ...saved };
+    this.state = {
+      completed: {},
+      hints: {},
+      flags: [],
+      early: [],
+      evidence: [],
+      choices: {},
+      chat: { log: {}, pending: {}, fired: [], unread: {} },
+      startedAt: Date.now(),
+      playtime: 0,
+      ...saved,
+    };
+    if (!saved?.chat) this.seedChatHistory();
     bus.onAny((e) => this.onEvent(e));
   }
 
@@ -109,6 +140,9 @@ export class ScenarioRuntime {
     if (this.ended) return;
     if (e.type === 'scenario.flag' && !this.state.flags.includes(e.payload.id)) {
       this.state.flags.push(e.payload.id);
+    }
+    for (const node of this.bundle.chat?.nodes ?? []) {
+      if (node.trigger && !this.state.chat.fired.includes(node.id) && matchTrigger(node.trigger, e)) this.fireChat(node.id);
     }
     for (const ev of this.bundle.evidence ?? []) {
       if (!this.state.evidence.includes(ev.id) && matchTrigger(ev.trigger, e)) {
@@ -197,8 +231,63 @@ export class ScenarioRuntime {
     this.changed();
   }
 
+  // ── Chat ─────────────────────────────────────────────────────────────
+
+  private seedChatHistory(): void {
+    for (const [contact, msgs] of Object.entries(this.bundle.chat?.history ?? {})) {
+      this.state.chat.log[contact] = msgs.map((m) => ({ from: m.from, text: m.text, at: m.at ? Date.parse(m.at) : this.host.now() }));
+    }
+  }
+
+  /** An NPC sends the messages of a node (once). */
+  fireChat(nodeId: string): void {
+    const node = this.bundle.chat?.nodes.find((n) => n.id === nodeId);
+    const chat = this.state.chat;
+    if (!node || chat.fired.includes(node.id)) return;
+    chat.fired.push(node.id);
+    const log = (chat.log[node.contact] ??= []);
+    for (const text of node.messages) {
+      log.push({ from: node.contact, text, at: this.host.now() });
+      this.bus.emit('chat.message', { contact: node.contact, text });
+    }
+    chat.unread[node.contact] = (chat.unread[node.contact] ?? 0) + node.messages.length;
+    if (node.replies?.length) chat.pending[node.contact] = node.id;
+    else for (const fx of node.onComplete ?? []) this.apply(fx);
+    this.changed();
+  }
+
+  /** Replies the player can pick right now for a contact. */
+  chatReplies(contact: string): Array<ChatReply & { missing: string[] }> {
+    const nodeId = this.state.chat.pending[contact];
+    const node = this.bundle.chat?.nodes.find((n) => n.id === nodeId);
+    return (node?.replies ?? []).map((r) => ({ ...r, missing: (r.requiresEvidence ?? []).filter((id) => !this.hasEvidence(id)) }));
+  }
+
+  chatReply(contact: string, replyId: string): boolean {
+    const chat = this.state.chat;
+    const node = this.bundle.chat?.nodes.find((n) => n.id === chat.pending[contact]);
+    const reply = node?.replies?.find((r) => r.id === replyId);
+    if (!node || !reply || (reply.requiresEvidence ?? []).some((id) => !this.hasEvidence(id))) return false;
+    delete chat.pending[contact];
+    (chat.log[contact] ??= []).push({ from: 'me', text: reply.text, at: this.host.now() });
+    for (const f of reply.flags ?? []) this.bus.emit('scenario.flag', { id: f });
+    this.bus.emit('chat.reply', { contact, node: node.id, reply: reply.id });
+    for (const fx of reply.onSelect ?? []) this.apply(fx);
+    for (const fx of node.onComplete ?? []) this.apply(fx);
+    if (reply.next) this.fireChat(reply.next);
+    this.changed();
+    return true;
+  }
+
+  markChatRead(contact: string): void {
+    if (!this.state.chat.unread[contact]) return;
+    this.state.chat.unread[contact] = 0;
+    this.changed();
+  }
+
   private apply(fx: Effect): void {
     if ('deliver' in fx) this.host.deliver(fx.deliver);
+    else if ('chat' in fx) this.fireChat(fx.chat);
     else if ('notify' in fx) this.bus.emit('scenario.notify', fx.notify);
     else if ('write' in fx) this.host.write(fx.write.path, fx.write.content, fx.write.mode, fx.write.owner);
     else if ('flag' in fx) this.bus.emit('scenario.flag', { id: fx.flag });

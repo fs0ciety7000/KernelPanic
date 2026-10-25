@@ -147,6 +147,9 @@ trigger:
 | `objective.complete` | `id` | runtime (chaînage) |
 | `evidence.found` | `id, title` | runtime (pièce découverte) |
 | `choice.made` | `objective, option` | runtime (décision prise) |
+| `web.visit` | `url, host, path, title, status` | Navigateur |
+| `chat.message` | `contact, text` | runtime (un PNJ écrit) |
+| `chat.reply` | `contact, node, reply` | Messagerie (réponse du joueur) |
 
 ### 3.2 Effets `onComplete`
 
@@ -157,6 +160,7 @@ trigger:
 | `write` | `{ write: { path, content, mode? } }` | fichier créé/remplacé (en root) |
 | `flag` | `{ flag: alarm-raised }` | émet `scenario.flag` (chaînage) |
 | `end` | `{ end: true }` | écran de fin (score, temps, indices utilisés) |
+| `chat` | `{ chat: tomas-hello }` | un PNJ écrit dans la messagerie |
 
 ### 3.3 Pièces à conviction
 
@@ -207,6 +211,65 @@ endings:                                   # évaluées dans l'ordre à l'effet 
 ```
 
 L'écran de fin affiche la fin obtenue (« Fin 2/4 ») ; `outro` reste le repli si aucune fin ne correspond.
+
+### 3.5 Web (navigateur simulé)
+
+Les sites d'un scénario sont de vrais fichiers HTML rangés par hôte :
+
+```
+scenarios/<id>/web/
+├─ intranet.lumengrid.local/
+│  ├─ index.html              → https://intranet.lumengrid.local/
+│  ├─ wiki/securite.html      → https://intranet.lumengrid.local/wiki/securite
+│  └─ annuaire/index.html     → https://intranet.lumengrid.local/annuaire
+└─ lumengrid.fr/index.html
+```
+
+- Chaque page a une `<title>`. **Aucun `<script>`** : le navigateur affiche les pages dans une iframe sandboxée sans scripts. CSS inline autorisé, images en `data:`.
+- Liens : relatifs (`/wiki/vpn`) ou absolus (`https://autre.hote/…`), interceptés par le navigateur. Formulaires en `GET` : la soumission ouvre `hôte/chemin?champ=valeur`, ce qui permet de router des recherches ou des logins factices.
+- La résolution suit le réseau du scénario : hôte inconnu → erreur DNS ; `network.hosts.<h>.reachable: false` → délai dépassé ; `web.blocked.<h>` → page « bloqué par le SOC » avec la raison ; un hôte sans page mais avec `http:` → réponse brute.
+- `file:///chemin` ouvre un fichier du disque virtuel (HTML ou texte), avec les droits de la session.
+
+```yaml
+web:
+  home: intranet.lumengrid.local           # page d'accueil du navigateur
+  bookmarks:
+    - { label: Intranet, url: intranet.lumengrid.local }
+  blocked:
+    vpn.lumengr1d.com: "Catégorie : hameçonnage — bloqué par le SOC le 17/04 à 07:55 (INC-2026-0417)."
+  routes:                                   # testées avant les pages statiques, sur "hôte/chemin?requête"
+    - { match: "^intranet\\.lumengrid\\.local/annuaire\\?q=.*varga", page: intranet.lumengrid.local/annuaire/varga, emit: annuaire-varga }
+```
+
+Événement : `web.visit` `{ url, host, path, title, status }` (status : `ok`, `dns`, `timeout`, `blocked`, `notfound`, `error`). L'historique de navigation est un vrai fichier : `~/.local/share/kp-browser/history` (lignes `AAAA-MM-JJ HH:MM:SS<TAB>url<TAB>titre`). Un scénario peut le pré-remplir : c'est un indice comme un autre.
+
+### 3.6 Messagerie interne (PNJ)
+
+```yaml
+chat:
+  contacts:
+    - { id: tomas, name: Tomás Reyes, role: Astreinte OT, status: en ligne }
+  history:                                  # conversations passées (affichées au démarrage)
+    tomas:
+      - { from: tomas, at: "2026-04-16T19:06:00+02:00", text: "bon congé !" }
+      - { from: me, at: "2026-04-16T19:07:00+02:00", text: "merci, à lundi 24" }
+  nodes:
+    - id: tomas-hello
+      contact: tomas
+      trigger: { event: objective.complete, where: { id: intrusion-ip } }   # se déclenche une seule fois
+      messages: ["Salut. Nadia m'a dit que t'es sur la machine d'Elias.", "Je peux aider ?"]
+      replies:
+        - { id: pw, text: "Tu sais comment il choisit ses mots de passe ?", next: tomas-pw }
+        - { id: proof, text: "Regarde ce mail.", requiresEvidence: [phishing], next: tomas-phish, flags: [tomas-informed] }
+        - { id: no, text: "Ça ira, merci." }
+    - id: tomas-pw
+      contact: tomas
+      messages: ["Ha. Regarde son bureau. Littéralement."]
+```
+
+- Un nœud avec `trigger` se joue tout seul (une fois) ; sans trigger, il est atteint par `next` ou par l'effet `{ chat: <nœud> }` (utilisable dans tous les `onComplete`/`onSelect`).
+- Les réponses peuvent exiger des pièces (`requiresEvidence`), lever des flags (pour les fins) et lancer des effets.
+- Événements : `chat.message` `{ contact, text }`, `chat.reply` `{ contact, node, reply }`.
 
 ## 4. Commandes scénarisées
 

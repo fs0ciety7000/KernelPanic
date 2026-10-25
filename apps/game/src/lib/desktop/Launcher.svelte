@@ -151,6 +151,7 @@
       <button class="ab" title="Aide — premiers pas" aria-label="Aide" onclick={() => go(() => help.toggle())}><Icon name="info" size={16} /></button>
       <button class="ab" title="Paramètres" aria-label="Paramètres" onclick={() => go(() => wm.open('settings'))}><Icon name="settings" size={16} /></button>
       <button class="ab" title="Sauvegarder" aria-label="Sauvegarder" onclick={() => go(() => os.save())}><Icon name="save" size={16} /></button>
+      <button class="ab" title="Verrouiller (Ctrl+Alt+L)" aria-label="Verrouiller" onclick={() => go(() => os.lock())}><Icon name="lock2" size={16} /></button>
       <button class="ab" title="Quitter vers le menu" aria-label="Quitter vers le menu" onclick={() => go(() => os.quitToMenu())}><Icon name="power" size={16} /></button>
       <button
         class="ab danger"

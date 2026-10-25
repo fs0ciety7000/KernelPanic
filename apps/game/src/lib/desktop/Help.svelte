@@ -9,6 +9,8 @@
     { icon: 'terminal', name: 'Terminal', text: 'Un vrai shell : tapez help. Tab complète, ↑ rappelle l’historique.' },
     { icon: 'activity', name: 'Logs', text: 'Les journaux système, filtrables par texte ou /regex/.' },
     { icon: 'image', name: 'Images', text: 'Le panneau Infos affiche les métadonnées EXIF.' },
+    { icon: 'globe', name: 'Navigateur', text: 'Intranet et sites web — l’historique de navigation est un fichier.' },
+    { icon: 'chat', name: 'Messages', text: 'Des collègues vous écrivent ; répondez par choix.' },
     { icon: 'case', name: 'Dossier', text: 'Vos objectifs, vos réponses et des indices si vous bloquez.' },
   ];
   const KEYS = [
@@ -18,6 +20,7 @@
     ['Ctrl+Alt+← → ↑', 'Ancrer / agrandir la fenêtre'],
     ['Ctrl+Alt+D', 'Afficher le bureau'],
     ['Ctrl+Alt+W', 'Fermer la fenêtre active'],
+    ['Ctrl+Alt+L', 'Verrouiller la session'],
     ['Ctrl+Alt+H', 'Afficher / masquer cette aide'],
   ];
 </script>

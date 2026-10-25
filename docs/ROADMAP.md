@@ -39,8 +39,9 @@ Agents : voir `AGENTS.md`.
 | 2.1c | ✅ **Scénario 00 « Premier jour »** : tutoriel (toutes les apps, sudo, pièces, choix) | scenario-writer |
 | 2.1d | Scénario 03 (avancé) : plusieurs machines (dépend de 3.1), pièces contradictoires entre machines | scenario-writer |
 | 2.2 | Commandes : `tar`/`unzip`/`gzip` simulés, `diff`, `awk` minimal, substitution `$(…)`, `for` simple (✅ déjà : `sort -t -k`, `xxd -p/-r`) | os-engine |
-| 2.3 | App **Navigateur simulé** (intranet de l'entreprise, pages HTML du scénario, formulaires factices) | apps-developer |
-| 2.4 | App **Messagerie interne** (chat PNJ scripté, réponses à choix) | apps-developer |
+| 2.3 | ✅ App **Navigateur** : sites des scénarios (`web/`), iframe sandboxée sans scripts, routes de formulaires, DNS/timeout/blocage, `file://`, historique-fichier | apps-developer |
+| 2.4 | ✅ App **Messages** : PNJ déclenchés par l'enquête, réponses à choix (pièces requises, flags) | apps-developer |
+| 2.4b | ✅ Écran d'ouverture de session + verrouillage (vrai mot de passe ou accès forensique) | design-system |
 | 2.5 | Mode « Lisibilité » (taille +2, sans grain/glow) + thème clair éventuel | design-system |
 | 2.6 | Backend : SQLite (sqlx), sauvegardes synchronisées par jeton joueur anonyme | backend |
 | 2.7 | Éditeur de scénario en ligne de commande : `kp-scenario new <slug>` (squelette) | scaffolder |

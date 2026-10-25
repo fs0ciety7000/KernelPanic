@@ -316,7 +316,7 @@ const su: CommandDef = {
 const open: CommandDef = {
   name: 'open',
   summary: 'open a file with its default application',
-  usage: 'open [-a APP] [FILE]',
+  usage: 'open [-a APP] [FILE|URL]',
   run(ctx) {
     const { values, rest } = getopt(ctx.argv, '', 'a');
     if (!rest.length && values.a) {
@@ -328,6 +328,11 @@ const open: CommandDef = {
       return 1;
     }
     for (const f of rest) {
+      // URLs go to the browser (xdg-open behaviour).
+      if (/^(https?|file):\/\//.test(f)) {
+        ctx.kernel.open('browser', f);
+        continue;
+      }
       const p = ctx.resolve(f);
       try {
         const st = ctx.kernel.vfs.stat(p, ctx.cred);

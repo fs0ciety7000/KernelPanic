@@ -175,6 +175,8 @@ export interface AppProps { win: WindowState; args: Record<string, unknown> }
 | **Images** | Visionneuse (zoom, panneau métadonnées/EXIF). | `.svg .png .jpg` |
 | **Logs** | Visionneuse de journaux : coloration par niveau, filtre texte/regex, saut à l'horodatage. | `.log`, `/var/log/*` |
 | **Case** | Dossier d'enquête : objectifs, réponses, indices, **pièces à conviction** (avec lien vers leur source) et **décisions** finales. | — |
+| **Navigateur** | Sites du scénario (`web/<hôte>/…html`) affichés dans une iframe **sandboxée sans scripts** ; liens et formulaires GET interceptés ; DNS / délai dépassé / blocage SOC selon le réseau simulé ; `file://` ; historique = fichier `~/.local/share/kp-browser/history`. | `.html` |
+| **Messages** | Messagerie interne : contacts, historique, PNJ qui écrivent au fil de l'enquête (nœuds déclenchés), réponses à choix pouvant exiger des pièces et lever des flags. | — |
 | **Paramètres** | Fond d'écran, son, ne pas déranger, lisibilité, « À propos » (machine, noyau, IP, uptime). | — |
 | **Propriétés** | Type (`file`), taille, dates, propriétaire, **permissions rwx modifiables** (règle réelle : seul le propriétaire, sinon `sudo chmod`). | tout chemin |
 
@@ -188,6 +190,10 @@ Le bureau se comporte comme un environnement Linux réel, et tout passe par le n
 - **Corbeille** au format freedesktop (`~/.local/share/Trash/{files,info}` + `.trashinfo` avec `Path=` et `DeletionDate=`), donc restaurable — et visible au terminal.
 - **Barre des tâches** : lanceur avec recherche, apps épinglées, une entrée par fenêtre, zone de notification (objectifs, centre de notifications avec « ne pas déranger », son, réseau, calendrier de la machine, afficher le bureau).
 - Opérations fichiers : `lib/os/fileops.svelte.ts` ; état du bureau : `lib/os/desktop.svelte.ts` ; préférences par navigateur : `lib/os/settings.svelte.ts`.
+
+### 5.1c Session
+
+Après l'intro (ou en reprenant une sauvegarde), un **écran d'ouverture de session** : heure et date de la machine, carte utilisateur, champ mot de passe (vérifié contre le vrai hash du scénario) et accès « forensique (SOC) » qui ne l'exige pas. **Verrouillage** par Ctrl+Alt+L ou depuis le lanceur, par-dessus le bureau intact.
 
 ### 5.2 Window Manager
 

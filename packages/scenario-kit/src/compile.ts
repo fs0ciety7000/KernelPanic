@@ -19,6 +19,9 @@ import {
   type ScenarioIndexEntry,
   type EvidenceDef,
   type EndingDef,
+  type WebDef,
+  type WebPage,
+  type ChatDef,
 } from '@kp/kernel';
 
 const BINARY_MIME: Record<string, string> = {
@@ -32,6 +35,7 @@ const BINARY_MIME: Record<string, string> = {
 const KNOWN_EVENTS = new Set([
   'fs.read', 'fs.write', 'fs.list', 'cmd.exec', 'auth.sudo', 'auth.su', 'mail.open', 'image.open',
   'app.open', 'scenario.flag', 'objective.complete', 'evidence.found', 'choice.made',
+  'web.visit', 'chat.message', 'chat.reply',
 ]);
 
 export class ScenarioError extends Error {
@@ -52,9 +56,11 @@ interface RawObjective extends Omit<ObjectiveDef, 'answer'> {
   answer?: { label: string; placeholder?: string; accept: string[]; normalize?: Array<'trim' | 'lower' | 'nospace'> };
 }
 
-interface RawScenario extends Omit<ScenarioBundle, 'format' | 'fs' | 'deliveries' | 'users' | 'objectives' | 'evidence' | 'endings'> {
+interface RawScenario extends Omit<ScenarioBundle, 'format' | 'fs' | 'deliveries' | 'users' | 'objectives' | 'evidence' | 'endings' | 'web' | 'chat'> {
   evidence?: EvidenceDef[];
   endings?: EndingDef[];
+  web?: Omit<WebDef, 'pages'>;
+  chat?: ChatDef;
   users: Array<UserDef & { password?: string }>;
   permissions?: RawPermission[];
   defaults?: { mtime?: string };
@@ -187,6 +193,50 @@ export function compileScenario(dir: string): ScenarioBundle {
   }
   const flags = new Set(Object.values(commands).flatMap((c) => c.rules.map((r) => r.emit).filter(Boolean) as string[]));
 
+  // ── Web: web/<host>/<path>.html (index.html = folder) + scenario.yaml `web:` ──
+  const pages: Record<string, WebPage> = {};
+  const webDir = join(dir, 'web');
+  if (existsSync(webDir)) {
+    for (const full of walk(webDir).filter((f) => !f.endsWith('/') && /\.html?$/.test(f))) {
+      const rel = relative(webDir, full).split(/[\\/]/);
+      const host = rel.shift()!.toLowerCase();
+      const path = rel.join('/').replace(/\.html?$/, '').replace(/(^|\/)index$/, '');
+      const key = `${host}/${path}`;
+      const html = readFileSync(full, 'utf8');
+      const title = html.match(/<title>([\s\S]*?)<\/title>/i)?.[1]?.trim();
+      if (!title) problems.push(`web: ${host}/${rel.join('/')} has no <title>`);
+      if (/<script\b/i.test(html)) problems.push(`web: ${key} contains <script> — pages are rendered without scripts`);
+      pages[key] = { key, title: title ?? key, html };
+    }
+  }
+  for (const r of raw.web?.routes ?? []) {
+    try {
+      new RegExp(r.match);
+    } catch {
+      problems.push(`web route: invalid regex ${r.match}`);
+    }
+    if (r.page && !pages[r.page]) problems.push(`web route ${r.match}: page '${r.page}' not found in web/`);
+    if (!r.page && !r.html) problems.push(`web route ${r.match}: needs page or html`);
+    if (r.emit) flags.add(r.emit);
+  }
+  const web: WebDef | undefined = Object.keys(pages).length || raw.web ? { ...raw.web, pages } : undefined;
+
+  // ── Chat ──────────────────────────────────────────────────────────────
+  const chat = raw.chat;
+  if (chat) {
+    const contacts = new Set(chat.contacts.map((c) => c.id));
+    const nodeIds = new Set(chat.nodes.map((n) => n.id));
+    for (const c of Object.keys(chat.history ?? {})) if (!contacts.has(c)) problems.push(`chat history: unknown contact '${c}'`);
+    for (const n of chat.nodes) {
+      if (!contacts.has(n.contact)) problems.push(`chat node ${n.id}: unknown contact '${n.contact}'`);
+      if (!n.messages?.length) problems.push(`chat node ${n.id}: needs messages`);
+      for (const r of n.replies ?? []) {
+        if (r.next && !nodeIds.has(r.next)) problems.push(`chat node ${n.id}: reply '${r.id}' → unknown node '${r.next}'`);
+        for (const f of r.flags ?? []) flags.add(f);
+      }
+    }
+  }
+
   // ── Objectives ────────────────────────────────────────────────────────
   const evidenceIds = new Set((raw.evidence ?? []).map((e) => e.id));
   for (const o of raw.objectives) {
@@ -270,6 +320,23 @@ export function compileScenario(dir: string): ScenarioBundle {
       if (typeof p === 'string' && !entries.has(p)) problems.push(`evidence ${ev.id}: trigger path '${p}' not in fs/`);
     }
   }
+  for (const n of chat?.nodes ?? []) {
+    for (const r of n.replies ?? []) {
+      for (const ev of r.requiresEvidence ?? []) if (!seenEv.has(ev)) problems.push(`chat node ${n.id}: reply '${r.id}' requires unknown evidence '${ev}'`);
+    }
+    for (const leaf of n.trigger ? leaves(n.trigger) : []) {
+      if (!KNOWN_EVENTS.has(leaf.event)) problems.push(`chat node ${n.id}: unknown event '${leaf.event}'`);
+    }
+  }
+  const allEffects = [
+    ...raw.objectives.flatMap((o) => [...(o.onComplete ?? []), ...(o.choice?.options ?? []).flatMap((x) => x.onSelect ?? [])]),
+    ...(chat?.nodes ?? []).flatMap((n) => [...(n.onComplete ?? []), ...(n.replies ?? []).flatMap((r) => r.onSelect ?? [])]),
+  ];
+  for (const fx of allEffects) {
+    if ('chat' in fx && !chat?.nodes.some((n) => n.id === fx.chat)) problems.push(`effect chat: unknown node '${fx.chat}'`);
+    if ('deliver' in fx && !deliveries[fx.deliver]) problems.push(`effect deliver: '${fx.deliver}' not found in deliveries/`);
+  }
+
   const endings = raw.endings ?? [];
   for (const e of endings) {
     for (const f of [...(e.flags ?? []), ...(e.notFlags ?? [])]) {
@@ -320,6 +387,8 @@ export function compileScenario(dir: string): ScenarioBundle {
     network: raw.network ?? {},
     objectives,
     evidence: raw.evidence ?? [],
+    web,
+    chat,
     endings,
     intro: raw.intro,
     outro: raw.outro,

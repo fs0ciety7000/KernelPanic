@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { os } from '$lib/os/os.svelte';
   import { wm } from '$lib/os/wm.svelte';
   import { help } from '$lib/os/help.svelte';
   import { settings } from '$lib/os/settings.svelte';
@@ -14,6 +15,7 @@
   onMount(() => help.maybeShowFirstTime());
 
   function onKey(e: KeyboardEvent) {
+    if (os.locked) return;
     const handled = () => {
       e.preventDefault();
       e.stopPropagation();
@@ -32,6 +34,9 @@
     } else if (e.ctrlKey && e.altKey && key === 'h') {
       handled();
       help.toggle();
+    } else if (e.ctrlKey && e.altKey && key === 'l') {
+      handled();
+      os.lock();
     } else if (e.ctrlKey && e.altKey && key === 'd') {
       handled();
       wm.toggleShowDesktop();

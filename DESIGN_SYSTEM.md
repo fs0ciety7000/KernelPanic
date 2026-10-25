@@ -143,6 +143,15 @@ Synthétisé en WebAudio (`apps/game/src/lib/os/sound.svelte.ts`), aucun fichier
 ### 6.10 Aide « Premiers pas »
 Panneau flottant non bloquant (verre, liseré cyan à gauche), affiché une seule fois au premier bureau puis réouvrable (menu KP, Ctrl+Alt+H). Rôle de chaque app en une phrase + raccourcis clavier.
 
+### 6.11 Écran de session
+Fond d'écran de l'utilisateur (voile flou par-dessus le bureau en mode verrouillé), heure en Geist 200 très grande (64–120 px), date en toutes lettres, avatar 76 px violet avec halo, champ mot de passe en pilule (bouton rond cyan), lien « accès forensique (SOC) » en pilule cyan translucide. Erreur : secousse + texte rouge ; succès : contour vert.
+
+### 6.12 Navigateur
+Chrome sombre (barre d'adresse en pilule, cadenas vert en HTTPS, ambre sinon, icône fichier en `file://`), barre de favoris, mais **la page elle-même garde son propre style** (fond blanc d'un intranet, typo d'un média) : c'est un autre monde dans la machine. Pages d'erreur dans le style NOCTIS avec icône par cause (DNS, délai, blocage rouge).
+
+### 6.13 Messages
+Liste de contacts avec avatars à teinte stable (dérivée de l'identifiant), badge non lu cyan. Bulles : interlocuteur à gauche (`--kp-bg-3`), vous à droite (cyan 14 %). Séparateur de date en pilule. Indicateur de saisie à trois points avant chaque nouveau message de PNJ. Réponses à choix en cartes ; verrouillées (cadenas) s'il manque une pièce.
+
 ## 7. Iconographie
 Jeu d'icônes maison au trait (24 px de grille, stroke 1.5, coins arrondis), inspiré de Lucide, stocké dans `apps/game/src/lib/desktop/icons.ts`. Les types de fichiers ont une icône + une teinte : dossier (text-1), texte (text-1), mail (cyan), image (violet), log (amber), script (green), caché (opacité 55 %).
 

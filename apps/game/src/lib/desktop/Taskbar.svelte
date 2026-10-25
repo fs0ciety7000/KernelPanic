@@ -28,6 +28,10 @@
   const focusedId = $derived(wm.focused?.id);
   const pinned = APPS.filter((a) => a.dock);
   const running = $derived(new Set(wm.windows.map((w) => w.appId)));
+  const chatUnread = $derived.by(() => {
+    void os.version;
+    return Object.values(k.runtime.state.chat?.unread ?? {}).reduce((a, b) => a + b, 0);
+  });
 
   function toggle(p: Panel) {
     panel = panel === p ? null : p;
@@ -93,6 +97,7 @@
         title={app.title}
       >
         <Icon name={app.icon} size={19} />
+        {#if app.id === 'chat' && chatUnread}<span class="pbadge mono">{chatUnread}</span>{/if}
       </button>
     {/each}
   </div>
@@ -186,6 +191,7 @@
     background: var(--kp-text-2);
   }
   .pin.focused::after { background: var(--kp-cyan); box-shadow: 0 0 8px var(--kp-cyan); width: 18px; }
+  .pbadge { position: absolute; top: 3px; right: 3px; min-width: 15px; height: 15px; padding: 0 3px; border-radius: 8px; background: var(--kp-cyan); color: var(--kp-bg-0); font-size: 9.5px; font-weight: 700; line-height: 15px; }
   .sepv { width: 1px; height: 24px; margin: 0 6px; background: var(--kp-line-strong); }
   .windows { flex: 1; display: flex; gap: 3px; min-width: 0; overflow: hidden; }
   .win {

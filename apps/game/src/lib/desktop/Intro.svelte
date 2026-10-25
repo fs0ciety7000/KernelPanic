@@ -32,7 +32,7 @@
     <button
       class="kp-btn primary go"
       class:ready={visible >= intro.lines.length}
-      onclick={() => (visible >= intro.lines.length ? os.enterDesktop() : (visible = intro.lines.length))}
+      onclick={() => (visible >= intro.lines.length ? os.toLogin() : (visible = intro.lines.length))}
     >
       {visible >= intro.lines.length ? 'Ouvrir la session' : 'Passer'}
     </button>
