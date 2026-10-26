@@ -1,0 +1,503 @@
+# ─────────────────────────────────────────────────────────────────────────────
+#  Kernel_Panic — Scénario 01 : GHOST SHIFT
+#  Difficulté : débutant → intermédiaire · ~35-45 min
+#  Solution complète : SOLUTION.md (spoilers)
+# ─────────────────────────────────────────────────────────────────────────────
+id: ghost-shift
+version: 1
+title: Ghost Shift
+subtitle: Une mise à jour de firmware que personne n'a demandée.
+summary: >
+  Lumen Grid, opérateur du réseau électrique de Valmont. Cette nuit à 03:12, le compte
+  de l'administrateur OT Elias Varga a programmé le déploiement d'un firmware non signé
+  sur 14 sous-stations. Exécution prévue à 09:00. Elias est en congé, injoignable.
+  Vous avez sa station de travail. Et quarante-huit minutes.
+difficulty: beginner
+estimatedMinutes: 40
+locale: fr
+contract: { client: "Lumen Grid", fee: 4800 }
+
+machine:
+  hostname: ws-varga
+  domain: ot.lumengrid.local
+  os: LumenOS 22.04.4 LTS
+  kernel: 6.8.0-41-lumen
+  ip: 10.20.4.17
+  clock: 2026-04-17T08:12:00+02:00
+
+defaults:
+  mtime: 2026-03-02T10:00:00+02:00
+
+session:
+  user: elias
+  email: elias@lumengrid.fr
+  cwd: /home/elias
+  autostart:
+    - { app: mail }
+
+users:
+  - { name: root, uid: 0, home: /root, shell: /bin/bash }
+  - name: elias
+    uid: 1000
+    fullName: Elias Varga
+    home: /home/elias
+    shell: /bin/bash
+    groups: [adm, sudo, lumen-ops]
+    password: Pixel2019
+  - { name: lumen-agent, uid: 998, home: /var/lib/lumen, shell: /usr/sbin/nologin }
+
+# Propriétaires/modes par défaut : /home/<u>/** → <u>:<u> 0644 (dossiers 0755, home 0750),
+# ailleurs root:root. Surcharges ci-dessous (dernière règle gagnante).
+permissions:
+  - { path: /root, mode: "0700" }
+  - { path: /root/**, mode: "0600" }
+  - { path: /etc/shadow, group: shadow, mode: "0640" }
+  - { path: /etc/lumen/override.key, mode: "0600", mtime: 2026-04-01T09:30:00+02:00 }
+  - { path: /etc/lumen/lumenctl.conf, group: lumen-ops, mode: "0640" }
+  - { path: /var/log/auth.log, group: adm, mode: "0640", mtime: 2026-04-17T08:12:00+02:00 }
+  - { path: /var/log/syslog, group: adm, mode: "0640", mtime: 2026-04-17T08:10:01+02:00 }
+  - { path: /var/log/lumen/lumenctl.log, group: lumen-ops, mode: "0640", mtime: 2026-04-17T03:12:06+02:00 }
+  - { path: /var/log/wtmp, group: utmp, mode: "0664", mtime: 2026-04-17T08:12:00+02:00 }
+  - { path: /var/spool/cron/crontabs, group: crontab, mode: "0730" }
+  - { path: /var/spool/cron/crontabs/elias, owner: elias, group: crontab, mode: "0600", mtime: 2026-04-17T02:52:40+02:00 }
+  - { path: /usr/local/bin/lumenctl, group: lumen-ops, mode: "0750" }
+  - { path: /tmp, mtime: 2026-04-17T02:58:31+02:00 }
+  - { path: /tmp/.fw, owner: elias, mode: "0755", mtime: 2026-04-17T02:58:31+02:00 }
+  - { path: /tmp/.fw/lumen-fw-4.2.1-hotfix.img, owner: elias, mtime: 2026-04-17T02:58:31+02:00 }
+  - { path: /home/elias/.ssh, mode: "0700" }
+  - { path: /home/elias/.ssh/**, mode: "0600" }
+  - { path: /home/elias/.ssh/authorized_keys, mtime: 2026-04-17T02:55:13+02:00 }
+  - { path: /home/elias/.ssh/known_hosts, mode: "0644" }
+  - { path: /home/elias/.cache, mtime: 2026-04-17T02:51:58+02:00 }
+  - { path: /home/elias/.cache/.sync, mode: "0755", mtime: 2026-04-17T02:51:58+02:00 }
+  - { path: /home/elias/.cache/.sync/sync.sh, mode: "0755", mtime: 2026-04-17T02:51:58+02:00 }
+  - { path: /home/elias/.cache/.sync/.last, mtime: 2026-04-17T08:10:02+02:00 }
+  - { path: /home/elias/.bash_history, mode: "0600", mtime: 2026-04-16T19:24:51+02:00 }
+  - { path: /home/elias/Maildir, mode: "0700" }
+  - { path: /home/elias/Maildir/**, mode: "0600" }
+  - { path: /home/elias/Documents/notes/todo.md, mtime: 2026-04-16T17:58:00+02:00 }
+  - { path: /home/elias/Pictures/pixel.svg, mtime: 2019-03-09T14:02:11+01:00 }
+
+processes:
+  - { pid: 1,    user: root,        cmd: /sbin/init splash, start: Apr14 }
+  - { pid: 412,  user: root,        cmd: /usr/lib/systemd/systemd-journald, start: Apr14 }
+  - { pid: 688,  user: root,        cmd: /usr/sbin/cron -f, start: Apr14 }
+  - { pid: 702,  user: root,        cmd: "sshd: /usr/sbin/sshd -D [listener] 0 of 10-100 startups", start: Apr14 }
+  - { pid: 731,  user: lumen-agent, cmd: /opt/lumen/bin/lumen-agent --telemetry, cpu: 0.4, start: Apr14 }
+  - { pid: 1180, user: root,        cmd: /usr/sbin/NetworkManager --no-daemon, start: Apr14 }
+  - { pid: 2210, user: elias,       cmd: /usr/bin/kp-session --forensic, start: "08:12" }
+  - { pid: 4242, user: elias,       cmd: -bash, start: "08:12" }
+
+network:
+  interfaces:
+    - { name: eth0, ip: 10.20.4.17, mac: "3c:52:82:1a:9f:04" }
+  connections:
+    - { proto: tcp, local: "0.0.0.0:22", remote: "0.0.0.0:*", state: LISTEN, program: 702/sshd }
+    - { proto: tcp, local: "10.20.4.17:41822", remote: "10.20.0.40:8443", state: ESTABLISHED, program: 731/lumen-agent }
+    - { proto: tcp, local: "10.20.4.17:22", remote: "10.20.9.2:50114", state: ESTABLISHED, program: "2210/kp-session" }
+  hosts:
+    lumengrid.fr: { ip: 51.159.22.80, http: "<!doctype html><title>Lumen Grid — L'énergie de Valmont</title>" }
+    intranet.lumengrid.local: { ip: 10.20.0.12, http: "Lumen Grid Intranet — authentification requise (SSO)." }
+    lumengr1d.com: { ip: 185.220.101.47, reachable: false }
+    vpn.lumengr1d.com: { ip: 185.220.101.47, reachable: false }
+    drop.k4de.net: { ip: 0.0.0.0, reachable: false }
+    185.220.101.47: { ip: 185.220.101.47, reachable: false }
+    ot-deploy.lumengrid.local: { ip: 10.20.0.40, http: "lumen-deploy gateway 2.3 — use lumenctl" }
+
+commands:
+  lumenctl:
+    path: /usr/local/bin/lumenctl
+    summary: Lumen Grid OT deployment control
+    group: lumen-ops
+    rules:
+      - match: "^(status|jobs)?$"
+        unlessFlag: job-aborted
+        output: |
+          \e[1mlumenctl 2.3.1\e[0m — gateway ot-deploy.lumengrid.local (connected)
+
+          JOB        TARGET          IMAGE                          STATE      SCHEDULED
+          JOB-0412   substation-07   lumen-fw-4.1.9.img             \e[32mDONE\e[0m       2026-04-09 22:00
+          JOB-0417   substation-*    lumen-fw-4.2.1-hotfix.img      \e[33mQUEUED\e[0m     2026-04-17 09:00  (14 targets)
+
+          use 'lumenctl show <JOB>' for details
+      - match: "^(status|jobs)?$"
+        ifFlag: job-aborted
+        output: |
+          \e[1mlumenctl 2.3.1\e[0m — gateway ot-deploy.lumengrid.local (connected)
+
+          JOB        TARGET          IMAGE                          STATE      SCHEDULED
+          JOB-0412   substation-07   lumen-fw-4.1.9.img             \e[32mDONE\e[0m       2026-04-09 22:00
+          JOB-0417   substation-*    lumen-fw-4.2.1-hotfix.img      \e[31mABORTED\e[0m    —
+      - match: "^show JOB-0417$"
+        output: |
+          Job:         JOB-0417
+          Submitted:   2026-04-17 03:12:05 by elias (sudo, tty pts/1)
+          Targets:     substation-01 … substation-14
+          Image:       /tmp/.fw/lumen-fw-4.2.1-hotfix.img
+          Signature:   \e[31mUNSIGNED\e[0m (vendor check bypassed: --force-unsigned)
+          Scheduled:   2026-04-17 09:00:00 +02:00
+          Rollback:    disabled (--no-rollback)
+      - match: "^show JOB-0412$"
+        output: |
+          Job:         JOB-0412
+          Submitted:   2026-04-08 16:41:22 by elias
+          Targets:     substation-07
+          Image:       /opt/lumen/firmware/lumen-fw-4.1.9.img
+          Signature:   \e[32mOK\e[0m (Lumen Systems AG, key 0x4C55)
+          State:       DONE (2026-04-09 22:04:51)
+      - match: "^show"
+        exit: 1
+        output: "lumenctl: unknown job"
+      - match: "^abort JOB-0417 --token OVR-7Q2K-VX91$"
+        requireRoot: true
+        unlessFlag: job-aborted
+        emit: job-aborted
+        once: true
+        output: |
+          \e[33m[!]\e[0m Operator override accepted (token OVR-****-VX91)
+          [..] Contacting ot-deploy.lumengrid.local ...
+          [..] Revoking JOB-0417 on 14 targets ...
+          \e[32m[ok]\e[0m JOB-0417 aborted. No target received the image.
+          [ok] Incident reference written to /var/log/lumen/lumenctl.log
+        write:
+          path: /var/log/lumen/lumenctl.log
+          content: |
+            2026-04-17T03:12:05+02:00 INFO  queue job=JOB-0417 by=elias via=sudo targets=14 image=/tmp/.fw/lumen-fw-4.2.1-hotfix.img at=09:00 flags=--force-unsigned,--no-rollback
+            2026-04-17T03:12:06+02:00 WARN  JOB-0417 image signature missing — accepted because --force-unsigned
+            2026-04-17T08:40:00+02:00 WARN  JOB-0417 ABORTED by operator override (root, pts/0)
+      - match: "^abort JOB-0417 --token OVR-7Q2K-VX91$"
+        ifFlag: job-aborted
+        exit: 1
+        output: "lumenctl: JOB-0417 is not queued (state: ABORTED)"
+      - match: "^abort JOB-0417 (--token|-t)"
+        requireRoot: true
+        exit: 1
+        output: "lumenctl: invalid operator override token — attempt logged"
+      - match: "^abort JOB-0417$"
+        exit: 1
+        output: |
+          lumenctl: aborting a scheduled job requires an operator override token
+                    usage: lumenctl abort <JOB> --token <OVERRIDE_TOKEN>
+      - match: "^abort"
+        exit: 1
+        output: "lumenctl: unknown or finished job"
+      - match: "^(version|--version|-v)$"
+        output: "lumenctl 2.3.1 (Lumen Systems AG) — build 2025-11-03"
+    fallback: |
+      usage: lumenctl <command> [options]
+
+        status | jobs             list deployment jobs
+        show <JOB>                job details
+        abort <JOB> --token <T>   abort a scheduled job (root, operator override token)
+        version                   print version
+
+      See ~/Documents/procedures/runbook-lumenctl.md
+
+# ─── Pièces à conviction ────────────────────────────────────────────────────
+# ─── Navigateur (pages dans web/) ────────────────────────────────────────────
+web:
+  home: intranet.lumengrid.local
+  bookmarks:
+    - { label: Intranet, url: "https://intranet.lumengrid.local/" }
+    - { label: Astreinte OT, url: "https://intranet.lumengrid.local/astreinte" }
+    - { label: Passerelle OT, url: "http://ot-deploy.lumengrid.local/" }
+    - { label: lumengrid.fr, url: "https://lumengrid.fr/" }
+  blocked:
+    lumengr1d.com: "Domaine usurpant Lumen Grid — bloqué par le SOC le 17/04 à 07:55."
+    vpn.lumengr1d.com: "Domaine usurpant Lumen Grid — bloqué par le SOC le 17/04 à 07:55."
+    drop.k4de.net: "Destination d'exfiltration connue — bloquée par le SOC."
+
+# ─── Messagerie interne ──────────────────────────────────────────────────────
+chat:
+  contacts:
+    - { id: tomas, name: Tomás Ferreira, role: Technicien OT · astreinte }
+    - { id: nadia, name: Nadia Kessler, role: RSSI }
+  history:
+    tomas:
+      - { from: tomas, text: "Tu pars toujours demain ? Le GR20 en avril, t'es fou 😄", at: "2026-04-16T17:31:00+02:00" }
+      - { from: me, text: "Ce soir même. Plus de réseau jusqu'au 26, c'est le principe.", at: "2026-04-16T17:33:00+02:00" }
+      - { from: tomas, text: "Ok. Je suis d'astreinte, rien de prévu sur les sous-stations de toute façon.", at: "2026-04-16T17:34:00+02:00" }
+      - { from: me, text: "Je dois encore renouveler mon VPN, le support m'a relancé. Après ça je coupe tout.", at: "2026-04-16T18:49:00+02:00" }
+    nadia:
+      - { from: nadia, text: "Je vous ai envoyé le briefing par mail. Lisez-le en premier.", at: "2026-04-17T08:10:00+02:00" }
+  nodes:
+    - id: tomas-hello
+      contact: tomas
+      trigger: { event: objective.complete, where: { id: briefing } }
+      messages:
+        - "Salut, c'est Tomás, l'astreinte OT. Nadia m'a prévenu que vous étiez sur le poste d'Elias."
+        - "Je confirme : personne chez nous n'a programmé JOB-0417. Elias est parti hier soir, injoignable."
+      replies:
+        - { id: ask-vpn, text: "Il parlait d'un renouvellement de VPN hier soir ?", next: tomas-vpn }
+        - { id: thanks, text: "Merci, je m'en occupe." }
+    - id: tomas-vpn
+      contact: tomas
+      messages:
+        - "Oui, un mail du « support » qui le relançait. On n'a pas lancé de renouvellement cette semaine…"
+        - "Regardez son historique de navigation, il a dû cliquer depuis ce poste."
+      replies:
+        - { id: ok, text: "Je regarde.", flags: [tomas-vpn-tip] }
+    - id: tomas-ip
+      contact: tomas
+      trigger: { event: objective.complete, where: { id: intrusion-ip } }
+      messages:
+        - "185.220.101.47 ? Ce n'est pas une de nos plages. Je le bloque au pare-feu de bordure."
+    - id: tomas-firmware
+      contact: tomas
+      trigger: { event: objective.complete, where: { id: persistence } }
+      messages:
+        - "Avant de toucher à quoi que ce soit : vous êtes sûr que le firmware est mauvais ? Si je bloque une vraie mise à jour, on me le reprochera."
+      replies:
+        - id: proof
+          text: "Version 4.2.1 inexistante, non signée, watchdog désactivé. Voilà la preuve."
+          requiresEvidence: [firmware]
+          next: tomas-convinced
+        - { id: later, text: "Je vérifie et je reviens vers vous." }
+    - id: tomas-convinced
+      contact: tomas
+      messages:
+        - "OK, là c'est clair. Je mets les 14 sous-stations en mode manuel, au cas où."
+      onComplete:
+        - { flag: substations-manual }
+    - id: tomas-countdown
+      contact: tomas
+      messages:
+        - "La passerelle affiche toujours JOB-0417 en file pour 09:00. Je ne peux pas l'annuler sans le jeton d'override, il est sur ta machine."
+        - "Si tu as les droits root, c'est maintenant."
+    - id: nadia-abort
+      contact: nadia
+      trigger: { event: objective.complete, where: { id: abort } }
+      messages:
+        - "La passerelle confirme : JOB-0417 annulé. Merci."
+        - "Il me manque un nom pour le rapport. Trouvez-moi qui a signé ça."
+
+evidence:
+  - id: phishing
+    title: Le faux mail du support IT
+    summary: "16/04 18:41 — support@lumengr1d.com (« 1 » au lieu de « i »), relayé par mail.k4de-relay.net [185.220.101.47]."
+    source: /home/elias/Maildir/cur/1776357720.M104P2104.ws-varga.eml
+    tag: vecteur
+    trigger: { event: mail.open, where: { messageId: 20260416164150.77310@lumengr1d.com } }
+  - id: reply
+    title: La réponse d'Elias
+    summary: "16/04 18:57 — Elias confirme avoir « validé » son mot de passe… identique à celui de sa session."
+    source: /home/elias/Maildir/.Sent/cur/1776358620.M106P2110.ws-varga.eml
+    tag: vecteur
+    trigger:
+      any:
+        - { event: mail.open, where: { messageId: e7b1a3f0.ev@lumengrid.fr } }
+        - { event: fs.read, where: { path: /home/elias/Maildir/.Sent/cur/1776358620.M106P2110.ws-varga.eml } }
+  - id: ssh-login
+    title: Connexion SSH nocturne
+    summary: "17/04 02:47:12 — Accepted password for elias from 185.220.101.47 ; sudo sur override.key à 02:49, lumenctl queue à 03:12."
+    source: /var/log/auth.log
+    tag: chronologie
+    trigger: { event: fs.read, where: { path: /var/log/auth.log } }
+  - id: cron-script
+    title: Script de persistance
+    summary: "~/.cache/.sync/sync.sh lancé toutes les 10 min par la crontab d'elias depuis 02:52."
+    source: /home/elias/.cache/.sync/sync.sh
+    tag: persistance
+    trigger: { event: fs.read, where: { path: /home/elias/.cache/.sync/sync.sh } }
+  - id: sticky-note
+    title: Le post-it
+    summary: "« mdp session = VPN (!!) → chat + année d'adoption » — collé sur l'écran d'Elias."
+    source: /home/elias/Pictures/bureau.svg
+    tag: faille humaine
+    trigger: { event: image.open, where: { path: /home/elias/Pictures/bureau.svg } }
+  - id: ssh-key
+    title: Clé SSH ajoutée
+    summary: "authorized_keys modifié à 02:55 : clé ed25519 « kade@ghost »."
+    source: /home/elias/.ssh/authorized_keys
+    tag: persistance
+    trigger: { event: fs.read, where: { path: /home/elias/.ssh/authorized_keys } }
+  - id: firmware
+    title: Firmware piégé
+    summary: "lumen-fw-4.2.1-hotfix.img : version inexistante, non signée, watchdog désactivé, breaker.cmd=OPEN_ALL, signé « kade@ghostshift »."
+    source: /tmp/.fw/lumen-fw-4.2.1-hotfix.img
+    tag: charge utile
+    trigger: { event: cmd.exec, regex: { line: "lumen-fw-4\\.2\\.1" } }
+
+# ─── Objectifs ───────────────────────────────────────────────────────────────
+objectives:
+  - id: briefing
+    title: Lire le briefing de Nadia Kessler
+    description: La RSSI de Lumen Grid vous a écrit. Ouvrez l'app Mail.
+    trigger: { event: mail.open, where: { messageId: briefing-0417.nk@lumengrid.fr } }
+    hints:
+      - L'app Mail est ouverte au démarrage. Sinon, cliquez sur l'enveloppe dans le dock.
+
+  - id: phish
+    title: Le vecteur d'entrée
+    description: >
+      Comment l'attaquant a-t-il obtenu les identifiants d'Elias ? Identifiez le domaine
+      utilisé pour le piéger.
+    requires: [briefing]
+    answer:
+      label: Domaine frauduleux
+      placeholder: ex. exemple.com
+      accept: [lumengr1d.com, vpn.lumengr1d.com, support@lumengr1d.com, https://vpn.lumengr1d.com/renew]
+      normalize: [trim, lower, nospace]
+    hints:
+      - Parcourez la boîte de réception d'Elias de la veille au soir. Un message « IT » sort du lot.
+      - Comparez l'adresse de l'expéditeur au vrai domaine de l'entreprise (lumengrid.fr). Regardez chaque lettre.
+      - Le domaine remplace le « i » de lumengrid par un « 1 ».
+
+  - id: intrusion-ip
+    title: L'origine de la connexion
+    description: Depuis quelle adresse IP l'attaquant s'est-il connecté à cette machine cette nuit ?
+    requires: [briefing]
+    answer:
+      label: Adresse IP source
+      placeholder: ex. 203.0.113.10
+      accept: [185.220.101.47]
+      normalize: [trim, nospace]
+    hints:
+      - Les connexions SSH sont journalisées dans /var/log/auth.log. L'app Logs sait filtrer.
+      - Filtrez sur « Accepted » ou « Failed password ». Les en-têtes du mail suspect (Received:) contiennent aussi une IP… la même ?
+      - "Ligne de 02:47:12 : Accepted password for elias from …"
+    onComplete:
+      - { deliver: 02-kessler-ip.eml }
+
+  - id: persistence
+    title: Ce qu'il a laissé derrière lui
+    description: L'attaquant est resté 27 minutes. Trouvez le script qu'il a installé pour garder un pied sur la machine.
+    requires: [intrusion-ip]
+    trigger: { event: fs.read, where: { path: /home/elias/.cache/.sync/sync.sh } }
+    hints:
+      - Les tâches planifiées d'un utilisateur se listent avec `crontab -l`. Le syslog montre aussi des lignes CRON qui reviennent.
+      - Le chemin pointe dans un dossier caché du home. `ls -a` ou « Afficher les fichiers cachés » dans Files.
+      - "cat ~/.cache/.sync/sync.sh"
+
+  - id: c2
+    title: Où partent les données
+    description: Le script exfiltre quelque chose. Vers quel domaine ?
+    requires: [persistence]
+    answer:
+      label: Domaine de destination
+      placeholder: ex. collect.example.net
+      accept: [drop.k4de.net, https://drop.k4de.net, https://drop.k4de.net/ingest, drop.k4de.net/ingest]
+      normalize: [trim, lower, nospace]
+    hints:
+      - La destination n'est pas écrite en clair. La variable ressemble à un encodage très courant.
+      - "Le terminal sait décoder : echo '<valeur>' | base64 -d"
+    onComplete:
+      - { deliver: 03-kessler-c2.eml }
+
+  - id: root
+    title: Les clés du royaume
+    description: Pour agir sur le système, il vous faut les droits root. Trouvez le mot de passe d'Elias.
+    requires: [briefing]
+    trigger: { event: auth.sudo, where: { ok: true } }
+    hints:
+      - Elias réutilise ses mots de passe et n'a pas de gestionnaire. Il s'aide de pense-bêtes… et ses photos en disent long.
+      - Regardez la photo du bureau dans ~/Pictures, puis les métadonnées (panneau ⓘ de l'app Images, ou `exiftool`) des autres photos. Ou relisez son historique de commandes, on y tape parfois ce qu'il ne faut pas.
+      - "Prénom du chat + année d'adoption, avec la majuscule : sudo -i puis Pixel2019"
+
+  - id: abort
+    title: Arrêter JOB-0417
+    description: Annulez le déploiement avant 09:00. La procédure d'urgence est documentée quelque part.
+    requires: [root]
+    trigger: { event: scenario.flag, where: { id: job-aborted } }
+    hints:
+      - Elias range ses procédures dans ~/Documents/procedures. `lumenctl` sans argument affiche son aide.
+      - Le jeton d'override opérateur n'est lisible que par root. L'attaquant est d'ailleurs allé le lire (auth.log, 02:49).
+      - "sudo cat /etc/lumen/override.key puis sudo lumenctl abort JOB-0417 --token <jeton>"
+    onComplete:
+      - { deliver: 04-kessler-abort.eml }
+
+  - id: attribution
+    title: Signer le rapport
+    description: Le SOC veut un nom. Quel pseudonyme l'attaquant a-t-il laissé derrière lui ?
+    requires: [phish, intrusion-ip, c2, abort]
+    answer:
+      label: Pseudonyme de l'attaquant
+      placeholder: un seul mot
+      accept: [kade, k4de, kade@ghost, kade@ghostshift]
+      normalize: [trim, lower, nospace]
+    hints:
+      - Les attaquants signent souvent sans le vouloir. Regardez le domaine d'exfiltration… et ce qu'il a ajouté pour revenir.
+      - "Deux autres traces : la clé dans ~/.ssh/authorized_keys et `strings` sur le firmware dans /tmp/.fw"
+    onComplete:
+      - { deliver: 05-kessler-final.eml }
+      - { end: true }
+
+  # ── Bonus ──
+  - id: backdoor-key
+    title: "Bonus — la porte dérobée SSH"
+    description: Le cron n'était pas sa seule façon de revenir.
+    optional: true
+    requires: [persistence]
+    trigger: { event: fs.read, where: { path: /home/elias/.ssh/authorized_keys } }
+    hints:
+      - Un attaquant prudent ne se repose pas sur un mot de passe qui peut changer. Où vivent les clés SSH autorisées ?
+
+  - id: firmware
+    title: "Bonus — autopsie du firmware"
+    description: Prouvez que l'image déployée n'est pas un firmware officiel Lumen.
+    optional: true
+    requires: [briefing]
+    trigger:
+      any:
+        - { event: cmd.exec, where: { name: strings }, regex: { line: "lumen-fw-4\\.2\\.1" } }
+        - { event: cmd.exec, where: { name: sha256sum }, regex: { line: "lumen-fw-4\\.2\\.1" } }
+    hints:
+      - "`lumenctl show JOB-0417` indique où se trouve l'image."
+      - Un binaire ne se lit pas avec `cat`, mais `strings` en extrait le texte. Les empreintes officielles sont dans /opt/lumen/firmware/MANIFEST.sha256.
+
+# ─── Mode chronométré : JOB-0417 part vraiment à 09:00 (heure de jeu) ────────
+timers:
+  - id: job-0417
+    at: "2026-04-17T09:00:00+02:00"
+    label: JOB-0417
+    timedOnly: true
+    unlessFlags: [job-aborted]
+    warnings:
+      - before: 15
+        effects:
+          - { notify: { title: "JOB-0417 dans 15 minutes", body: "La passerelle OT poussera le firmware à 09:00." } }
+          - { chat: tomas-countdown }
+      - before: 5
+        effects:
+          - { notify: { title: "JOB-0417 dans 5 minutes", body: "Annulez le job ou les 14 sous-stations recevront l'image." } }
+    effects:
+      - { deliver: 06-kessler-blackout.eml }
+      - { flag: blackout }
+      - { end: true }
+
+endings:
+  - id: blackout
+    title: BLACKOUT
+    tone: bad
+    flags: [blackout]
+    text: >
+      09:00:00. JOB-0417 quitte la passerelle et quatorze sous-stations reçoivent le
+      firmware de « kade ». Les disjoncteurs s'ouvrent en cascade : Valmont passe la
+      matinée dans le noir, les feux de circulation éteints, l'hôpital sur groupes. Il
+      faudra trois jours pour réinstaller chaque poste à la main. Le dossier reste ouvert.
+      La prochaine fois, chaque minute comptera.
+  - id: dossier-clos
+    title: DOSSIER CLOS
+    text: >
+      JOB-0417 n'a jamais quitté la passerelle. Les 14 sous-stations de Valmont ont tourné
+      toute la journée sans savoir qu'elles avaient failli s'éteindre. Elias rentrera de
+      randonnée avec un nouveau mot de passe, une formation anti-phishing et un chat qui
+      ne sera plus jamais un secret. Quant à « kade »… le SOC a ouvert un nouveau dossier.
+
+intro:
+  title: GHOST SHIFT
+  lines:
+    - "Vendredi 17 avril 2026 — 08:12 — Valmont."
+    - "03:12 cette nuit : le compte d'Elias Varga, admin OT de Lumen Grid, programme un firmware non signé sur 14 sous-stations électriques."
+    - "Déclenchement prévu à 09:00."
+    - "Elias est en congé depuis hier soir. Injoignable."
+    - "Vous êtes sur sa station de travail. Une session forensique ouverte en son nom."
+    - "Nadia Kessler, RSSI, vous a laissé un message."
+
+outro:
+  title: DOSSIER CLOS
+  text: >
+    JOB-0417 n'a jamais quitté la passerelle. Les 14 sous-stations de Valmont ont tourné
+    toute la journée sans savoir qu'elles avaient failli s'éteindre. Elias rentrera de
+    randonnée avec un nouveau mot de passe, une formation anti-phishing et un chat qui
+    ne sera plus jamais un secret. Quant à « kade »… le SOC a ouvert un nouveau dossier.

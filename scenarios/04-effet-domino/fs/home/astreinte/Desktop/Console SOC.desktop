@@ -1,0 +1,6 @@
+[Desktop Entry]
+Type=Application
+Name=Console SOC
+Comment=Carte du réseau et alertes
+Exec=soc
+Icon=shield

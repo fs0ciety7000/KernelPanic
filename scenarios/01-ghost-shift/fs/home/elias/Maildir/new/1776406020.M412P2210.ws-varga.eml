@@ -1,0 +1,46 @@
+Return-Path: <n.kessler@lumengrid.fr>
+Delivered-To: elias@lumengrid.fr
+Received: from mx1.lumengrid.fr (mx1.lumengrid.fr [10.20.0.25])
+	by ws-varga.ot.lumengrid.local (Postfix) with ESMTP id 4F2A61C0
+	for <elias@lumengrid.fr>; Fri, 17 Apr 2026 08:07:00 +0200
+From: Nadia Kessler <n.kessler@lumengrid.fr>
+To: Analyste DFIR <ir-analyst@lumengrid.fr>
+Cc: soc@lumengrid.fr
+Subject: [URGENT] INC-2026-0417 — JOB-0417 programmé depuis le compte d'Elias
+Date: Fri, 17 Apr 2026 08:07:00 +0200
+Message-ID: <briefing-0417.nk@lumengrid.fr>
+X-Priority: 1 (Highest)
+Content-Type: text/plain; charset=utf-8
+
+Bonjour,
+
+Merci d'avoir pris le dossier aussi vite. Je t'écris directement dans la boîte de la
+session forensique, c'est le seul canal que je suis sûre de maîtriser ce matin.
+
+Les faits :
+- Cette nuit à 03:12, un job de déploiement firmware (JOB-0417) a été programmé sur
+  les 14 sous-stations de Valmont, depuis le poste d'Elias Varga (ws-varga) et avec
+  son compte. Exécution prévue à 09:00 aujourd'hui.
+- L'image n'est pas signée par Lumen Systems. Personne ne l'a demandée.
+- Elias est en congé depuis hier soir (rando en Corse, aucun réseau). Je ne crois pas
+  une seconde qu'il soit derrière ça.
+
+Ce que j'attends de toi :
+  1. Comprendre comment l'attaquant a obtenu l'accès (vecteur + origine).
+  2. Trouver ce qu'il a laissé sur la machine.
+  3. Annuler JOB-0417 avant 09:00. La procédure est dans les docs d'Elias.
+  4. Me donner de quoi attribuer l'attaque.
+
+Contraintes : on ne connaît pas le mot de passe d'Elias (session ouverte par le SOC
+via un accès forensique). Pour tout ce qui demande root, il faudra le retrouver —
+Elias n'est pas le plus rigoureux avec ses mots de passe, regarde autour de toi.
+
+Le dossier « Case » sur le bureau suit l'avancement. Je te relance par mail à chaque
+étape validée.
+
+Merci. Vraiment.
+
+--
+Nadia Kessler
+RSSI — Lumen Grid
+Ligne directe : 04 72 18 44 01

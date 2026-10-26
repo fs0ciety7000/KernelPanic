@@ -1,0 +1,55 @@
+May  4 00:17:01 lab-qa-03 CRON[2134]: (root) CMD (cd / && run-parts --report /etc/cron.hourly)
+May  4 06:17:01 lab-qa-03 CRON[3679]: (root) CMD (cd / && run-parts --report /etc/cron.hourly)
+May  4 12:17:01 lab-qa-03 CRON[3079]: (root) CMD (cd / && run-parts --report /etc/cron.hourly)
+May  4 18:17:01 lab-qa-03 CRON[7061]: (root) CMD (cd / && run-parts --report /etc/cron.hourly)
+May  5 00:17:01 lab-qa-03 CRON[3486]: (root) CMD (cd / && run-parts --report /etc/cron.hourly)
+May  5 06:17:01 lab-qa-03 CRON[7446]: (root) CMD (cd / && run-parts --report /etc/cron.hourly)
+May  5 12:17:01 lab-qa-03 CRON[5574]: (root) CMD (cd / && run-parts --report /etc/cron.hourly)
+May  5 18:17:01 lab-qa-03 CRON[6839]: (root) CMD (cd / && run-parts --report /etc/cron.hourly)
+May  6 00:17:01 lab-qa-03 CRON[4351]: (root) CMD (cd / && run-parts --report /etc/cron.hourly)
+May  6 06:17:01 lab-qa-03 CRON[4639]: (root) CMD (cd / && run-parts --report /etc/cron.hourly)
+May  6 12:17:01 lab-qa-03 CRON[5381]: (root) CMD (cd / && run-parts --report /etc/cron.hourly)
+May  6 18:17:01 lab-qa-03 CRON[2005]: (root) CMD (cd / && run-parts --report /etc/cron.hourly)
+May  6 22:51:07 lab-qa-03 systemd[1]: Started session-31.scope - Session 31 of User mlefort.
+May  6 22:57:40 lab-qa-03 evince[4410]: Opened document /home/mlefort/Downloads/STA_PFAS_T1_ORIGINAL.pdf
+May  6 22:58:14 lab-qa-03 cupsd[640]: Job 412 queued on 'labprint-2' by 'mlefort'.
+May  6 22:58:51 lab-qa-03 cupsd[640]: Job 412 completed.
+May  6 22:59:20 lab-qa-03 gvfsd-trash[4502]: Moved /home/mlefort/Downloads/STA_PFAS_T1_ORIGINAL.pdf to trash; trash emptied
+May  6 23:00:13 lab-qa-03 systemd[1]: session-31.scope: Deactivated successfully.
+May  6 23:02:38 lab-qa-03 systemd[1]: Started session-32.scope - Session 32 of User srahmani.
+May  6 23:04:02 lab-qa-03 kernel: [412233.902114] usb 2-1: new SuperSpeed USB device number 5 using xhci_hcd
+May  6 23:04:02 lab-qa-03 kernel: [412233.931870] usb 2-1: Product: DataTraveler 3.0 — Manufacturer: Kingston — SerialNumber: 60A44C3FB2E4
+May  6 23:04:03 lab-qa-03 kernel: [412234.988101] sd 2:0:0:0: [sdb] 60437492 512-byte logical blocks: (30.9 GB/28.8 GiB)
+May  6 23:04:05 lab-qa-03 udisksd[702]: Mounted /dev/sdb1 at /media/srahmani/KINGSTON on behalf of uid 1002
+May  6 23:29:44 lab-qa-03 udisksd[702]: Unmounted /dev/sdb1 on behalf of uid 1002
+May  6 23:29:50 lab-qa-03 kernel: [413781.115032] usb 2-1: USB disconnect, device number 5
+May  6 23:31:53 lab-qa-03 systemd[1]: session-32.scope: Deactivated successfully.
+May  7 00:17:01 lab-qa-03 CRON[3486]: (root) CMD (cd / && run-parts --report /etc/cron.hourly)
+May  7 06:17:01 lab-qa-03 CRON[7802]: (root) CMD (cd / && run-parts --report /etc/cron.hourly)
+May  7 12:17:01 lab-qa-03 CRON[4431]: (root) CMD (cd / && run-parts --report /etc/cron.hourly)
+May  7 18:17:01 lab-qa-03 CRON[8321]: (root) CMD (cd / && run-parts --report /etc/cron.hourly)
+May  8 00:17:01 lab-qa-03 CRON[8730]: (root) CMD (cd / && run-parts --report /etc/cron.hourly)
+May  8 06:17:01 lab-qa-03 CRON[7664]: (root) CMD (cd / && run-parts --report /etc/cron.hourly)
+May  8 12:17:01 lab-qa-03 CRON[5565]: (root) CMD (cd / && run-parts --report /etc/cron.hourly)
+May  8 18:17:01 lab-qa-03 CRON[2039]: (root) CMD (cd / && run-parts --report /etc/cron.hourly)
+May  9 00:17:01 lab-qa-03 CRON[6494]: (root) CMD (cd / && run-parts --report /etc/cron.hourly)
+May  9 06:17:01 lab-qa-03 CRON[3170]: (root) CMD (cd / && run-parts --report /etc/cron.hourly)
+May  9 12:17:01 lab-qa-03 CRON[6154]: (root) CMD (cd / && run-parts --report /etc/cron.hourly)
+May  9 18:17:01 lab-qa-03 CRON[2893]: (root) CMD (cd / && run-parts --report /etc/cron.hourly)
+May 10 00:17:01 lab-qa-03 CRON[4990]: (root) CMD (cd / && run-parts --report /etc/cron.hourly)
+May 10 06:17:01 lab-qa-03 CRON[8640]: (root) CMD (cd / && run-parts --report /etc/cron.hourly)
+May 10 12:17:01 lab-qa-03 CRON[8898]: (root) CMD (cd / && run-parts --report /etc/cron.hourly)
+May 10 18:17:01 lab-qa-03 CRON[8986]: (root) CMD (cd / && run-parts --report /etc/cron.hourly)
+May 11 00:17:01 lab-qa-03 CRON[7504]: (root) CMD (cd / && run-parts --report /etc/cron.hourly)
+May 11 06:17:01 lab-qa-03 CRON[7877]: (root) CMD (cd / && run-parts --report /etc/cron.hourly)
+May 11 12:17:01 lab-qa-03 CRON[3203]: (root) CMD (cd / && run-parts --report /etc/cron.hourly)
+May 11 18:17:01 lab-qa-03 CRON[3488]: (root) CMD (cd / && run-parts --report /etc/cron.hourly)
+May 12 00:17:01 lab-qa-03 CRON[2408]: (root) CMD (cd / && run-parts --report /etc/cron.hourly)
+May 12 06:17:01 lab-qa-03 CRON[6713]: (root) CMD (cd / && run-parts --report /etc/cron.hourly)
+May 12 07:10:44 lab-qa-03 cupsd[640]: Printer 'labprint-2' state changed to idle
+May 12 12:17:01 lab-qa-03 CRON[2543]: (root) CMD (cd / && run-parts --report /etc/cron.hourly)
+May 12 18:17:01 lab-qa-03 CRON[7935]: (root) CMD (cd / && run-parts --report /etc/cron.hourly)
+May 13 00:17:01 lab-qa-03 CRON[3813]: (root) CMD (cd / && run-parts --report /etc/cron.hourly)
+May 13 06:17:01 lab-qa-03 CRON[2529]: (root) CMD (cd / && run-parts --report /etc/cron.hourly)
+May 13 09:24:11 lab-qa-03 usermod[3015]: add 'audit' to group 'sudo'
+May 13 09:30:00 lab-qa-03 kp-session[2210]: audit session started; untrusted binary execution disabled

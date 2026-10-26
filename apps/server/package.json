@@ -1,0 +1,9 @@
+{
+  "name": "@kp/server",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "build": "cargo build --release",
+    "test": "cargo test"
+  }
+}

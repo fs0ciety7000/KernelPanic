@@ -1,0 +1,11 @@
+Jun  3 08:47:12 srv-claims sshd[20411]: Accepted password for jruiz from 10.40.3.18 port 51022 ssh2
+Jun  3 17:58:09 srv-claims sshd[20411]: pam_unix(sshd:session): session closed for user jruiz
+Jun  3 23:39:58 srv-claims sshd[22870]: Accepted publickey for fmarchal from 10.40.7.31 port 60214 ssh2: ED25519 SHA256:p0Xk3mRb7wQ1fmarchalHome
+Jun  3 23:39:58 srv-claims sshd[22870]: pam_unix(sshd:session): session opened for user fmarchal(uid=1010) by (uid=0)
+Jun  3 23:41:12 srv-claims sudo: fmarchal : TTY=pts/1 ; PWD=/home/fmarchal ; USER=root ; COMMAND=/opt/claims/bin/claimsctl set-status SIN-2026-0412 APPROUVE --as jruiz --at "2026-06-03 14:02" --force
+Jun  3 23:42:30 srv-claims sudo: fmarchal : TTY=pts/1 ; PWD=/home/fmarchal ; USER=root ; COMMAND=/opt/claims/bin/claimsctl purge-events SIN-2026-0412
+Jun  3 23:44:37 srv-claims sudo: fmarchal : TTY=pts/1 ; PWD=/home/fmarchal ; USER=root ; COMMAND=/usr/bin/vi /var/log/claims/app.log
+Jun  3 23:47:02 srv-claims sudo: fmarchal : TTY=pts/1 ; PWD=/home/fmarchal ; USER=root ; COMMAND=/usr/bin/rm -f /home/fmarchal/.bash_history
+Jun  3 23:47:31 srv-claims sshd[22870]: pam_unix(sshd:session): session closed for user fmarchal
+Jun  4 09:14:50 srv-claims CRON[23101]: pam_unix(cron:session): session opened for user compta-batch(uid=0) by (uid=0)
+Jun  8 08:30:00 srv-claims sudo: root : TTY=pts/0 ; PWD=/root ; USER=root ; COMMAND=/opt/claims/bin/claimsctl read-only on

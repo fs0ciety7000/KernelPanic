@@ -1,0 +1,26 @@
+Return-Path: <y.haddad@ironveil.fr>
+Delivered-To: recrue@ironveil.fr
+Received: from mx.ironveil.fr (mx.ironveil.fr [10.100.0.5])
+	by training-01.lab.ironveil.local (Postfix) with ESMTP id 1A2B03
+	for <recrue@ironveil.fr>; {{date}}
+From: Yasmine Haddad <y.haddad@ironveil.fr>
+To: Nouvelle recrue <recrue@ironveil.fr>
+Subject: Re: exercice — lire les journaux
+Date: {{date}}
+Message-ID: <step-logs.yh@ironveil.fr>
+Content-Type: text/plain; charset=utf-8
+
+Avec ce mot de passe, n'importe qui pouvait se connecter à l'appli. Justement :
+quelqu'un l'a fait, à une heure qui ne colle pas.
+
+Ouvre l'app **Logs** et sélectionne /var/log/lab/access.log . C'est le journal des
+connexions de LedgerLite. Pour t'y retrouver :
+- les boutons en haut filtrent (« Connexions », « Échecs »…),
+- ou tape un mot dans la barre de recherche (texte simple ou /regex/).
+
+Cherche la connexion du SAMEDI soir (4 avril, vers 23 h). Les autres viennent de la
+machine elle-même (10.100.0.21) ; celle-là vient d'ailleurs. Donne-moi son adresse IP.
+
+(Au terminal, même info : `grep ACCEPT /var/log/lab/access.log` .)
+
+— Y.

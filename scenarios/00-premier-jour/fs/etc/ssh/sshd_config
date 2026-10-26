@@ -1,0 +1,13 @@
+# Ironveil Lab — training-01 sshd configuration
+# Lab machine: wide open on purpose, reset every night. Do not copy to prod.
+
+Port 22
+ListenAddress 0.0.0.0
+PermitRootLogin no
+PubkeyAuthentication yes
+PasswordAuthentication yes
+KbdInteractiveAuthentication no
+UsePAM yes
+X11Forwarding no
+PrintMotd yes
+Subsystem sftp /usr/lib/openssh/sftp-server

@@ -1,0 +1,7 @@
+# horaires-v1.8.3 — configuration des afficheurs et services temps réel
+service: horaires
+fuseau: Europe/Paris
+source_horaires: https://sae.valmobilis.local/api/v1/passages
+refresh_interval_ms: 15000
+cache_ttl_s: 30
+journal: /var/log/horaires.log

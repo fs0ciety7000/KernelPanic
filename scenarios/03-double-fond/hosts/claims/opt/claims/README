@@ -1,0 +1,9 @@
+claims-app 3.4 — Orbis Assurances, gestion des sinistres
+
+  /opt/claims/db/claims.csv      base des dossiers (export vivant de l'application)
+  /opt/claims/bin/claimsctl      outil d'administration (show, list, history)
+  /var/log/claims/app.log        journal applicatif (décisions, paiements)
+  /opt/claims/scripts/           tâches planifiées (sauvegardes, voir /etc/cron.d)
+
+Règle métier R-12 : tout dossier > 1 000 000 € exige une double validation
+(responsable indemnisation + direction technique) avant paiement.

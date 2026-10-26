@@ -1,0 +1,6 @@
+2026-09-01 10:12:40 JOB-0901 horaires-v1.8.3 par=jlefevre recette=OK canary=pc-depot-sud cibles=5 statut=TERMINE
+2026-09-08 14:30:02 JOB-0908 billet-tarifs-2026b par=jlefevre recette=OK canary=srv-billet cibles=1 statut=TERMINE
+2026-09-14 04:02:11 JOB-0914 horaires-v2.0.0 par=tdumas recette=NON canary=AUCUN options="--skip-canary --force" cibles=5 statut=EN_COURS
+2026-09-14 04:02:11 JOB-0914 ordre des cibles : srv-info, srv-billet, pc-depot-nord, pc-depot-sud, srv-sae (intervalle 5 min)
+2026-09-14 04:04:52 JOB-0914 srv-info : configuration appliquée, service redémarré
+2026-09-14 04:05:30 JOB-0914 srv-info : service en boucle de rechargement (watchdog)

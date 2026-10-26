@@ -1,0 +1,12 @@
+Bienvenue sur training-01 !
+
+Ce bureau est un vrai bureau : chaque icône est un fichier du dossier ~/Desktop.
+  - double-clic pour ouvrir, clic droit pour le reste (renommer, propriétés…)
+  - glisse une icône pour la ranger, ou sur la Corbeille pour la jeter
+  - la barre du bas lance les applications et liste tes fenêtres
+
+Tout ce que tu fais à la souris, tu peux le faire au terminal, et inversement :
+  ls ~/Desktop      → ce que tu vois ici
+  cat ~/Desktop/LISEZ-MOI.txt
+
+Commence par mon mail. — Yasmine

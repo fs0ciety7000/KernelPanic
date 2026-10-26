@@ -1,0 +1,5 @@
+Apr  6 08:30:04 training-01 systemd-logind[655]: New seat seat0.
+Apr  6 08:59:58 training-01 sshd[705]: Server listening on 0.0.0.0 port 22.
+Apr  6 09:00:00 training-01 gdm-password: pam_unix(gdm-password:session): session opened for user recrue(uid=1000) by (uid=0)
+Apr  6 09:00:00 training-01 systemd-logind[655]: New session 1 of user recrue.
+Apr  6 09:00:00 training-01 kp-session[1501]: training session opened for user recrue (exercise IV-2026-0006)

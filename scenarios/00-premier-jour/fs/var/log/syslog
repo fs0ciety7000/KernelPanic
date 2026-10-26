@@ -1,0 +1,5 @@
+Apr  6 04:00:01 training-01 systemd[1]: Starting lab-reset.service - Restore training snapshot...
+Apr  6 04:00:09 training-01 lab-reset[612]: training-01 restored from clean snapshot (exercise IV-2026-0006)
+Apr  6 04:00:10 training-01 systemd[1]: lab-reset.service: Deactivated successfully.
+Apr  6 08:30:02 training-01 systemd[1]: Started LedgerLite lab service (ledgerlited).
+Apr  6 09:00:01 training-01 CRON[988]: (deploy) CMD (curl -s http://10.100.0.21:8080/health >/dev/null)

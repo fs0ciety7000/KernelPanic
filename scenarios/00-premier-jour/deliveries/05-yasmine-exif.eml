@@ -1,0 +1,24 @@
+Return-Path: <y.haddad@ironveil.fr>
+Delivered-To: recrue@ironveil.fr
+Received: from mx.ironveil.fr (mx.ironveil.fr [10.100.0.5])
+	by training-01.lab.ironveil.local (Postfix) with ESMTP id 1A2B04
+	for <recrue@ironveil.fr>; {{date}}
+From: Yasmine Haddad <y.haddad@ironveil.fr>
+To: Nouvelle recrue <recrue@ironveil.fr>
+Subject: Re: exercice — les métadonnées d'une image
+Date: {{date}}
+Message-ID: <step-exif.yh@ironveil.fr>
+Content-Type: text/plain; charset=utf-8
+
+198.51.100.23, parfait. Léo avait repéré la même chose et pris une capture d'écran
+avant de partir : ~/Pictures/capture-ledgerlite.svg .
+
+Une image « raconte » souvent plus que ce qu'on y voit : les métadonnées EXIF gardent
+l'appareil, l'auteur, et surtout la DATE de prise de vue.
+
+Ouvre-la dans l'app **Images**, puis le panneau « Infos » (à droite) : cherche la ligne
+« DateTimeOriginal ». Au terminal, même résultat avec `exiftool ~/Pictures/capture-ledgerlite.svg` .
+
+Donne-moi la date de prise de vue de la capture (format AAAA-MM-JJ).
+
+— Y.

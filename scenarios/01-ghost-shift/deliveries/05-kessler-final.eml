@@ -1,0 +1,28 @@
+Return-Path: <n.kessler@lumengrid.fr>
+Delivered-To: elias@lumengrid.fr
+Received: from mx1.lumengrid.fr (mx1.lumengrid.fr [10.20.0.25])
+	by ws-varga.ot.lumengrid.local (Postfix) with ESMTP id 61A0C2D4
+	for <elias@lumengrid.fr>; {{date}}
+From: Nadia Kessler <n.kessler@lumengrid.fr>
+To: Analyste DFIR <ir-analyst@lumengrid.fr>
+Subject: INC-2026-0417 — clôture
+Date: {{date}}
+Message-ID: <close-0417.nk@lumengrid.fr>
+Content-Type: text/plain; charset=utf-8
+
+« kade ». Le SOC le relie à la signature du firmware, à la clé SSH et au domaine
+k4de.net. L'ANSSI a déjà un dossier à ce nom.
+
+Pour mémoire, la chaîne complète :
+  1. Phishing (lumengr1d.com) → mot de passe VPN d'Elias, réutilisé pour sa session.
+  2. Connexion SSH par l'accès maintenance ouvert (185.220.101.47, 02:47).
+  3. Lecture du jeton d'override, persistance cron + clé SSH, exfiltration vers drop.k4de.net.
+  4. Programmation d'un firmware piégé (OPEN_ALL à 09:30) sur 14 postes.
+
+Actions engagées : fermeture d'OT-2025-31, rotation du jeton d'override,
+réinitialisation des comptes, campagne de sensibilisation. Et un gestionnaire de
+mots de passe pour Elias, qu'il le veuille ou non.
+
+Merci. Tu as évité une coupure sur toute la ville.
+
+Nadia

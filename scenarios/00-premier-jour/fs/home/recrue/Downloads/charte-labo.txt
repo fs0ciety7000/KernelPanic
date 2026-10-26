@@ -1,0 +1,8 @@
+Ironveil — charte des machines d'entraînement
+
+1. Les VM du lab sont jetables : elles sont restaurées chaque nuit à 04:00.
+2. Rien de ce qui s'y trouve n'est confidentiel. Casse, lis, recommence.
+3. On ne branche jamais une VM de lab sur un réseau client.
+4. Les identifiants d'exercice (jetables) n'ont rien à voir avec les vrais comptes.
+
+Bon premier jour. — L'équipe

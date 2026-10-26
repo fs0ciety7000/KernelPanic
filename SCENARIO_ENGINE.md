@@ -1,0 +1,445 @@
+# Kernel_Panic — Scenario Engine
+
+Un scénario est **du contenu**, pas du code. Il décrit une machine (disque, comptes, processus, réseau), des outils propres à son univers, et une suite d'objectifs que le runtime valide en observant ce que fait le joueur.
+
+## 1. Anatomie d'un scénario
+
+```
+scenarios/<NN-slug>/
+├─ scenario.yaml        # manifeste (ce document)
+├─ fs/                  # racine du disque virtuel — copié tel quel dans le VFS
+│  ├─ etc/…
+│  ├─ home/<user>/…
+│  └─ var/log/…
+└─ deliveries/          # mails livrés en cours de partie (.eml), hors disque au départ
+```
+
+Pipeline :
+
+```mermaid
+flowchart LR
+  A[scenario.yaml + fs/ + deliveries/] -->|kp-scenario validate| V{Schéma OK ?<br/>chemins existent ?<br/>dépendances acycliques ?}
+  V -->|oui| C[kp-scenario build]
+  C --> J[(static/scenarios/&lt;id&gt;.json<br/>+ index.json)]
+  J -->|fetch| R[Kernel · ScenarioRuntime]
+```
+
+Le compilateur (`packages/scenario-kit`) :
+- lit récursivement `fs/` (texte → UTF-8 ; binaires → `data:` URL base64) ;
+- applique la propriété par défaut (`/home/<u>/**` → `<u>:<u>`, ailleurs `root:root`), les modes par défaut (fichiers `0644`, dossiers `0755`, homes `0750`), puis les surcharges `permissions:` ;
+- **hache** mots de passe et réponses (`sha256("<scenarioId>:" + valeur normalisée)`), pour qu'aucun spoil ne soit lisible dans le bundle ;
+- valide les références (chemins des triggers, livraisons, `requires`).
+
+```bash
+pnpm scenarios          # build de tous les scénarios vers apps/game/static/scenarios
+pnpm scenarios:check    # validation seule (CI)
+```
+
+## 2. `scenario.yaml` — référence
+
+```yaml
+id: ghost-shift                 # unique, kebab-case — sert de sel aux hash
+version: 1
+title: Ghost Shift
+subtitle: Une poussée de firmware que personne n'a demandée.
+summary: >                      # affiché dans le menu de sélection
+  …
+difficulty: beginner            # beginner | intermediate | advanced
+estimatedMinutes: 35
+locale: fr
+
+machine:
+  hostname: ws-varga
+  domain: lumengrid.local
+  os: LumenOS 22.04.4 LTS
+  kernel: 6.8.0-41-lumen
+  ip: 10.20.4.17
+  clock: 2026-04-17T08:12:00+02:00   # heure de jeu au démarrage (avance en temps réel)
+
+session:
+  user: elias                   # utilisateur de la session graphique / du terminal
+  cwd: /home/elias
+  email: elias@lumengrid.fr     # adresse affichée par l'app Mail (défaut : user@domaine)
+  autostart:                    # apps ouvertes au démarrage
+    - { app: mail }
+
+users:
+  - { name: root,  uid: 0,    home: /root,        shell: /bin/bash }   # sans password → verrouillé
+  - { name: elias, uid: 1000, home: /home/elias,  shell: /bin/bash, groups: [sudo, lumen-ops], password: "…" }
+
+permissions:                    # surcharges (owner, group, mode octal en chaîne)
+  - { path: /etc/lumen/override.key, owner: root, group: root, mode: "0600" }
+
+processes:                      # pour ps / top
+  - { pid: 1, user: root, cmd: /sbin/init }
+
+network:                        # pour ifconfig / ip / netstat / ping / curl
+  interfaces: [ { name: eth0, ip: 10.20.4.17, mac: "…" } ]
+  connections: [ { proto: tcp, local: "10.20.4.17:22", remote: "…", state: ESTABLISHED, program: sshd } ]
+  hosts: { "drop.k4de.net": { reachable: false } }
+
+commands:                       # outils propres à l'univers (voir §4)
+  lumenctl: { … }
+
+objectives:                     # voir §3
+  - …
+
+evidence:                       # pièces à conviction, voir §3.3
+  - …
+
+endings:                        # fins multiples, voir §3.4
+  - …
+
+intro:  { title: …, lines: [ … ] }   # écran de briefing après le boot
+outro:  { title: …, text: … }        # écran de fin
+```
+
+## 3. Objectifs
+
+```yaml
+- id: attacker-ip
+  title: Identifier l'origine de l'intrusion
+  description: D'où l'attaquant s'est-il connecté ?
+  requires: [briefing]          # visible et validable seulement après ces objectifs
+  optional: false               # true = bonus, n'empêche pas la fin
+  # Validation : un trigger OU une réponse (ou les deux : `any`)
+  answer:
+    label: Adresse IP source
+    placeholder: ex. 203.0.113.10
+    accept: ["185.220.101.47"]  # en clair dans la source, hachées dans le bundle
+    normalize: [trim, lower, nospace]   # défaut : [trim, lower]
+  hints:                        # révélés un par un dans l'app Case (coût : -score)
+    - Les en-têtes d'un mail racontent tout son trajet.
+    - Cherche « Received: » ou « X-Originating-IP » dans le mail suspect — et recoupe avec /var/log/auth.log.
+  onComplete:                   # effets
+    - { deliver: 02-kessler-ip.eml }          # dépose deliveries/02-… dans ~/Maildir/new
+    - { notify: { title: "…", body: "…" } }
+```
+
+### 3.1 Triggers
+
+Un trigger écoute le bus d'événements du noyau.
+
+```yaml
+trigger:
+  event: fs.read                     # type d'événement
+  where: { path: /home/elias/.cache/.sync/sync.sh }   # égalité stricte
+  regex: { line: "^crontab\\s+-l" }  # expressions régulières sur des champs texte
+# ou plusieurs :
+trigger:
+  any:
+    - { event: fs.read, where: { path: … } }
+    - { event: cmd.exec, regex: { line: "crontab\\s+-l" } }
+```
+
+| Événement | Charge utile | Émis par |
+|---|---|---|
+| `fs.read` | `path, user` | toute lecture de contenu (cat, Notes, Images, Mail…) |
+| `fs.write` | `path, user` | écriture, `touch`, redirection `>` |
+| `fs.list` | `path, user` | `ls`, explorateur |
+| `cmd.exec` | `name, argv, line, exit, user` | chaque commande du shell |
+| `auth.sudo` | `user, ok` | `sudo` (mot de passe correct ou non) |
+| `auth.su` | `user, target, ok` | `su` |
+| `mail.open` | `path, messageId, subject, from` | app Mail |
+| `image.open` | `path` | app Images |
+| `app.open` | `appId, path?` | lancement d'app |
+| `scenario.flag` | `id` | commandes scénarisées (`emit`) |
+| `objective.complete` | `id` | runtime (chaînage) |
+| `evidence.found` | `id, title` | runtime (pièce découverte) |
+| `choice.made` | `objective, option` | runtime (décision prise) |
+| `web.visit` | `url, host, path, title, status` | Navigateur |
+| `chat.message` | `contact, text` | runtime (un PNJ écrit) |
+| `chat.reply` | `contact, node, reply` | Messagerie (réponse du joueur) |
+| `auth.ssh` | `user, login, target, ok, method, machine?` |
+| `soc.alert` / `soc.triage` / `soc.action` | voir §3.6d | Console SOC | `ssh`/`scp` (connexion à une machine distante) |
+
+### 3.2 Effets `onComplete`
+
+| Effet | Exemple | Résultat |
+|---|---|---|
+| `deliver` | `{ deliver: 03-final.eml }` | nouveau mail + notification « Nouveau message » |
+| `notify` | `{ notify: { title, body } }` | toast narratif |
+| `write` | `{ write: { path, content, mode?, owner?, append?, machine? } }` | fichier créé/remplacé (en root) ; `append: true` ajoute (lignes de journal) ; `machine: <id>` vise une machine distante |
+| `alert` | `{ alert: a-sae }` | lève une alerte de la Console SOC |
+| `remove` | `{ remove: { path, machine? } }` | supprime un fichier (preuve détruite par un PNJ, rétention…) ; le chemin doit exister à la compilation |
+| `flag` | `{ flag: alarm-raised }` | émet `scenario.flag` (chaînage) |
+| `end` | `{ end: true }` | écran de fin (score, temps, indices utilisés) |
+| `chat` | `{ chat: tomas-hello }` | un PNJ écrit dans la messagerie |
+
+### 3.3 Pièces à conviction
+
+Inspiré d'*Orwell* : l'enquête ne se résume pas à des réponses justes, elle accumule des **faits sourcés** que le joueur pourra (ou non) utiliser. Une pièce est découverte automatiquement quand son trigger se déclenche, une seule fois, à n'importe quel moment de la partie, et s'affiche dans l'onglet « Pièces » du Dossier avec un lien vers sa source.
+
+```yaml
+evidence:
+  - id: exec-trace
+    title: Trace d'exécution auditd
+    summary: "06/05 23:10:02 — auid=1001 (mlefort) lance python3 ~/.local/share/.cache/sync.py"
+    source: /var/log/audit/audit.log      # rouvrable depuis le Dossier
+    tag: témoin                           # badge libre : vecteur, témoin, contradiction, contexte…
+    trigger: { event: cmd.exec, regex: { line: "audit\\.log" } }
+```
+
+Une pièce peut être **trompeuse** : le moteur ne le sait pas, c'est au joueur d'en juger (et au scénario de punir une conclusion hâtive par la fin qu'il obtient).
+
+### 3.4 Choix et fins multiples
+
+Un objectif peut être une **décision** (`choice`). Chaque option peut exiger des pièces : on ne peut accuser, dénoncer ou protéger qu'avec ce qu'on a trouvé. Au moins une option doit rester toujours disponible. Le choix est définitif.
+
+```yaml
+- id: verdict
+  title: Rendre votre rapport
+  requires: [qui]
+  choice:
+    prompt: Que transmettez-vous à votre client ?
+    options:
+      - id: name-source
+        label: Donner le nom de la source
+        detail: Le contrat est rempli.
+        requiresEvidence: [exec-trace]
+        flags: [source-exposed]           # + flag automatique `choice:verdict:name-source`
+        onSelect: [{ deliver: 06-client-merci.eml }]
+      - id: inconclusive
+        label: Conclure à une enquête non concluante
+  onComplete: [{ end: true }]
+
+endings:                                   # évaluées dans l'ordre à l'effet `end` ; la 1re qui correspond gagne
+  - id: price-of-silence
+    title: Le prix du silence
+    text: …
+    flags: [source-exposed]
+    notFlags: []
+  - id: fog                                # sans condition = fin par défaut
+    title: Brouillard
+    text: …
+```
+
+L'écran de fin affiche la fin obtenue (« Fin 2/4 ») ; `outro` reste le repli si aucune fin ne correspond.
+
+### 3.5 Web (navigateur simulé)
+
+Les sites d'un scénario sont de vrais fichiers HTML rangés par hôte :
+
+```
+scenarios/<id>/web/
+├─ intranet.lumengrid.local/
+│  ├─ index.html              → https://intranet.lumengrid.local/
+│  ├─ wiki/securite.html      → https://intranet.lumengrid.local/wiki/securite
+│  └─ annuaire/index.html     → https://intranet.lumengrid.local/annuaire
+└─ lumengrid.fr/index.html
+```
+
+- Chaque page a une `<title>`. **Aucun `<script>`** : le navigateur affiche les pages dans une iframe sandboxée sans scripts. CSS inline autorisé, images en `data:`.
+- Liens : relatifs (`/wiki/vpn`) ou absolus (`https://autre.hote/…`), interceptés par le navigateur. Formulaires en `GET` : la soumission ouvre `hôte/chemin?champ=valeur`, ce qui permet de router des recherches ou des logins factices.
+- La résolution suit le réseau du scénario : hôte inconnu → erreur DNS ; `network.hosts.<h>.reachable: false` → délai dépassé ; `web.blocked.<h>` → page « bloqué par le SOC » avec la raison ; un hôte sans page mais avec `http:` → réponse brute.
+- `file:///chemin` ouvre un fichier du disque virtuel (HTML ou texte), avec les droits de la session.
+
+```yaml
+web:
+  home: intranet.lumengrid.local           # page d'accueil du navigateur
+  bookmarks:
+    - { label: Intranet, url: intranet.lumengrid.local }
+  blocked:
+    vpn.lumengr1d.com: "Catégorie : hameçonnage — bloqué par le SOC le 17/04 à 07:55 (INC-2026-0417)."
+  routes:                                   # testées avant les pages statiques, sur "hôte/chemin?requête"
+    - { match: "^intranet\\.lumengrid\\.local/annuaire\\?q=.*varga", page: intranet.lumengrid.local/annuaire/varga, emit: annuaire-varga }
+```
+
+Événement : `web.visit` `{ url, host, path, title, status }` (status : `ok`, `dns`, `timeout`, `blocked`, `notfound`, `error`). L'historique de navigation est un vrai fichier : `~/.local/share/kp-browser/history` (lignes `AAAA-MM-JJ HH:MM:SS<TAB>url<TAB>titre`). Un scénario peut le pré-remplir : c'est un indice comme un autre.
+
+### 3.6 Messagerie interne (PNJ)
+
+```yaml
+chat:
+  contacts:
+    - { id: tomas, name: Tomás Reyes, role: Astreinte OT, status: en ligne }
+  history:                                  # conversations passées (affichées au démarrage)
+    tomas:
+      - { from: tomas, at: "2026-04-16T19:06:00+02:00", text: "bon congé !" }
+      - { from: me, at: "2026-04-16T19:07:00+02:00", text: "merci, à lundi 24" }
+  nodes:
+    - id: tomas-hello
+      contact: tomas
+      trigger: { event: objective.complete, where: { id: intrusion-ip } }   # se déclenche une seule fois
+      messages: ["Salut. Nadia m'a dit que t'es sur la machine d'Elias.", "Je peux aider ?"]
+      replies:
+        - { id: pw, text: "Tu sais comment il choisit ses mots de passe ?", next: tomas-pw }
+        - { id: proof, text: "Regarde ce mail.", requiresEvidence: [phishing], next: tomas-phish, flags: [tomas-informed] }
+        - { id: no, text: "Ça ira, merci." }
+    - id: tomas-pw
+      contact: tomas
+      messages: ["Ha. Regarde son bureau. Littéralement."]
+```
+
+- Un nœud avec `trigger` se joue tout seul (une fois) ; sans trigger, il est atteint par `next` ou par l'effet `{ chat: <nœud> }` (utilisable dans tous les `onComplete`/`onSelect`).
+- Les réponses peuvent exiger des pièces (`requiresEvidence`), lever des flags (pour les fins) et lancer des effets.
+- Événements : `chat.message` `{ contact, text }`, `chat.reply` `{ contact, node, reply }`.
+
+### 3.6b Minuteries et mode chronométré
+
+```yaml
+timers:
+  - id: job-0417
+    at: "2026-04-17T09:00:00+02:00"       # heure de JEU
+    label: JOB-0417                       # compte à rebours dans la barre des tâches tant qu'elle est armée
+    timedOnly: true                       # seulement si le joueur a coché « Mode chronométré » au menu
+    unlessFlags: [job-aborted]            # désamorcée dès qu'un de ces flags est levé
+    warnings:                             # n minutes avant (seule la plus récente se joue après un saut de temps)
+      - { before: 15, effects: [{ notify: { title: "…", body: "…" } }, { chat: tomas-countdown }] }
+    effects: [{ deliver: 06-blackout.eml }, { flag: blackout }, { end: true }]
+```
+
+- L'heure de jeu avance avec le temps de jeu réel (pause hors partie). Les minuteries ne se déclenchent que sur le bureau déverrouillé.
+- Un scénario qui a au moins une minuterie `timedOnly` propose la case « Mode chronométré » au menu (nouvelle partie) ; le choix est conservé dans la sauvegarde.
+- `journal: "…"` : la ligne qui apparaît dans le déroulé de fin de partie quand la minuterie se déclenche (par défaut : `label` ou `id`).
+- Une fin peut porter `tone: bad` (titre rouge) ou `tone: mixed` (ambre). Le score est pondéré par la part des objectifs principaux terminés : une fin atteinte par une minuterie ou un rapport précipité rapporte moins.
+
+### 3.6c Déroulé de partie (replay)
+
+Le runtime tient un journal (`state.journal`, sauvegardé) affiché sur l'écran de fin, « Revoir la partie » : objectifs atteints, pièces trouvées **avec ce qui les a révélées** (la commande tapée et sa machine, le fichier lu, le mail ouvert), connexions `ssh` (`compte@machine`, clé ou mot de passe), indices demandés, réponses refusées (la valeur saisie), décisions, minuteries déclenchées et fin. Heure de jeu pour chaque ligne, temps de jeu en infobulle. Rien à déclarer côté scénario : soignez les titres des objectifs et des pièces, c'est ce qui se lit.
+
+### 3.6d Console SOC (crise en direct)
+
+Un scénario qui déclare `soc:` installe l'app « Console SOC » sur le poste : carte du réseau par zone, flux d'alertes, triage, isolement, pare-feu.
+
+```yaml
+soc:
+  name: Supervision — Valmobilis
+  faultLabel: défaillant          # libellé de l'état « infected » (défaut : compromis)
+  zones: [Voyageurs, Exploitation]
+  assets:
+    - { id: sae, name: srv-sae, ip: 10.60.3.10, role: "…", zone: Exploitation, impact: "aucun tram ne pourra partir." }
+    - { id: deploy, name: srv-deploy, ip: 10.60.1.10, role: "…", host: deploy }   # host = machine ssh (isolée → No route to host)
+  alerts:
+    - { id: a-sae, severity: critical, title: "…", asset: sae, detail: "…" }                      # levée par un effet { alert: a-sae }
+    - { id: a-x, severity: medium, title: "…", detail: "…", trigger: { event: …, where: … } }    # ou par un déclencheur
+```
+
+- L'état d'une machine se lit dans les flags : `infected:<id>` (sauf `restored:<id>`), `isolated:<id>`. Les minuteries et les effets `flag` font vivre la carte.
+- Actions du joueur, toutes définitives : triage (`triage:<alerte>:real|false`), isolement (`isolated:<id>`, avec confirmation qui affiche `impact`), blocage d'une IPv4 au pare-feu (`blocked:<ip>`). Le compilateur considère ces flags comme « levables ».
+- Propagation : des minuteries avec `ifFlags` (la source doit être atteinte) et `unlessFlags` (pause, blocage, isolement) ; une minuterie sans `timedOnly` fait partie du scénario, mode chronométré ou non.
+- Événements : `soc.alert` `{ id, severity, title, asset? }`, `soc.triage` `{ alert, verdict }`, `soc.action` `{ action: isolate|block, target }`.
+
+### 3.6e Contrat (tableau des contrats)
+
+```yaml
+contract: { client: "Orbis Assurances", fee: 12000 }   # fee: 0 = formation
+```
+
+Affiché sur la carte du menu. La carrière (réputation = somme des meilleurs scores, rangs, badges, étoiles : clos · bonne fin · sans indice) est calculée côté bureau à partir des résultats de fin de partie ; un scénario n'a rien d'autre à déclarer. Les fins `tone: bad` ou `mixed` ne donnent qu'une étoile.
+
+### 3.7 Machines distantes (`ssh`, `scp`)
+
+Un scénario peut déclarer d'autres machines. Leurs fichiers vivent dans `hosts/<id>/`, comme `fs/` pour le poste du joueur.
+
+```yaml
+hosts:
+  - id: claims                              # identifiant stable (événements : machine: claims)
+    machine: { hostname: srv-claims, domain: orbis.local, os: LumenOS Server 22.04, kernel: 6.8.0, ip: 10.40.1.20 }
+    aliases: [claims.orbis.local]           # facultatif (hostname, FQDN et IP résolvent toujours)
+    ssh:
+      banner: "Accès réservé."              # avant le mot de passe
+      motd: "claims-app 3.4"                # après la connexion
+      from: [local]                         # machines d'où elle est joignable ("local" = le poste). Défaut : partout
+    users:                                  # comme pour le poste (password haché à la compilation)
+      - { name: audit, uid: 1060, home: /home/audit, groups: [adm, sudo], password: ... }
+    permissions: [...]                      # mêmes règles que pour fs/
+    defaults: { mtime: ... }
+    processes: [...]
+    network: { interfaces: [...] }
+    commands: { claimsctl: { ... } }        # outils scénarisés propres à cette machine
+    archives:                               # mots de passe des zip construits depuis hosts/<id>/…/x.zip.d/
+      /srv/backups/documents/rapport.zip: { password: ... }
+```
+
+- **Authentification réelle** : une clé dont le `.pub` (à côté de la clé privée, lisible par le joueur) figure dans `~/.ssh/authorized_keys` du compte visé, sinon le mot de passe (3 essais). `ssh -i <clé>` choisit la clé ; sans `-i`, `~/.ssh/id_ed25519`, `id_ecdsa`, `id_rsa`.
+- Chaque connexion écrit une ligne `sshd` dans `/var/log/auth.log` de la machine visée, et `sudo` journalise sur la machine où il s'exécute : le joueur laisse des traces, comme un vrai administrateur.
+- `ssh hôte commande` exécute puis rend la main ; `exit` ferme la connexion (« Connection to … closed. ») et rend le dossier courant du poste. `scp [-r]` copie dans les deux sens. Les applications du bureau ne montrent que le poste : pour lire un fichier distant dans Images ou Notes, il faut le rapatrier avec `scp`.
+- **Événements** : tout ce qui se passe sur une machine distante (`fs.*`, `cmd.exec`, `auth.sudo`…) porte `machine: <id>`. Un trigger ne les voit **que s'il nomme la machine** : `{ event: fs.read, where: { path: /var/log/auth.log, machine: claims } }`. Sans `machine`, il ne concerne que le poste.
+- Nouvel événement `auth.ssh` `{ user, login, target, ok, method: password|key, machine? }` : `user` est le compte d'où part la connexion, `login` le compte visé, `target` l'id de la machine visée et `machine` celle d'où l'on part (absente = le poste).
+- Une pièce dont la source est distante déclare `machine: <id>` ; le Dossier l'affiche `hôte:/chemin` (sans l'ouvrir).
+- Sauvegardes : les modifications de chaque machine sont conservées (`SaveGame.hosts`).
+
+### 3.8 Archives
+
+Dans `fs/` ou `hosts/<id>/`, un dossier `nom.zip.d/`, `nom.tar.d/`, `nom.tgz.d/` ou `nom.tar.gz.d/` devient l'archive `nom.zip` (etc.) avec son contenu ; un fichier `x.log.gz.src` devient `x.log.gz`. Les zip peuvent être chiffrés (section `archives:` ci-dessus, ou à la racine pour le poste) : le contenu n'apparaît pas en clair dans le bundle. Côté joueur : `tar -tzf / -xzf -C`, `gzip`, `gunzip`, `zcat`, `zip [-e|-P]`, `unzip [-l] [-P] [-d]`.
+
+## 4. Commandes scénarisées
+
+Déclaratives : la ligne d'arguments est comparée aux règles dans l'ordre ; la première qui matche gagne.
+
+```yaml
+commands:
+  lumenctl:
+    path: /usr/local/bin/lumenctl      # pour `which` et `ls /usr/local/bin`
+    summary: Lumen Grid OT control utility
+    group: lumen-ops                   # sinon « permission denied »
+    rules:
+      - match: "^status$"
+        output: |
+          JOB        TARGET          STATE    AT
+          JOB-0417   substation-*    QUEUED   09:00
+      - match: "^abort JOB-0417 --token OVR-7Q2K-VX91$"
+        requireRoot: true
+        output: "[ok] JOB-0417 aborted."
+        emit: job-aborted              # → scenario.flag {id: job-aborted}
+        once: true                     # n'émet qu'une fois
+      - match: "^abort"
+        exit: 1
+        output: "lumenctl: abort requires a valid operator override token"
+    fallback: |                        # aucun match
+      usage: lumenctl <status|jobs|abort> [options]
+```
+
+Champs d’une règle : `ifFlag` / `unlessFlag` (conditions sur un flag déjà levé), `write` peut être une liste (ex. `unzip` qui extrait plusieurs fichiers ; chemins avec `{{cwd}}`), `match` (regex sur les arguments joints par des espaces), `output` (texte, ANSI autorisé via `\e[…m`), `exit` (défaut 0), `requireRoot`, `emit`, `once`, `write` (même forme que l'effet).
+
+Variables substituées dans `output` : `{{user}}`, `{{hostname}}`, `{{date}}`, `{{cwd}}`.
+
+## 5. Mails
+
+Les mails sont de vrais fichiers RFC 822 (`.eml`) dans une **Maildir** :
+
+```
+/home/<user>/Maildir/new/   # non lus
+/home/<user>/Maildir/cur/   # lus (l'app Mail y déplace le fichier à l'ouverture)
+/home/<user>/Maildir/.Sent/cur/
+```
+
+En-têtes reconnus pour l'affichage : `From`, `To`, `Cc`, `Subject`, `Date`, `Message-ID` ; **tous** les en-têtes sont visibles via « Afficher la source » (et `cat`). C'est voulu : `Received`, `Return-Path`, `X-Originating-IP` sont des indices.
+
+L'événement `mail.open` porte le `Message-ID` sans chevrons — c'est la clé à utiliser dans les triggers.
+
+## 6. Images
+
+`.svg` (texte : les balises `<metadata>`, `<title>`, `<desc>` sont lisibles au terminal **et** affichées par l'app Images dans le panneau « Métadonnées ») ou `.png/.jpg` (binaires). Pour des métadonnées sur un raster, ajouter un fichier sidecar `<image>.meta.yaml` (non monté) — phase 2.
+
+Convention de métadonnées SVG reconnue par la visionneuse :
+
+```xml
+<metadata>
+  <kp:exif xmlns:kp="https://kernel.fs0ciety.org/ns" Make="Fairphone" Model="FP5"
+           DateTimeOriginal="2019-03-09 14:02:11" Description="…"/>
+</metadata>
+```
+
+## 7. Règles d'écriture (checklist scénariste)
+
+1. **Chaque objectif a au moins deux chemins** (ex. l'IP est dans les en-têtes du mail *et* dans `auth.log`).
+2. **Bruit crédible** : ~60 % des fichiers ne servent pas l'intrigue mais rendent la machine vivante (planning d'astreinte, newsletter, photos).
+3. **Chaque app de base sert au moins une fois** : Mail (en-têtes), Images (métadonnées), Logs (filtre), Notes (runbook), Files (fichiers cachés), Terminal (`base64 -d`, `sudo`, `strings`).
+4. **Indices en 2–3 paliers** : orientation → méthode → quasi-solution.
+5. **Cohérence temporelle** : tous les horodatages (mails, logs, `mtime`, `.bash_history`) racontent la même nuit.
+6. **Pas de vrai exploit** : techniques réalistes (phishing, réutilisation de mot de passe, cron, clé SSH), contenu inoffensif.
+7. Les réponses acceptent les variantes raisonnables (`accept` est une liste).
+
+## 8. Runtime (implémentation)
+
+`packages/kernel/src/scenario/runtime.ts` :
+
+- `load(bundle, save?)` monte le VFS puis rejoue le diff de sauvegarde.
+- S'abonne au bus ; à chaque événement, teste les objectifs **disponibles** (prérequis remplis, non complétés).
+- **Découvertes anticipées** : si un trigger se déclenche alors que son objectif est encore verrouillé, il est mémorisé (`state.early`) et l'objectif se valide dès qu'il se déverrouille. Le joueur explore librement sans devoir « refaire » une action.
+- `submit(objectiveId, value)` → normalise, hache, compare.
+- `revealHint(objectiveId)` → incrémente le palier (comptabilisé dans le score).
+- Score final : `1000 − 40 × indices − 2 × minutes`, plancher 100 ; bonus optionnels +150.
+- État sérialisable : `{ completed: Record<id, timestamp>, hints: Record<id, n>, flags: string[], early: string[], startedAt, endedAt?, playtime }`.

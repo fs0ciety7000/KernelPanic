@@ -1,0 +1,25 @@
+Return-Path: <y.haddad@ironveil.fr>
+Delivered-To: recrue@ironveil.fr
+Received: from mx.ironveil.fr (mx.ironveil.fr [10.100.0.5])
+	by training-01.lab.ironveil.local (Postfix) with ESMTP id 1A2B02
+	for <recrue@ironveil.fr>; {{date}}
+From: Yasmine Haddad <y.haddad@ironveil.fr>
+To: Nouvelle recrue <recrue@ironveil.fr>
+Subject: Re: exercice — le mot de passe en clair
+Date: {{date}}
+Message-ID: <step-grep.yh@ironveil.fr>
+Content-Type: text/plain; charset=utf-8
+
+Tu as vu : ce fichier contient un mot de passe écrit noir sur blanc. C'est LA boulette
+classique. Même config en vrai dans /opt/ledgerlite/config/settings.ini .
+
+Apprends à chercher sans tout lire. Au terminal :
+
+    grep -i password /opt/ledgerlite/config/settings.ini
+
+`grep` affiche seulement les lignes qui contiennent le motif (`-i` ignore la casse).
+Tu peux aussi faire `cat` du fichier et lire à l'œil, mais `grep` ira plus vite.
+
+Reporte le mot de passe du compte « deploy » dans le Dossier.
+
+— Y.

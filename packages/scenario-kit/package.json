@@ -1,0 +1,24 @@
+{
+  "name": "@kp/scenario-kit",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Compiles and validates Kernel_Panic scenarios (scenario.yaml + fs/) into JSON bundles",
+  "exports": { ".": "./src/compile.ts" },
+  "bin": { "kp-scenario": "./src/cli.ts" },
+  "scripts": {
+    "cli": "tsx src/cli.ts",
+    "test": "vitest run",
+    "check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@kp/kernel": "workspace:*",
+    "yaml": "2.8.1"
+  },
+  "devDependencies": {
+    "@types/node": "22.18.0",
+    "tsx": "4.20.5",
+    "typescript": "5.9.3",
+    "vitest": "3.2.7"
+  }
+}

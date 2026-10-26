@@ -1,0 +1,6 @@
+2026-06-01 09:02:44 INFO  claims-app 3.4 started (pid 1180)
+2026-06-01 11:05:19 INFO  SIN-2026-0401 statut EXPERTISE -> APPROUVE par=jruiz montant=52000.00
+2026-06-01 15:31:02 INFO  SIN-2026-0412 piece jointe ajoutee: rapport-expertise-SIN-2026-0412.pdf (expert=Cabinet Lazare) par=jruiz
+2026-06-01 15:31:03 INFO  SIN-2026-0412 document chiffre et archive -> srv-backup:/srv/backups/documents
+2026-06-02 09:30:40 INFO  SIN-2026-0415 statut EXPERTISE -> REFUSE par=jruiz motif="exclusion contractuelle (art. 7)"
+2026-06-02 16:12:08 INFO  SIN-2026-0420 expertise demandee par=jruiz

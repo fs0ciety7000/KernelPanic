@@ -1,0 +1,4 @@
+point,date_prelevement,methode,pfas_ugl,seuil_ugl,statut
+BEL-P1,2026-03-05,ponctuel (rév. A),0.02,0.10,conforme
+BEL-P2,2026-03-05,ponctuel (rév. A),0.03,0.10,conforme
+BEL-P3,2026-03-05,ponctuel (rév. A),0.01,0.10,conforme

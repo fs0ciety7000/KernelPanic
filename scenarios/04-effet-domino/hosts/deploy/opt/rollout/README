@@ -1,0 +1,14 @@
+rollout 2.1 — déploiement de configuration Valmobilis
+
+  rollout status              état du job en cours
+  rollout log JOB-ID          qui a lancé quoi, avec quelles options
+  rollout diff JOB-ID         différence entre l'ancienne et la nouvelle configuration
+  rollout pause JOB-ID        suspend le job (les cibles déjà traitées restent en l'état)
+  rollout rollback JOB-ID     réinstalle la configuration précédente sur les cibles (job en pause)
+
+Procédure PR-07 : tout déploiement en production passe d'abord par la recette, puis par
+un « canary » (une seule cible, 30 minutes d'observation), et exige l'accord écrit d'un
+second responsable.
+
+Les paquets sont téléchargés depuis le miroir de l'éditeur : repo.transitsoft.example
+(198.51.100.40).

@@ -1,0 +1,420 @@
+# ─────────────────────────────────────────────────────────────────────────────
+#  Kernel_Panic — Scénario 00 : PREMIER JOUR  (tutoriel)
+#  Difficulté : débutant · ~12 min
+#  Solution complète : SOLUTION.md (spoilers)
+# ─────────────────────────────────────────────────────────────────────────────
+id: premier-jour
+version: 1
+title: Premier jour
+subtitle: Votre première VM d'entraînement chez Ironveil. Rien de grave. Presque.
+summary: >
+  Lundi matin, 9 h. Premier jour comme analyste DFIR chez Ironveil, cabinet de réponse
+  à incident de Valmont. Votre mentore Yasmine vous a préparé une VM d'entraînement avec
+  un petit incident bidon : un stagiaire a laissé traîner un mot de passe et « perdu » un
+  fichier. L'occasion d'apprendre les outils. Suivez ses mails, pas à pas.
+difficulty: beginner
+estimatedMinutes: 12
+locale: fr
+contract: { client: "Ironveil — formation", fee: 0 }
+
+machine:
+  hostname: training-01
+  domain: lab.ironveil.local
+  os: IronveilOS 24.04 LTS (Lab Edition)
+  kernel: 6.8.0-40-ironveil
+  ip: 10.100.0.21
+  clock: 2026-04-06T09:00:00+02:00
+
+defaults:
+  mtime: 2026-04-03T17:00:00+02:00
+
+session:
+  user: recrue
+  cwd: /home/recrue
+  autostart:
+    - { app: mail }
+
+users:
+  - { name: root, uid: 0, home: /root, shell: /bin/bash }
+  - name: recrue
+    uid: 1000
+    fullName: Nouvelle recrue (DFIR)
+    home: /home/recrue
+    shell: /bin/bash
+    groups: [sudo, ironveil]
+    password: IronveilLab6
+
+# Propriétaires/modes par défaut : /home/<u>/** → <u>:<u> ; ailleurs root:root.
+permissions:
+  - { path: /root, mode: "0700" }
+  - { path: /etc/ironveil/lab.key, owner: root, group: root, mode: "0600", mtime: 2026-04-03T17:05:00+02:00 }
+  - { path: /opt/ledgerlite/config/settings.ini, mtime: 2026-04-03T16:58:40+02:00 }
+  - { path: /opt/ledgerlite/bin/ledgerlited, mode: "0755", mtime: 2026-04-03T16:40:00+02:00 }
+  - { path: /usr/local/bin/trainingctl, group: ironveil, mode: "0755" }
+  - { path: /var/log/lab/access.log, group: adm, mode: "0644", mtime: 2026-04-05T06:25:00+02:00 }
+  - { path: /var/log/lab/ledgerlite.log, group: adm, mode: "0644", mtime: 2026-04-05T06:25:00+02:00 }
+  - { path: /home/recrue/.ledgerlite, mode: "0755", mtime: 2026-04-03T17:02:00+02:00 }
+  - { path: /home/recrue/.ledgerlite/settings.ini.bak, mode: "0644", mtime: 2026-04-03T17:02:11+02:00 }
+  - { path: /home/recrue/.config/ironveil/agent.conf, mtime: 2026-04-06T08:30:00+02:00 }
+  - { path: /home/recrue/Maildir, mode: "0700" }
+  - { path: /home/recrue/Maildir/**, mode: "0600" }
+  - { path: /home/recrue/Pictures/capture-ledgerlite.svg, mtime: 2026-04-05T22:14:11+02:00 }
+  - { path: /home/recrue/Documents/onboarding.md, mtime: 2026-04-06T08:31:00+02:00 }
+
+processes:
+  - { pid: 1,    user: root,   cmd: /sbin/init splash, start: Apr06 }
+  - { pid: 420,  user: root,   cmd: /usr/lib/systemd/systemd-journald, start: Apr06 }
+  - { pid: 611,  user: root,   cmd: /usr/sbin/cron -f, start: Apr06 }
+  - { pid: 705,  user: root,   cmd: "sshd: /usr/sbin/sshd -D [listener]", start: Apr06 }
+  - { pid: 904,  user: deploy, cmd: /opt/ledgerlite/bin/ledgerlited --serve, cpu: 0.2, start: Apr06 }
+  - { pid: 1501, user: recrue, cmd: /usr/bin/kp-session --training, start: "09:00" }
+  - { pid: 1540, user: recrue, cmd: -bash, start: "09:00" }
+
+network:
+  interfaces:
+    - { name: eth0, ip: 10.100.0.21, mac: "52:54:00:b7:3a:21" }
+  connections:
+    - { proto: tcp, local: "0.0.0.0:22", remote: "0.0.0.0:*", state: LISTEN, program: 705/sshd }
+    - { proto: tcp, local: "10.100.0.21:8080", remote: "0.0.0.0:*", state: LISTEN, program: 904/ledgerlited }
+  hosts:
+    ironveil.fr: { ip: 203.0.113.10, http: "<!doctype html><title>Ironveil — réponse à incident, Valmont</title>" }
+    lab.ironveil.local: { ip: 10.100.0.1, http: "Ironveil Lab — portail d'entraînement (SSO interne)." }
+    training-01.lab.ironveil.local: { ip: 10.100.0.21, http: "LedgerLite (lab) — 200 OK" }
+
+commands:
+  trainingctl:
+    path: /usr/local/bin/trainingctl
+    summary: Ironveil — contrôle des exercices du lab
+    group: ironveil
+    rules:
+      - match: "^(status)?$"
+        unlessFlag: lab-submitted
+        output: |
+          \e[1mtrainingctl 1.0\e[0m — lab training-01 (exercice IV-2026-0006)
+
+          ÉTAPE                                  ÉTAT
+          1. Lire le mot de passe en clair        \e[33mà valider dans le Dossier\e[0m
+          2. Repérer la connexion suspecte         \e[33mà valider dans le Dossier\e[0m
+          3. Jeton de validation (sudo + base64)   \e[33men attente\e[0m
+
+          Quand tu as le jeton :  trainingctl submit <JETON>
+      - match: "^(status)?$"
+        ifFlag: lab-submitted
+        output: |
+          \e[1mtrainingctl 1.0\e[0m — lab training-01 (exercice IV-2026-0006)
+
+          Exercice \e[32mVALIDÉ\e[0m. Beau travail. Reste le rapport à rendre (dans le Dossier).
+      - match: "^submit IVLAB-7F3A$"
+        unlessFlag: lab-submitted
+        emit: lab-submitted
+        once: true
+        output: |
+          \e[32m[ok]\e[0m Jeton accepté. Exercice IV-2026-0006 marqué comme validé.
+          [ok] Ton instructeur (Yasmine) reçoit une notification.
+      - match: "^submit IVLAB-7F3A$"
+        ifFlag: lab-submitted
+        exit: 1
+        output: "trainingctl: exercice déjà validé."
+      - match: "^submit"
+        exit: 1
+        output: |
+          trainingctl: jeton invalide.
+                       le jeton est dans /etc/ironveil/lab.key (lecture root), encodé en base64.
+      - match: "^(version|--version|-v)$"
+        output: "trainingctl 1.0 — Ironveil Lab tools"
+    fallback: |
+      usage: trainingctl <commande>
+
+        status              état de l'exercice en cours
+        submit <JETON>      valider l'exercice avec le jeton du corrigé
+        version             version de l'outil
+
+# ─── Navigateur (pages dans web/) ────────────────────────────────────────────
+web:
+  home: lab.ironveil.local
+  bookmarks:
+    - { label: Portail du lab, url: "http://lab.ironveil.local/" }
+    - { label: Aide-mémoire, url: "http://lab.ironveil.local/wiki/aide-memoire" }
+    - { label: Ironveil, url: "https://ironveil.fr/" }
+
+# ─── Messagerie interne ──────────────────────────────────────────────────────
+chat:
+  contacts:
+    - { id: yasmine, name: Yasmine Haddad, role: Analyste senior · votre mentore }
+  history:
+    yasmine:
+      - { from: yasmine, text: "Bienvenue ! Je t'ai envoyé un mail pour démarrer. Tu peux aussi m'écrire ici.", at: "2026-04-06T08:58:00+02:00" }
+  nodes:
+    - id: yasmine-browser
+      contact: yasmine
+      trigger: { event: objective.complete, where: { id: ticket } }
+      messages:
+        - "Bien vu pour le numéro d'exercice 👍"
+        - "Petit conseil : le navigateur a un aide-mémoire du terminal dans ses favoris. Garde-le ouvert à côté."
+      replies:
+        - { id: thanks, text: "Merci, je regarde !", next: yasmine-thanks }
+        - { id: fine, text: "Ça va, je connais le terminal." , next: yasmine-fine }
+    - id: yasmine-thanks
+      contact: yasmine
+      messages:
+        - "Avec plaisir. Si tu bloques, le Dossier propose aussi des indices. Aucune honte à les utiliser."
+    - id: yasmine-fine
+      contact: yasmine
+      messages:
+        - "Parfait. Alors je ne te dis rien de plus 😉"
+    - id: yasmine-root
+      contact: yasmine
+      trigger: { event: objective.complete, where: { id: droits-root } }
+      messages:
+        - "Te voilà root. Règle de la maison : on ne garde ces droits que le temps nécessaire, et on ne modifie rien sur une machine qu'on analyse."
+
+# ─── Objectifs ───────────────────────────────────────────────────────────────
+objectives:
+  - id: bienvenue
+    title: Lire le mail de bienvenue
+    description: Yasmine vous a écrit. L'app Mail est déjà ouverte — ouvrez son message.
+    trigger: { event: mail.open, where: { messageId: welcome-0006.yh@ironveil.fr } }
+    hints:
+      - L'app Mail est ouverte au démarrage. Sinon, cliquez sur l'enveloppe dans le dock.
+      - Le message non lu a une pastille. Cliquez dessus pour l'ouvrir.
+    onComplete:
+      - { notify: { title: "Bienvenue chez Ironveil", body: "Suivez les mails de Yasmine, étape par étape." } }
+
+  - id: ticket
+    title: Trouver le numéro de l'exercice
+    description: >
+      Yasmine a glissé le numéro de l'exercice dans un en-tête de son mail. Apprenez à
+      lire la source d'un message, puis reportez le numéro.
+    requires: [bienvenue]
+    answer:
+      label: Numéro d'exercice
+      placeholder: ex. IV-2026-0000
+      accept: ["IV-2026-0006", "iv-2026-0006", "2026-0006"]
+      normalize: [trim, lower, nospace]
+    hints:
+      - Dans le mail ouvert, cliquez sur « Afficher la source » pour voir tous les en-têtes.
+      - Cherchez une ligne qui commence par « X-Ironveil-Ticket: ».
+      - "Le même numéro figure aussi dans ~/Documents/onboarding.md. Format : IV-2026-0006."
+    onComplete:
+      - { deliver: 02-yasmine-cache.eml }
+
+  - id: cache
+    title: Ouvrir le fichier caché
+    description: >
+      Le stagiaire a « perdu » une sauvegarde de config dans votre dossier perso — un
+      fichier caché. Affichez les fichiers cachés et ouvrez-le.
+    requires: [ticket]
+    trigger: { event: fs.read, where: { path: /home/recrue/.ledgerlite/settings.ini.bak } }
+    hints:
+      - Les fichiers cachés commencent par un point. Dans Fichiers, bouton « Cachés » ; au terminal, `ls -a`.
+      - Il est dans un dossier caché de votre home nommé .ledgerlite
+      - "Au terminal : `cat ~/.ledgerlite/settings.ini.bak` (la touche Tab complète les noms)."
+    onComplete:
+      - { deliver: 03-yasmine-grep.eml }
+
+  - id: mot-de-passe
+    title: Le mot de passe laissé en clair
+    description: >
+      La config de l'appli LedgerLite contient un mot de passe de service écrit en clair.
+      Retrouvez-le (c'est l'erreur n°1 du stagiaire).
+    requires: [cache]
+    answer:
+      label: Mot de passe du compte deploy
+      placeholder: le mot de passe en clair
+      accept: ["Printemps2026!", "printemps2026!"]
+      normalize: [trim, lower]
+    hints:
+      - "La config vit dans /opt/ledgerlite/config/settings.ini (et sa copie dans ~/.ledgerlite)."
+      - "`grep` cherche un motif dans un fichier : `grep -i password /opt/ledgerlite/config/settings.ini`"
+      - "La ligne est : deploy_password = Printemps2026!"
+    onComplete:
+      - { deliver: 04-yasmine-logs.eml }
+
+  - id: connexion
+    title: La connexion suspecte
+    description: >
+      Dans le journal d'accès de LedgerLite, une connexion n'a rien à faire là (un samedi
+      soir, depuis l'extérieur). De quelle adresse IP vient-elle ?
+    requires: [mot-de-passe]
+    answer:
+      label: Adresse IP source
+      placeholder: ex. 198.51.100.0
+      accept: ["198.51.100.23"]
+      normalize: [trim, nospace]
+    hints:
+      - Ouvrez l'app Logs et sélectionnez /var/log/lab/access.log.
+      - Utilisez les filtres « Connexions » ou « Échecs », ou tapez une recherche. Repérez le samedi 4 avril, tard le soir.
+      - "La ligne : « ACCEPT user=deploy src=198.51.100.23 » le 04/04 à 23:14. Au terminal : `grep ACCEPT /var/log/lab/access.log`."
+    onComplete:
+      - { deliver: 05-yasmine-exif.eml }
+
+  - id: capture
+    title: Lire les métadonnées d'une photo
+    description: >
+      Le stagiaire a laissé une capture d'écran du tableau de bord. Ses métadonnées EXIF
+      disent quand elle a été prise. Quelle est la date de prise de vue ?
+    requires: [connexion]
+    answer:
+      label: Date de prise de vue
+      placeholder: ex. AAAA-MM-JJ
+      accept: ["2026-04-05", "2026:04:05", "05/04/2026", "05-04-2026"]
+      normalize: [trim, lower, nospace]
+    hints:
+      - Ouvrez ~/Pictures/capture-ledgerlite.svg dans l'app Images, puis le panneau « Infos ».
+      - Cherchez le champ « DateTimeOriginal » dans les métadonnées EXIF (surligné).
+      - "Au terminal : `exiftool ~/Pictures/capture-ledgerlite.svg`. La date est le 2026-04-05."
+    onComplete:
+      - { deliver: 06-yasmine-sudo.eml }
+
+  - id: droits-root
+    title: Passer root avec sudo
+    description: >
+      Le corrigé de l'exercice est dans un fichier réservé à root. Apprenez `sudo` : il
+      demande VOTRE mot de passe (celui de votre session), pas celui de root.
+    requires: [capture]
+    trigger: { event: auth.sudo, where: { ok: true } }
+    hints:
+      - Votre mot de passe de session est dans le mail de bienvenue de Yasmine.
+      - "Essayez : `sudo cat /etc/ironveil/lab.key` — sudo vous demandera votre mot de passe."
+      - "Mot de passe de session : IronveilLab6 (donné par Yasmine). Un fichier root devient alors lisible."
+    onComplete:
+      - { deliver: 07-yasmine-submit.eml }
+
+  - id: valider
+    title: Valider l'exercice
+    description: >
+      Le fichier root contient un jeton encodé en base64. Décodez-le, puis validez
+      l'exercice avec l'outil maison `trainingctl`.
+    requires: [droits-root]
+    trigger: { event: scenario.flag, where: { id: lab-submitted } }
+    hints:
+      - "Affichez le jeton : `sudo cat /etc/ironveil/lab.key`. Il est encodé en base64."
+      - "Décodez : `echo SVZMQUItN0YzQQ== | base64 -d`"
+      - "Puis : `trainingctl submit IVLAB-7F3A`"
+    onComplete:
+      - { deliver: 08-yasmine-rapport.eml }
+
+  - id: rapport
+    title: Rendre votre premier rapport
+    description: Yasmine veut savoir comment vous présentez la « connexion suspecte » de l'exercice.
+    requires: [valider]
+    choice:
+      prompt: Comment rapportez-vous votre trouvaille ?
+      options:
+        - id: sobre
+          label: La noter sobrement dans le ticket d'exercice
+          detail: Un fait, une source, une ligne. Comme on vous l'a appris ce matin.
+        - id: reunion
+          label: La signaler en réunion de 11 h comme une vraie compromission
+          detail: Preuves en main, vous dramatisez un peu. C'était un exercice, mais bon.
+          requiresEvidence: [ev-config, ev-login]
+          flags: [alarme-reunion]
+    onComplete:
+      - { end: true }
+
+  # ── Bonus ──
+  - id: bonus-codename
+    title: "Bonus — le nom de code de l'appli"
+    description: Un binaire ne se lit pas avec `cat`. Faites parler celui de LedgerLite.
+    optional: true
+    requires: [bienvenue]
+    trigger:
+      any:
+        - { event: cmd.exec, where: { name: strings }, regex: { line: "ledgerlited" } }
+        - { event: cmd.exec, where: { name: strings }, regex: { line: "ledgerlite/bin" } }
+    hints:
+      - "`strings` extrait le texte lisible d'un fichier binaire."
+      - "Essayez : `strings /opt/ledgerlite/bin/ledgerlited` (le nom de code commence par IRON…)."
+
+  - id: bonus-navigateur
+    title: "Bonus — ouvrir le navigateur"
+    description: Le lab a un wiki interne. Trouvez l'aide-mémoire du terminal.
+    optional: true
+    requires: [bienvenue]
+    trigger: { event: web.visit, regex: { url: "lab\\.ironveil\\.local/wiki/aide-memoire" } }
+    hints:
+      - Le navigateur est dans la barre des tâches (le globe). Regardez ses favoris.
+
+  - id: bonus-messagerie
+    title: "Bonus — répondre à Yasmine"
+    description: Yasmine vous écrit sur la messagerie interne. Répondez-lui.
+    optional: true
+    requires: [ticket]
+    trigger: { event: chat.reply, where: { contact: yasmine } }
+    hints:
+      - L'app Messages est dans la barre des tâches. Les réponses possibles apparaissent sous la conversation.
+
+# ─── Pièces à conviction ───────────────────────────────────────────────────────
+evidence:
+  - id: ev-config
+    title: Mot de passe en clair dans la config
+    summary: "deploy_password = Printemps2026! — en clair dans settings.ini (compte de service LedgerLite)."
+    source: /opt/ledgerlite/config/settings.ini
+    tag: vecteur
+    trigger:
+      any:
+        - { event: fs.read, where: { path: /opt/ledgerlite/config/settings.ini } }
+        - { event: fs.read, where: { path: /home/recrue/.ledgerlite/settings.ini.bak } }
+        - { event: cmd.exec, regex: { line: "deploy_password|settings\\.ini" } }
+
+  - id: ev-login
+    title: Connexion suspecte un samedi soir
+    summary: "04/04 23:14:07 — ACCEPT user=deploy src=198.51.100.23 (hors plage, depuis l'extérieur)."
+    source: /var/log/lab/access.log
+    tag: témoin
+    trigger:
+      any:
+        - { event: fs.read, where: { path: /var/log/lab/access.log } }
+        - { event: cmd.exec, regex: { line: "198\\.51\\.100\\.23|access\\.log" } }
+
+  - id: ev-capture
+    title: Capture d'écran du stagiaire
+    summary: "capture-ledgerlite.svg — EXIF DateTimeOriginal 2026:04:05, légende « connexion bizarre samedi soir »."
+    source: /home/recrue/Pictures/capture-ledgerlite.svg
+    tag: contexte
+    trigger:
+      any:
+        - { event: image.open, where: { path: /home/recrue/Pictures/capture-ledgerlite.svg } }
+        - { event: cmd.exec, regex: { line: "capture-ledgerlite" } }
+
+  - id: ev-key
+    title: Jeton de validation du corrigé
+    summary: "/etc/ironveil/lab.key — jeton base64 lisible seulement en root (SVZMQUItN0YzQQ== → IVLAB-7F3A)."
+    source: /etc/ironveil/lab.key
+    tag: procédure
+    trigger: { event: fs.read, where: { path: /etc/ironveil/lab.key } }
+
+# ─── Fins ──────────────────────────────────────────────────────────────────────
+endings:
+  - id: zele
+    title: LE ZÈLE DU PREMIER JOUR
+    text: >
+      Vous avez déboulé en réunion, captures à l'appui, pour annoncer une compromission…
+      d'un lab d'entraînement monté par un stagiaire. Yasmine a souri : « C'était un
+      exercice. Mais j'admire l'énergie — garde-la pour le vrai feu. » Toute l'équipe
+      connaît désormais votre nom. Pour de bonnes raisons, à peu près.
+    flags: [alarme-reunion]
+  - id: sobre
+    title: PREMIER JOUR, PREMIER RAPPORT
+    text: >
+      Un fait, une source, une ligne : connexion deploy depuis 198.51.100.23, samedi
+      23:14, mot de passe laissé en clair. Yasmine relit, hoche la tête : « Propre.
+      Tu sais lire une machine, et tu sais quand ne pas crier. On va bien s'entendre. »
+      Bienvenue chez Ironveil.
+
+intro:
+  title: PREMIER JOUR
+  lines:
+    - "Lundi 6 avril 2026 — 09:00 — Valmont."
+    - "Premier jour comme analyste chez Ironveil, cabinet de réponse à incident."
+    - "Pas de vraie alerte aujourd'hui : juste une VM d'entraînement, training-01."
+    - "Un ancien stagiaire l'a montée la semaine dernière et y a laissé quelques bêtises."
+    - "Votre mentore, Yasmine Haddad, vous guide par mail, étape par étape."
+    - "Ouvrez sa session. On apprend en faisant."
+
+outro:
+  title: EXERCICE TERMINÉ
+  text: >
+    Vous avez pris en main Mail, Fichiers, Terminal, Logs, Images, sudo et les outils
+    maison. L'incident était faux ; les réflexes, eux, sont vrais. Au prochain dossier,
+    ils ne le seront plus.

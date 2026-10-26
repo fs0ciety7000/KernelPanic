@@ -1,0 +1,4 @@
+127.0.0.1       localhost
+127.0.1.1       lab-qa-03.aqualis.local lab-qa-03
+10.30.0.20      lims.aqualis.local lims
+10.30.0.31      labprint-2.aqualis.local labprint-2

@@ -1,0 +1,14 @@
+**/node_modules
+**/dist
+**/build
+**/.svelte-kit
+**/.astro
+**/target
+apps/game/src-tauri
+apps/game/static/scenarios
+.git
+.github
+.claude
+*.log
+.env
+.env.*

@@ -1,0 +1,17 @@
+node_modules/
+dist/
+build/
+.svelte-kit/
+.astro/
+target/
+*.log
+# Scenario disks contain in-world log files: they are content, not build output.
+!scenarios/**/*.log
+!scenarios/**/log/**
+.env
+.env.*
+!.env.example
+.DS_Store
+apps/game/static/scenarios/
+apps/game/src-tauri/gen/
+coverage/

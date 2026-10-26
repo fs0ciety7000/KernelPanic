@@ -1,0 +1,32 @@
+Return-Path: <regulation@valmobilis.fr>
+Delivered-To: astreinte@ws-astreinte.valmobilis.local
+Received: from mx.valmobilis.fr (mx.valmobilis.fr [10.60.0.25])
+	by ws-astreinte.valmobilis.local (Postfix) with ESMTP id 9C11A0F3
+	for <astreinte@ws-astreinte.valmobilis.local>; Mon, 14 Sep 2026 04:13:00 +0200
+From: Karim Benali <regulation@valmobilis.fr>
+To: Astreinte Ironveil <astreinte@ws-astreinte.valmobilis.local>
+Subject: URGENT — les systèmes tombent un par un
+Date: Mon, 14 Sep 2026 04:13:00 +0200
+Message-ID: <prise-poste-0914.kb@valmobilis.fr>
+X-Priority: 1 (Highest)
+Content-Type: text/plain; charset=utf-8
+
+Bonjour,
+
+Depuis 04:05, les panneaux d'information voyageurs affichent des horaires
+délirants puis s'éteignent. Je n'ai rien touché. Personne n'est censé travailler
+sur le réseau cette nuit.
+
+Le premier tram part à 05:00. Si l'aide à l'exploitation (srv-sae) tombe, je ne
+peux plus faire partir personne.
+
+Vos accès pour la nuit :
+  - Console SOC sur votre poste (carte, alertes, isolement, pare-feu).
+  - srv-deploy : votre clé SSH est autorisée sur le compte « astreinte ».
+    Mot de passe (sudo) : Astr31nte-0914
+
+Je suis sur la messagerie. Tenez-moi au courant.
+
+--
+Karim Benali
+Régulateur de nuit — Valmobilis

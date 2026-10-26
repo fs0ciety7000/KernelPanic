@@ -1,0 +1,8 @@
+PRETTY_NAME="IronveilOS 24.04 LTS (Lab Edition)"
+NAME="IronveilOS"
+VERSION_ID="24.04"
+VERSION="24.04 LTS (Lab Edition)"
+ID=ironveilos
+ID_LIKE=ubuntu debian
+HOME_URL="https://lab.ironveil.local/"
+SUPPORT_URL="mailto:lab@ironveil.fr"

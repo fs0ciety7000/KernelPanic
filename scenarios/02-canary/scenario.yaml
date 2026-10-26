@@ -1,0 +1,403 @@
+# ─────────────────────────────────────────────────────────────────────────────
+#  Kernel_Panic — Scénario 02 : CANARY
+#  Difficulté : intermédiaire · ~40 min · 4 fins
+#  Inspiration : Orwell — on ne cherche pas seulement la vérité, on choisit ce qu'on en fait.
+#  Solution complète : SOLUTION.md (spoilers)
+# ─────────────────────────────────────────────────────────────────────────────
+id: canary
+version: 1
+title: Canary
+subtitle: On vous paie pour trouver la source. Pas pour lire ce qu'elle a dit.
+summary: >
+  Aqualis, qui fournit l'eau potable de Valmont, a vu ses analyses internes publiées
+  dans la presse. Son directeur juridique vous confie le poste partagé du laboratoire
+  qualité : trouvez qui a parlé. Les journaux savent qui était là cette nuit-là. Les
+  fichiers savent pourquoi. À vous de décider ce que votre rapport dira.
+difficulty: intermediate
+estimatedMinutes: 40
+locale: fr
+contract: { client: "Aqualis — direction juridique", fee: 7500 }
+
+machine:
+  hostname: lab-qa-03
+  domain: aqualis.local
+  os: LumenOS 22.04.4 LTS
+  kernel: 6.8.0-41-lumen
+  ip: 10.30.2.33
+  clock: 2026-05-13T09:30:00+02:00
+
+defaults:
+  mtime: 2026-02-10T09:00:00+01:00
+
+session:
+  user: audit
+  email: audit@lab-qa-03.aqualis.local
+  cwd: /home/audit
+  autostart:
+    - { app: mail }
+
+users:
+  - { name: root, uid: 0, home: /root, shell: /bin/bash }
+  - name: audit
+    uid: 1050
+    fullName: Compte d'audit (prestataire)
+    home: /home/audit
+    shell: /bin/bash
+    groups: [sudo, adm]
+    password: Aud1t-QA-0513
+  - { name: mlefort, uid: 1001, fullName: Margaux Lefort, home: /home/mlefort, shell: /bin/bash, groups: [lims, lp] }
+  - { name: srahmani, uid: 1002, fullName: Samir Rahmani, home: /home/srahmani, shell: /bin/bash, groups: [lims, lp, plugdev] }
+  - { name: tgarnier, uid: 1003, fullName: Théo Garnier, home: /home/tgarnier, shell: /bin/bash, groups: [lims, lp] }
+
+permissions:
+  - { path: /root, mode: "0700" }
+  - { path: /home/mlefort, mode: "0700" }
+  - { path: /home/mlefort/**, mode: "0600" }
+  - { path: /home/srahmani, mode: "0700" }
+  - { path: /home/srahmani/**, mode: "0600" }
+  - { path: /home/tgarnier, mode: "0700" }
+  - { path: /home/tgarnier/**, mode: "0600" }
+  - { path: /srv/lims, group: lims, mode: "0750" }
+  - { path: /srv/lims/**, group: lims, mode: "0640" }
+  - { path: /srv/lims/exports/STA_PFAS_T1_ORIGINAL.csv, mtime: 2026-03-20T16:12:00+01:00 }
+  - { path: /srv/lims/exports/STA_PFAS_T1_VALIDE.csv, mtime: 2026-04-08T11:47:00+02:00 }
+  - { path: /var/log/auth.log, group: adm, mode: "0640", mtime: 2026-05-13T09:30:00+02:00 }
+  - { path: /var/log/syslog, group: adm, mode: "0640", mtime: 2026-05-13T09:30:00+02:00 }
+  - { path: /var/log/cups, mode: "0710" }
+  - { path: /var/log/cups/page_log, group: lp, mode: "0640", mtime: 2026-05-12T17:20:03+02:00 }
+  - { path: /home/srahmani/.bash_history, mtime: 2026-05-06T23:31:40+02:00 }
+  - { path: /home/mlefort/.notes/.journal.md, mtime: 2026-05-06T23:19:00+02:00 }
+
+processes:
+  - { pid: 1, user: root, cmd: /sbin/init splash, start: May11 }
+  - { pid: 640, user: root, cmd: /usr/sbin/cupsd -l, start: May11 }
+  - { pid: 655, user: root, cmd: /usr/sbin/cron -f, start: May11 }
+  - { pid: 702, user: root, cmd: /usr/libexec/udisks2/udisksd, start: May11 }
+  - { pid: 2210, user: audit, cmd: /usr/bin/kp-session --audit, start: "09:30" }
+  - { pid: 4242, user: audit, cmd: -bash, start: "09:30" }
+
+network:
+  interfaces:
+    - { name: eth0, ip: 10.30.2.33, mac: "3c:52:82:4e:10:33" }
+  hosts:
+    aqualis.fr: { ip: 51.159.40.12, http: "<!doctype html><title>Aqualis — L'eau de Valmont</title>" }
+    lims.aqualis.local: { ip: 10.30.0.20, http: "LIMS Aqualis — session requise" }
+    leveilleur.fr: { ip: 198.51.100.24, http: "<!doctype html><title>Le Veilleur — journal indépendant de Valmont</title>" }
+
+commands:
+  accesslog:
+    path: /usr/local/bin/accesslog
+    summary: Aqualis badge access log (building B — laboratoire)
+    group: adm
+    rules:
+      - match: "^(--date|-d) 2026-05-06$"
+        output: |
+          DATE        TIME      DOOR            BADGE    HOLDER
+          2026-05-06  07:58:12  B-LAB-ENTRY     004417   GARNIER Théo
+          2026-05-06  08:21:40  B-LAB-ENTRY     003102   RAHMANI Samir
+          2026-05-06  08:34:09  B-LAB-ENTRY     005218   LEFORT Margaux
+          2026-05-06  17:41:55  B-LAB-EXIT      004417   GARNIER Théo
+          2026-05-06  18:12:30  B-LAB-EXIT      005218   LEFORT Margaux
+          2026-05-06  18:40:02  B-LAB-EXIT      003102   RAHMANI Samir
+          2026-05-06  22:47:31  B-LAB-ENTRY     005218   LEFORT Margaux
+          2026-05-06  22:59:48  B-LAB-ENTRY     003102   RAHMANI Samir
+          2026-05-06  23:01:15  B-LAB-EXIT      005218   LEFORT Margaux
+          2026-05-06  23:33:20  B-LAB-EXIT      003102   RAHMANI Samir
+      - match: "^(--date|-d) 2026-05-(0[1-9]|1[0-3])$"
+        output: |
+          DATE        TIME      DOOR            BADGE    HOLDER
+          (horaires habituels — aucune entrée entre 20:00 et 06:00)
+      - match: "^(--date|-d)"
+        exit: 1
+        output: "accesslog: no data for this date (retention: 2026-05-01 → today)"
+    fallback: |
+      usage: accesslog --date YYYY-MM-DD
+      Building B (laboratoire qualité) — badge readers B-LAB-ENTRY / B-LAB-EXIT
+
+# ─── Navigateur (pages dans web/) ────────────────────────────────────────────
+web:
+  home: aqualis.fr
+  bookmarks:
+    - { label: Aqualis, url: "https://aqualis.fr/" }
+    - { label: Résultats publiés T1, url: "https://aqualis.fr/qualite" }
+    - { label: Le Veilleur, url: "https://leveilleur.fr/" }
+    - { label: LIMS, url: "http://lims.aqualis.local/" }
+
+# ─── Messagerie interne ──────────────────────────────────────────────────────
+chat:
+  contacts:
+    - { id: sorel, name: Laurent Sorel, role: Directeur juridique · votre client }
+    - { id: samir, name: Samir Rahmani, role: Responsable du laboratoire qualité }
+  history:
+    sorel:
+      - { from: sorel, text: "Votre compte est actif. Je vous rappelle que cette mission est strictement confidentielle.", at: "2026-05-13T09:12:00+02:00" }
+  nodes:
+    - id: samir-hello
+      contact: samir
+      trigger: { event: objective.complete, where: { id: root } }
+      messages:
+        - "Bonjour. Samir Rahmani, je dirige le labo. On m'a dit que vous auditiez le poste partagé."
+        - "Si vous avez besoin d'un protocole ou d'un export, demandez-moi."
+      replies:
+        - { id: ask-night, text: "Qui était au laboratoire le 6 mai au soir ?", next: samir-night }
+        - { id: nothing, text: "Rien pour l'instant, merci." }
+    - id: samir-night
+      contact: samir
+      messages:
+        - "Moi. Je suis repassé tard pour… un étalonnage. Je n'ai croisé personne."
+      replies:
+        - { id: noted, text: "C'est noté.", flags: [samir-evasive] }
+    - id: samir-mails
+      contact: samir
+      trigger: { event: evidence.found, where: { id: order-mail } }
+      messages:
+        - "Vous avez ouvert ma boîte mail. Je l'ai vu dans les journaux."
+      replies:
+        - id: why-keep
+          text: "Vous avez gardé les originaux, et vous les avez copiés le 6 mai. Pourquoi ?"
+          requiresEvidence: [original-results, usb-copy]
+          next: samir-truth
+        - { id: silent, text: "Je ne peux rien vous dire." }
+    - id: samir-truth
+      contact: samir
+      messages:
+        - "Parce qu'un jour quelqu'un poserait la question, et que je ne voulais pas être celui qui avait signé des chiffres faux."
+        - "La clé est chez moi. Je n'ai rien donné à la presse. Ce soir-là, je n'étais pas seul à vouloir que ça se sache."
+      onComplete:
+        - { flag: samir-confided }
+    - id: sorel-pressure
+      contact: sorel
+      trigger: { event: objective.complete, where: { id: night } }
+      messages:
+        - "Le conseil d'administration se réunit jeudi. Il me faut un nom, pas une hypothèse."
+      replies:
+        - { id: working, text: "Mon rapport sera prêt aujourd'hui." }
+        - { id: careful, text: "Les chiffres originaux posent un vrai problème sanitaire.", next: sorel-cold }
+    - id: sorel-cold
+      contact: sorel
+      messages:
+        - "Ce n'est pas l'objet de votre mission. Tenez-vous-en au périmètre du contrat."
+
+# ─── Pièces à conviction ────────────────────────────────────────────────────
+evidence:
+  - id: article
+    title: L'article du Veilleur
+    summary: "12/05 — relevés PFAS « originaux » de Saint-Ambroise : jusqu'à 0,31 µg/L pour un seuil de 0,1. La journaliste dit avoir reçu « un document imprimé »."
+    source: /home/audit/Documents/le-veilleur-2026-05-12.txt
+    tag: contexte
+    trigger: { event: fs.read, where: { path: /home/audit/Documents/le-veilleur-2026-05-12.txt } }
+  - id: print-log
+    title: Impression nocturne
+    summary: "06/05 22:58 — mlefort imprime STA_PFAS_T1_ORIGINAL.pdf (14 pages) sur labprint-2."
+    source: /var/log/cups/page_log
+    tag: témoin
+    trigger: { event: fs.read, where: { path: /var/log/cups/page_log } }
+  - id: sessions
+    title: Deux sessions, une nuit
+    summary: "06/05 — session mlefort 22:51 → 23:00, puis session srahmani 23:02 → 23:31 sur ce poste."
+    source: /var/log/auth.log
+    tag: chronologie
+    trigger:
+      any:
+        - { event: fs.read, where: { path: /var/log/auth.log } }
+        - { event: cmd.exec, where: { name: accesslog }, regex: { line: "2026-05-06" } }
+  - id: usb-copy
+    title: La clé USB de Samir
+    summary: "06/05 23:04 — srahmani branche une clé KINGSTON et y copie les exports LIMS du T1, originaux compris."
+    source: /home/srahmani/.bash_history
+    tag: contradiction
+    trigger:
+      any:
+        - { event: fs.read, where: { path: /home/srahmani/.bash_history } }
+        - { event: fs.read, where: { path: /var/log/syslog } }
+  - id: original-results
+    title: Les relevés originaux
+    summary: "Export LIMS du 20/03 : 5 points de prélèvement sur 8 au-dessus de 0,1 µg/L, maximum 0,31 µg/L (puits P4)."
+    source: /srv/lims/exports/STA_PFAS_T1_ORIGINAL.csv
+    tag: fait
+    trigger: { event: fs.read, where: { path: /srv/lims/exports/STA_PFAS_T1_ORIGINAL.csv } }
+  - id: validated-results
+    title: Les relevés « validés »
+    summary: "Export du 08/04, même campagne : toutes les valeurs passent sous 0,1 µg/L. Méthode notée « échantillonnage composite (rév. B) »."
+    source: /srv/lims/exports/STA_PFAS_T1_VALIDE.csv
+    tag: fait
+    trigger: { event: fs.read, where: { path: /srv/lims/exports/STA_PFAS_T1_VALIDE.csv } }
+  - id: order-mail
+    title: L'ordre
+    summary: "02/04 — Arnaud Ferrand (directeur d'usine) à Samir : « repasse le T1 sous 0,1 […] c'est validé par L. Sorel ». Samir répond qu'il garde les originaux."
+    source: /home/srahmani/Maildir/cur/1775115600.M201P1300.lab-qa-03.eml
+    tag: mobile
+    trigger: { event: fs.read, where: { path: /home/srahmani/Maildir/cur/1775115600.M201P1300.lab-qa-03.eml } }
+  - id: journal
+    title: Le carnet de Margaux
+    summary: "06/05 23:19 — « Je l'ai imprimé. Je le donne à C.M. vendredi. Mon fils boit cette eau. »"
+    source: /home/mlefort/.notes/.journal.md
+    tag: aveu
+    trigger: { event: fs.read, where: { path: /home/mlefort/.notes/.journal.md } }
+
+# ─── Objectifs ───────────────────────────────────────────────────────────────
+objectives:
+  - id: briefing
+    title: Lire la mission
+    description: Le directeur juridique d'Aqualis vous a écrit.
+    trigger: { event: mail.open, where: { messageId: mission-0513.ls@aqualis.fr } }
+    hints:
+      - L'app Mail est ouverte au démarrage.
+
+  - id: root
+    title: Prendre la main sur le poste
+    description: Les dossiers des techniciens sont privés. Votre compte d'audit a les droits d'administration.
+    requires: [briefing]
+    trigger: { event: auth.sudo, where: { ok: true } }
+    hints:
+      - "`sudo` demande VOTRE mot de passe, celui du compte audit. Il est dans le mail de mission."
+      - "sudo ls /home/mlefort"
+
+  - id: document
+    title: Ce qui a fuité
+    description: Quel fichier précis est à l'origine de l'article ? Donnez son nom.
+    requires: [briefing]
+    answer:
+      label: Nom du fichier
+      placeholder: ex. RAPPORT_2026.pdf
+      accept: [STA_PFAS_T1_ORIGINAL.pdf, STA_PFAS_T1_ORIGINAL.csv, STA_PFAS_T1_ORIGINAL]
+      normalize: [trim, lower, nospace]
+    hints:
+      - L'article parle d'un document imprimé. Les imprimantes tiennent un journal.
+      - "Le journal de CUPS est dans /var/log/cups/ (lisible avec sudo). Les exports du laboratoire sont dans /srv/lims/exports."
+      - "sudo cat /var/log/cups/page_log"
+    onComplete:
+      - { deliver: 02-sorel-relance.eml }
+
+  - id: max-value
+    title: Ce que disaient les chiffres
+    description: Quelle était la concentration maximale de PFAS (en µg/L) dans les relevés d'origine ?
+    requires: [document]
+    answer:
+      label: Valeur maximale (µg/L)
+      placeholder: ex. 0.05
+      accept: ["0.31", "0,31", "0.31µg/l", "0,31µg/l", "0.310"]
+      normalize: [trim, lower, nospace]
+    hints:
+      - Les deux exports de la même campagne sont dans /srv/lims/exports. Comparez-les.
+      - "La 4ᵉ colonne contient la concentration. `sort` sait trier numériquement sur une colonne : -t, -k4 -n"
+      - "sudo sort -t, -k4 -n /srv/lims/exports/STA_PFAS_T1_ORIGINAL.csv | tail -1"
+
+  - id: night
+    title: La nuit du 6 mai
+    description: Qui se trouvait au laboratoire ce soir-là, et devant ce poste ?
+    requires: [root]
+    trigger:
+      any:
+        - { event: fs.read, where: { path: /var/log/auth.log } }
+        - { event: cmd.exec, where: { name: accesslog }, regex: { line: "2026-05-06" } }
+    hints:
+      - Les ouvertures de session sont dans /var/log/auth.log. Le bâtiment a aussi des badges.
+      - "`accesslog --date 2026-05-06` (outil installé sur le poste) ou l'app Logs sur auth.log."
+    onComplete:
+      - { deliver: 03-canary.eml }
+
+  - id: verdict
+    title: Votre rapport
+    description: >
+      Vous savez ce qui est parti, quand, et qui était là. Ce que vous en faites
+      n'appartient qu'à vous.
+    requires: [document, max-value, night]
+    choice:
+      prompt: Que contient votre rapport final ?
+      options:
+        - id: name-margaux
+          label: « La source est Margaux Lefort. »
+          detail: Elle a imprimé le document cette nuit-là. Votre contrat est rempli.
+          requiresEvidence: [print-log, sessions]
+          flags: [source-exposed]
+          onSelect: [{ deliver: 04-fin-sorel.eml }]
+        - id: accuse-samir
+          label: « La source est Samir Rahmani. »
+          detail: Il a copié les originaux sur une clé USB cette nuit-là.
+          requiresEvidence: [usb-copy]
+          flags: [wrong-person]
+          onSelect: [{ deliver: 04-fin-sorel.eml }]
+        - id: regulator
+          label: Transmettre les relevés originaux et l'ordre de falsification à l'Agence régionale de santé.
+          detail: Vous rompez votre contrat et votre clause de confidentialité. Personne ne sera nommé.
+          requiresEvidence: [original-results, order-mail]
+          flags: [whistleblower]
+          onSelect: [{ deliver: 04-fin-ars.eml }]
+        - id: inconclusive
+          label: « Les éléments ne permettent pas d'identifier la source. »
+          detail: Un rapport vide. Aqualis cherchera ailleurs.
+          onSelect: [{ deliver: 04-fin-sorel.eml }]
+    onComplete:
+      - { end: true }
+
+  # ── Bonus ──
+  - id: motive
+    title: "Bonus — qui a donné l'ordre ?"
+    description: Les relevés n'ont pas changé tout seuls.
+    optional: true
+    requires: [root]
+    trigger: { event: fs.read, where: { path: /home/srahmani/Maildir/cur/1775115600.M201P1300.lab-qa-03.eml } }
+    hints:
+      - Le responsable du laboratoire a validé la seconde version. Sur instruction de qui ?
+      - "sudo grep -rl Ferrand /home/srahmani/Maildir"
+
+  - id: why
+    title: "Bonus — pourquoi elle l'a fait"
+    description: Une source n'est pas qu'un nom.
+    optional: true
+    requires: [root]
+    trigger: { event: fs.read, where: { path: /home/mlefort/.notes/.journal.md } }
+    hints:
+      - Les dossiers cachés d'un home ne se voient qu'avec `ls -a`.
+      - "sudo ls -la /home/mlefort"
+
+endings:
+  - id: sunlight
+    title: EN PLEINE LUMIÈRE
+    flags: [whistleblower]
+    text: >
+      L'ARS ouvre une enquête le lendemain. Les puits P3, P4 et P7 de Saint-Ambroise sont
+      fermés dans la semaine ; Valmont distribue des bouteilles pendant un mois. Arnaud
+      Ferrand et Laurent Sorel sont mis en examen pour mise en danger d'autrui. Samir
+      Rahmani remet sa clé USB aux enquêteurs et devient témoin. Le nom de Margaux Lefort
+      n'apparaît dans aucun document. Vous, vous ne travaillerez plus jamais pour un
+      grand groupe de la région. Vous dormez très bien.
+  - id: scapegoat
+    title: LE MAUVAIS NOM
+    tone: bad
+    flags: [wrong-person]
+    text: >
+      Samir Rahmani est licencié pour faute grave le 15 mai. Il conteste, produit sa clé
+      USB, et les relevés originaux arrivent sur le bureau d'un juge prud'homal… puis dans
+      Le Veilleur, une seconde fois. Aqualis vous attaque pour rapport mensonger. Margaux
+      Lefort ne dit rien. Personne ne lui demande rien.
+  - id: price-of-silence
+    title: LE PRIX DU SILENCE
+    tone: mixed
+    flags: [source-exposed]
+    text: >
+      Margaux Lefort est mise à pied le 14 mai, puis poursuivie pour violation du secret
+      professionnel. Aqualis publie un communiqué : « des données de travail non validées,
+      sorties de leur contexte ». L'enquête sanitaire n'aura pas lieu. Votre facture est
+      réglée sous huit jours, avec une prime. Les puits de Saint-Ambroise tournent toujours.
+  - id: fog
+    title: BROUILLARD
+    tone: mixed
+    text: >
+      Laurent Sorel lit votre rapport en silence et vous remercie du bout des lèvres.
+      Une semaine plus tard, un autre cabinet est mandaté. Vous ne saurez pas ce qu'il a
+      trouvé. Vous ne saurez pas non plus si quelqu'un, à Valmont, boit encore cette eau.
+
+intro:
+  title: CANARY
+  lines:
+    - "Mercredi 13 mai 2026 — 09:30 — Valmont."
+    - "Hier, Le Veilleur a publié des analyses internes d'Aqualis : des PFAS au-dessus des seuils dans l'eau de Saint-Ambroise."
+    - "Aqualis dément. Et veut savoir qui a parlé."
+    - "On vous a ouvert un compte d'audit sur le poste partagé du laboratoire qualité."
+    - "Votre client est Laurent Sorel, directeur juridique. Il vous a laissé ses instructions."
+
+outro:
+  title: DOSSIER CLOS
+  text: Le rapport est parti.

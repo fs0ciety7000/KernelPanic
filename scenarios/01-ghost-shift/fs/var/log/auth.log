@@ -1,0 +1,47 @@
+Apr 14 00:49:24 ws-varga sshd[3253]: Invalid user oracle from 45.99.2.169 port 35150
+Apr 14 01:47:24 ws-varga sshd[8428]: Invalid user admin from 193.215.208.187 port 48740
+Apr 14 08:31:12 ws-varga gdm-password: pam_unix(gdm-password:session): session opened for user elias(uid=1000) by (uid=0)
+Apr 14 08:31:12 ws-varga systemd-logind[655]: New session 4 of user elias.
+Apr 14 11:16:00 ws-varga sshd[6431]: Invalid user admin from 103.108.2.69 port 51783
+Apr 14 18:02:40 ws-varga gdm-password: pam_unix(gdm-password:session): session closed for user elias
+Apr 14 18:02:40 ws-varga systemd-logind[655]: Session 4 logged out. Waiting for processes to exit.
+Apr 15 04:26:46 ws-varga sshd[6466]: Invalid user test from 141.74.184.95 port 64313
+Apr 15 08:27:55 ws-varga gdm-password: pam_unix(gdm-password:session): session opened for user elias(uid=1000) by (uid=0)
+Apr 15 08:27:55 ws-varga systemd-logind[655]: New session 4 of user elias.
+Apr 15 10:14:22 ws-varga sudo:    elias : TTY=pts/0 ; PWD=/home/elias ; USER=root ; COMMAND=/usr/bin/apt list --upgradable
+Apr 15 10:14:22 ws-varga sudo: pam_unix(sudo:session): session opened for user root(uid=0) by elias(uid=1000)
+Apr 15 10:14:23 ws-varga sudo: pam_unix(sudo:session): session closed for user root
+Apr 15 10:18:10 ws-varga sshd[4573]: Invalid user test from 193.81.168.93 port 52506
+Apr 15 18:26:44 ws-varga sshd[7196]: Invalid user pi from 45.130.127.8 port 37277
+Apr 15 19:11:03 ws-varga gdm-password: pam_unix(gdm-password:session): session closed for user elias
+Apr 15 19:11:03 ws-varga systemd-logind[655]: Session 4 logged out. Waiting for processes to exit.
+Apr 16 08:40:19 ws-varga gdm-password: pam_unix(gdm-password:session): session opened for user elias(uid=1000) by (uid=0)
+Apr 16 08:40:19 ws-varga systemd-logind[655]: New session 4 of user elias.
+Apr 16 17:41:09 ws-varga sudo:    elias : TTY=pts/0 ; PWD=/home/elias ; USER=root ; COMMAND=/usr/local/bin/lumenctl jobs
+Apr 16 17:41:09 ws-varga sudo: pam_unix(sudo:session): session opened for user root(uid=0) by elias(uid=1000)
+Apr 16 17:41:10 ws-varga sudo: pam_unix(sudo:session): session closed for user root
+Apr 16 19:24:58 ws-varga gdm-password: pam_unix(gdm-password:session): session closed for user elias
+Apr 16 19:24:58 ws-varga systemd-logind[655]: Session 4 logged out. Waiting for processes to exit.
+Apr 16 21:39:19 ws-varga sshd[6194]: Invalid user admin from 91.90.9.27 port 45312
+Apr 16 21:42:13 ws-varga sshd[5217]: Invalid user user from 141.17.128.97 port 51991
+Apr 16 23:07:32 ws-varga sshd[5175]: Invalid user pi from 45.222.154.9 port 56174
+Apr 17 02:41:07 ws-varga sshd[2271]: Invalid user admin from 185.220.101.47 port 51490
+Apr 17 02:41:09 ws-varga sshd[2271]: Failed password for invalid user admin from 185.220.101.47 port 51490 ssh2
+Apr 17 02:41:30 ws-varga sshd[2274]: Failed password for root from 185.220.101.47 port 51496 ssh2
+Apr 17 02:43:52 ws-varga sshd[2279]: Failed password for elias from 185.220.101.47 port 51503 ssh2
+Apr 17 02:47:12 ws-varga sshd[2283]: Accepted password for elias from 185.220.101.47 port 51522 ssh2
+Apr 17 02:47:12 ws-varga sshd[2283]: pam_unix(sshd:session): session opened for user elias(uid=1000) by (uid=0)
+Apr 17 02:47:12 ws-varga systemd-logind[655]: New session 9 of user elias.
+Apr 17 02:49:03 ws-varga sudo:    elias : TTY=pts/1 ; PWD=/home/elias ; USER=root ; COMMAND=/usr/bin/cat /etc/lumen/override.key
+Apr 17 02:49:03 ws-varga sudo: pam_unix(sudo:session): session opened for user root(uid=0) by elias(uid=1000)
+Apr 17 02:49:03 ws-varga sudo: pam_unix(sudo:session): session closed for user root
+Apr 17 02:52:40 ws-varga crontab[2291]: (elias) REPLACE (elias)
+Apr 17 03:12:05 ws-varga sudo:    elias : TTY=pts/1 ; PWD=/tmp/.fw ; USER=root ; COMMAND=/usr/local/bin/lumenctl queue --target substation-* --image /tmp/.fw/lumen-fw-4.2.1-hotfix.img --at 09:00 --force-unsigned --no-rollback
+Apr 17 03:12:05 ws-varga sudo: pam_unix(sudo:session): session opened for user root(uid=0) by elias(uid=1000)
+Apr 17 03:12:06 ws-varga sudo: pam_unix(sudo:session): session closed for user root
+Apr 17 03:14:51 ws-varga sshd[2283]: Received disconnect from 185.220.101.47 port 51522:11: disconnected by user
+Apr 17 03:14:51 ws-varga sshd[2283]: Disconnected from user elias 185.220.101.47 port 51522
+Apr 17 03:14:51 ws-varga sshd[2283]: pam_unix(sshd:session): session closed for user elias
+Apr 17 03:14:51 ws-varga systemd-logind[655]: Session 9 logged out. Waiting for processes to exit.
+Apr 17 05:06:44 ws-varga sshd[2402]: Invalid user git from 103.77.12.9 port 41022
+Apr 17 08:12:00 ws-varga kp-session[2210]: forensic session opened for user elias by soc-ir (ticket INC-2026-0417)
