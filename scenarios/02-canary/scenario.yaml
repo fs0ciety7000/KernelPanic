@@ -16,6 +16,7 @@ summary: >
 difficulty: intermediate
 estimatedMinutes: 40
 locale: fr
+contract: { client: "Aqualis — direction juridique", fee: 7500 }
 
 machine:
   hostname: lab-qa-03

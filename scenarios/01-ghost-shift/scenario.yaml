@@ -15,6 +15,7 @@ summary: >
 difficulty: beginner
 estimatedMinutes: 40
 locale: fr
+contract: { client: "Lumen Grid", fee: 4800 }
 
 machine:
   hostname: ws-varga

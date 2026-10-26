@@ -57,6 +57,7 @@ Agents : voir `AGENTS.md`.
 | 3.3b | ✅ **Double fond chronométré** : à 09:50, Fabien Marchal efface la sauvegarde des journaux du 3 juin (avertissements de Julie et Yasmine, traces dans auth.log et backup.log) ; effets `remove` et `write` distants/en ajout | scenario-writer |
 | 3.3c | ✅ **Déroulé de partie** sur l'écran de fin : chronologie des objectifs, pièces (avec la commande ou le fichier révélateur), connexions, indices, erreurs, décisions, événements | apps-developer |
 | 3.3d | ✅ **Console SOC** (carte réseau, alertes en direct, triage, isolement avec impact, pare-feu) + **Scénario 04 « Effet domino »** : crise d'exploitation en direct, sans attaquant | os-engine + apps-developer + scenario-writer |
+| 3.3f | ✅ **Carrière Ironveil** : le menu devient un tableau de contrats (client, prime, statut, meilleur résultat, étoiles), réputation cumulée et rangs (Stagiaire → Référent incident), 10 badges ; bilan sur l'écran de fin | apps-developer |
 | 3.3e | Analyseur réseau (métadonnées de flux uniquement : qui parle à qui, quand, combien) — à valider | architect |
 | 3.4 | Workshop : chargement de scénarios communautaires (bundle signé, sandbox stricte) | architect |
 | 3.5 | Localisation EN (UI + scénarios, artefacts machine déjà en anglais) | scenario-writer |

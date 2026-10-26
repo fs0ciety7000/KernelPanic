@@ -1,10 +1,20 @@
 <script lang="ts">
   import { os } from '$lib/os/os.svelte';
+  import { BADGES, rankOf, reputation, stars } from '$lib/os/career';
+  import Icon from './Icon.svelte';
 
   const DIFF: Record<string, string> = { beginner: 'Débutant', intermediate: 'Intermédiaire', advanced: 'Avancé' };
   let busy = $state<string | null>(null);
   /** Timed mode, per scenario, chosen before a new game. */
   let timed = $state<Record<string, boolean>>({});
+  let showBadges = $state(false);
+
+  const rep = $derived(reputation(os.career.records));
+  const rank = $derived(rankOf(rep));
+  const progress = $derived(rank.next ? Math.min(1, (rep - rank.floor) / (rank.next.at - rank.floor)) : 1);
+  const earned = $derived(Object.keys(os.career.badges).length);
+  const euros = (n: number) => (n ? `${n.toLocaleString('fr-FR')} €` : 'formation');
+  const fmt = (ms: number) => `${Math.floor(ms / 60000)} min`;
 
   async function play(id: string, fresh: boolean) {
     busy = id;
@@ -29,12 +39,52 @@
     <div class="kp-error">{os.error}</div>
   {/if}
 
-  <section class="list" aria-label="Scénarios">
+  <section class="career" aria-label="Carrière">
+    <div class="who">
+      <span class="kp-label">Ironveil · réponse à incident</span>
+      <b>{rank.title}</b>
+    </div>
+    <div class="rep">
+      <div class="bar" role="progressbar" aria-valuenow={rep} aria-valuemin={rank.floor} aria-valuemax={rank.next?.at ?? rep}><span style="width:{progress * 100}%"></span></div>
+      <span class="mono dim">{rep} pts de réputation{rank.next ? ` · ${rank.next.title} à ${rank.next.at}` : ' · rang maximal'}</span>
+    </div>
+    <button class="kp-btn ghost badges-btn" aria-expanded={showBadges} onclick={() => (showBadges = !showBadges)}>
+      <Icon name="diamond" size={13} /> Badges {earned}/{BADGES.length}
+    </button>
+  </section>
+
+  {#if showBadges}
+    <section class="badges" aria-label="Badges">
+      {#each BADGES as b (b.id)}
+        {@const got = os.career.badges[b.id]}
+        <div class="badge" class:got>
+          <span class="bi"><Icon name={b.icon} size={15} /></span>
+          <span><b>{b.title}</b><span class="dim">{b.desc}</span></span>
+        </div>
+      {/each}
+    </section>
+  {/if}
+
+  <section class="list" aria-label="Contrats">
     {#each os.scenarios as s, i (s.id)}
       {@const saved = os.hasSave(s.id)}
+      {@const rec = os.career.records[s.id]}
       <article class="card">
+        {#if s.contract}
+          <div class="contract mono">
+            <span>Contrat {String(i).padStart(2, '0')} · {s.contract.client}</span>
+            <span class="fee">{euros(s.contract.fee)}</span>
+          </div>
+        {/if}
         <div class="meta">
-          <span class="kp-badge violet">Dossier {String(i + 1).padStart(2, '0')}</span>
+          {#if rec?.best}
+            <span class="kp-badge green">Clos</span>
+            <span class="stars" title="{stars(rec.best)}/3 — clos · bonne fin · sans indice">{#each [1, 2, 3] as n (n)}<span class:on={stars(rec.best) >= n}>★</span>{/each}</span>
+          {:else if saved}
+            <span class="kp-badge amber">En cours</span>
+          {:else}
+            <span class="kp-badge violet">Nouveau</span>
+          {/if}
           <span class="kp-badge cyan">{DIFF[s.difficulty] ?? s.difficulty}</span>
           {#if s.endings && s.endings > 1}<span class="kp-badge green">{os.discoveredEndings(s.id).length}/{s.endings} fins</span>{/if}
           {#if s.estimatedMinutes}<span class="mins mono">~{s.estimatedMinutes} min</span>{/if}
@@ -42,6 +92,9 @@
         <h2>{s.title}</h2>
         {#if s.subtitle}<p class="sub">{s.subtitle}</p>{/if}
         {#if s.summary}<p class="sum">{s.summary}</p>{/if}
+        {#if rec?.best}
+          <p class="best mono">Meilleur résultat : {rec.best.score} pts · {fmt(rec.best.playtime)} · {rec.best.hints} indice{rec.best.hints > 1 ? 's' : ''}{rec.best.evidenceTotal ? ` · ${rec.best.evidence}/${rec.best.evidenceTotal} pièces` : ''} · {rec.runs} partie{rec.runs > 1 ? 's' : ''}</p>
+        {/if}
         <div class="actions">
           {#if saved}
             <button class="kp-btn primary" disabled={!!busy} onclick={() => play(s.id, false)}>Reprendre l'enquête</button>
@@ -66,13 +119,36 @@
 </div>
 
 <style>
+  .career { position: relative; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 18px; width: min(640px, 100%); padding: 14px 18px; border: 1px solid var(--kp-line-strong); border-radius: var(--kp-radius-l); background: rgba(12, 16, 22, 0.8); }
+  .who { display: flex; flex-direction: column; gap: 2px; }
+  .who b { font-size: 16px; color: var(--kp-cyan); }
+  .rep { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .bar { height: 6px; border-radius: 3px; background: var(--kp-bg-4); overflow: hidden; }
+  .bar span { display: block; height: 100%; background: linear-gradient(90deg, var(--kp-violet), var(--kp-cyan)); }
+  .dim { color: var(--kp-text-2); font-size: 11.5px; }
+  .badges { position: relative; display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; width: min(640px, 100%); }
+  .badge { display: flex; gap: 10px; align-items: center; padding: 10px 12px; border-radius: var(--kp-radius-m); border: 1px solid var(--kp-line); background: rgba(12, 16, 22, 0.8); opacity: 0.5; }
+  .badge.got { opacity: 1; border-color: rgba(157, 123, 255, 0.4); }
+  .badge > span:last-child { display: flex; flex-direction: column; gap: 2px; font-size: 12.5px; }
+  .bi { display: grid; place-items: center; width: 30px; height: 30px; flex-shrink: 0; border-radius: 50%; background: var(--kp-bg-3); color: var(--kp-text-2); }
+  .badge.got .bi { background: var(--kp-violet-dim); color: var(--kp-violet); }
+  .contract { display: flex; justify-content: space-between; gap: 12px; margin: -4px 0 12px; padding-bottom: 10px; border-bottom: 1px dashed var(--kp-line-strong); font-size: 11px; letter-spacing: 0.04em; color: var(--kp-text-2); text-transform: uppercase; }
+  .fee { color: var(--kp-green); }
+  .stars { font-size: 13px; letter-spacing: 1px; color: var(--kp-bg-4); }
+  .stars .on { color: var(--kp-amber); }
+  .best { margin: 10px 0 0; font-size: 11.5px; color: var(--kp-text-2); }
+  @media (max-width: 560px) { .career { grid-template-columns: 1fr; } .badges { grid-template-columns: 1fr; } }
   .timed { display: flex; align-items: center; gap: 8px; margin-top: 12px; font-size: 12.5px; color: var(--kp-text-1); cursor: pointer; user-select: none; }
   .timed input { accent-color: var(--kp-amber); }
   .timed .dim { color: var(--kp-text-2); }
+  /* Auto margins centre the column without clipping its top once it is taller than the screen. */
   .menu {
-    position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
-    gap: 36px; padding: 24px; overflow: auto; background: var(--kp-bg-0);
+    position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center;
+    gap: 28px; padding: 32px 24px; overflow: auto; background: var(--kp-bg-0);
   }
+  .menu > * { flex-shrink: 0; }
+  .menu > header { margin-top: auto; }
+  .menu > footer { margin-bottom: auto; }
   .bg {
     position: absolute; inset: 0; pointer-events: none;
     background:

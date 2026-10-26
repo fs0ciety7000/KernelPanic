@@ -320,6 +320,14 @@ soc:
 - Propagation : des minuteries avec `ifFlags` (la source doit être atteinte) et `unlessFlags` (pause, blocage, isolement) ; une minuterie sans `timedOnly` fait partie du scénario, mode chronométré ou non.
 - Événements : `soc.alert` `{ id, severity, title, asset? }`, `soc.triage` `{ alert, verdict }`, `soc.action` `{ action: isolate|block, target }`.
 
+### 3.6e Contrat (tableau des contrats)
+
+```yaml
+contract: { client: "Orbis Assurances", fee: 12000 }   # fee: 0 = formation
+```
+
+Affiché sur la carte du menu. La carrière (réputation = somme des meilleurs scores, rangs, badges, étoiles : clos · bonne fin · sans indice) est calculée côté bureau à partir des résultats de fin de partie ; un scénario n'a rien d'autre à déclarer. Les fins `tone: bad` ou `mixed` ne donnent qu'une étoile.
+
 ### 3.7 Machines distantes (`ssh`, `scp`)
 
 Un scénario peut déclarer d'autres machines. Leurs fichiers vivent dans `hosts/<id>/`, comme `fs/` pour le poste du joueur.

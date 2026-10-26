@@ -402,6 +402,7 @@ export function compileScenario(dir: string): ScenarioBundle {
     difficulty: raw.difficulty ?? 'beginner',
     estimatedMinutes: raw.estimatedMinutes,
     locale: raw.locale ?? 'fr',
+    ...(raw.contract ? { contract: raw.contract } : {}),
     machine: raw.machine,
     session: raw.session,
     users,
@@ -433,6 +434,8 @@ export function indexEntry(b: ScenarioBundle): ScenarioIndexEntry {
     estimatedMinutes: b.estimatedMinutes,
     endings: b.endings?.length || undefined,
     timed: b.timers?.some((t) => t.timedOnly) || undefined,
+    contract: b.contract,
+    evidence: b.evidence?.length || undefined,
     file: `${b.id}.json`,
   };
 }

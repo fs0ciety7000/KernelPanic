@@ -15,6 +15,7 @@ summary: >
 difficulty: beginner
 estimatedMinutes: 12
 locale: fr
+contract: { client: "Ironveil — formation", fee: 0 }
 
 machine:
   hostname: training-01

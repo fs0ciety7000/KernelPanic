@@ -17,6 +17,7 @@ difficulty: advanced
 estimatedMinutes: 50
 # Mode chronométré : à 09:50 (heure de jeu), quelqu'un efface la sauvegarde qui contredit le journal.
 locale: fr
+contract: { client: "Orbis Assurances", fee: 12000 }
 
 machine:
   hostname: ws-audit-02

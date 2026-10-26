@@ -303,6 +303,13 @@ export interface HostDef {
   };
 }
 
+/** How the case shows up on the Ironveil contract board. */
+export interface ContractDef {
+  client: string;
+  /** Fee in euros (0 = training). */
+  fee: number;
+}
+
 export interface ScenarioBundle {
   format: typeof BUNDLE_FORMAT;
   id: string;
@@ -313,6 +320,7 @@ export interface ScenarioBundle {
   difficulty: 'beginner' | 'intermediate' | 'advanced';
   estimatedMinutes?: number;
   locale: string;
+  contract?: ContractDef;
   machine: MachineDef;
   session: {
     user: string;
@@ -352,5 +360,7 @@ export interface ScenarioIndexEntry {
   endings?: number;
   /** Offers a timed mode (some timers only fire when it is on). */
   timed?: boolean;
+  contract?: ContractDef;
+  evidence?: number;
   file: string;
 }

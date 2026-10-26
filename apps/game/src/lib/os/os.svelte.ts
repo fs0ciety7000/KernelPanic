@@ -8,6 +8,23 @@ import { load, remove, store } from './storage';
 import { appForPath, appById } from './apps';
 import { wm, type WindowSnapshot } from './wm.svelte';
 import { desktop, type Cell } from './desktop.svelte';
+import { BADGES, better, rankOf, reputation, runResult, type ContractRecord, type RunResult } from './career';
+
+interface Career {
+  records: Record<string, ContractRecord>;
+  /** badge id → when it was earned. */
+  badges: Record<string, number>;
+}
+
+/** What the last finished run changed, for the end screen. */
+export interface RunReport {
+  result: RunResult;
+  newBadges: string[];
+  rankBefore: string;
+  rankAfter: string;
+  repBefore: number;
+  repAfter: number;
+}
 
 type Phase = 'boot' | 'select' | 'intro' | 'login' | 'desktop' | 'ended';
 
@@ -21,6 +38,7 @@ interface StoredGame {
 const SAVE_KEY = (id: string) => `kp.save.${id}`;
 /** Endings reached across all playthroughs (survives "Nouvelle partie"). */
 const ENDINGS_KEY = (id: string) => `kp.endings.${id}`;
+const CAREER_KEY = 'kp.career';
 const AUTOSAVE_MS = 15_000;
 
 class OS {
@@ -32,6 +50,9 @@ class OS {
   /** Wall-clock tick for the top bar clock. */
   tick = $state(0);
   error = $state<string | null>(null);
+  /** Ironveil career: best result per contract, badges. */
+  career = $state<Career>(load<Career>(CAREER_KEY) ?? { records: {}, badges: {} });
+  lastRun = $state.raw<RunReport | null>(null);
   /** Screen lock over a running desktop (Ctrl+Alt+L, launcher). */
   locked = $state(false);
   /** True until the first login of a fresh game (autostart apps run once). */
@@ -49,6 +70,22 @@ class OS {
       this.version++;
     });
   };
+
+  /** Files the finished run in the career: best result, new badges, rank change. */
+  private recordRun(k: Kernel): void {
+    const result = runResult(k, this.discoveredEndings(k.bundle.id).length);
+    const career = $state.snapshot(this.career) as Career;
+    const repBefore = reputation(career.records);
+    const rec = career.records[k.bundle.id] ?? { runs: 0 };
+    career.records[k.bundle.id] = { runs: rec.runs + 1, best: better(rec.best, result) };
+    const entry = this.scenarios.find((s) => s.id === k.bundle.id);
+    const newBadges = BADGES.filter((b) => !career.badges[b.id] && b.check(result, entry)).map((b) => b.id);
+    for (const id of newBadges) career.badges[id] = Date.now();
+    const repAfter = reputation(career.records);
+    this.career = career;
+    store(CAREER_KEY, career);
+    this.lastRun = { result, newBadges, rankBefore: rankOf(repBefore).title, rankAfter: rankOf(repAfter).title, repBefore, repAfter };
+  }
 
   async loadIndex(): Promise<void> {
     try {
@@ -151,6 +188,7 @@ class OS {
         const seen = this.discoveredEndings(k.bundle.id);
         if (!seen.includes(ending)) store(ENDINGS_KEY(k.bundle.id), [...seen, ending]);
       }
+      this.recordRun(k);
       this.save();
       setTimeout(() => {
         this.phase = 'ended';

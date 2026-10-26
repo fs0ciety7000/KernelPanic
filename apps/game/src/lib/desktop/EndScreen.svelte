@@ -1,6 +1,7 @@
 <script lang="ts">
   import { os } from '$lib/os/os.svelte';
   import type { JournalKind } from '@kp/kernel';
+  import { BADGES } from '$lib/os/career';
   import Icon from './Icon.svelte';
 
   const k = os.kernel!;
@@ -13,6 +14,10 @@
   const s = k.runtime.score();
   const fmt = (ms: number) => `${Math.floor(ms / 60000)}:${String(Math.floor((ms % 60000) / 1000)).padStart(2, '0')}`;
   const bonus = k.runtime.objectives().filter((o) => o.optional);
+
+  // Career: what this run changed (null when reopening an old finished save).
+  const run = os.lastRun?.result.scenario === k.bundle.id ? os.lastRun : null;
+  const newBadges = run ? BADGES.filter((b) => run.newBadges.includes(b.id)) : [];
 
   // Replay: what the player did, in game time.
   const journal = k.runtime.journal();
@@ -66,6 +71,17 @@
         <div><span class="kp-label">Bonus</span><b class="num">{bonus.filter((o) => o.status === 'done').length}/{bonus.length}</b></div>
       {/if}
     </div>
+    {#if run}
+      <section class="career-run" aria-label="Carrière">
+        <div class="rep mono">
+          <span>Réputation {run.repBefore} → <b>{run.repAfter}</b>{run.repAfter > run.repBefore ? ` (+${run.repAfter - run.repBefore})` : ' (meilleur résultat inchangé)'}</span>
+          {#if run.rankAfter !== run.rankBefore}<span class="rankup">Nouveau rang : {run.rankAfter}</span>{/if}
+        </div>
+        {#each newBadges as b (b.id)}
+          <div class="nb"><span class="nbi"><Icon name={b.icon} size={14} /></span><span><b>Badge débloqué — {b.title}</b><span class="dim">{b.desc}</span></span></div>
+        {/each}
+      </section>
+    {/if}
     {#if journal.length}
       <section class="replay" aria-label="Déroulé de la partie">
         <button class="replay-head" aria-expanded={replay} onclick={() => (replay = !replay)}>
@@ -107,6 +123,16 @@
   .stats div { padding: 14px; border-radius: var(--kp-radius-m); background: var(--kp-bg-2); border: 1px solid var(--kp-line); display: flex; flex-direction: column; gap: 6px; }
   .stats b { font-size: 22px; font-family: var(--kp-font-mono); }
   .actions { display: flex; gap: 8px; }
+  .career-run { margin: -8px 0 20px; display: flex; flex-direction: column; gap: 8px; }
+  .career-run .rep { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-size: 12px; color: var(--kp-text-1); }
+  .career-run b { color: var(--kp-cyan); }
+  .rankup { color: var(--kp-violet); }
+  .nb { display: flex; gap: 10px; align-items: center; padding: 10px 12px; border: 1px solid rgba(157, 123, 255, 0.4); border-radius: var(--kp-radius-m); background: var(--kp-violet-dim); animation: pop 400ms var(--kp-ease) both; }
+  .nb > span:last-child { display: flex; flex-direction: column; gap: 2px; font-size: 12.5px; }
+  .nb .dim { margin: 0; }
+  .nbi { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--kp-bg-2); color: var(--kp-violet); }
+  @keyframes pop { from { opacity: 0; transform: scale(0.96); } }
+  @media (prefers-reduced-motion: reduce) { .nb { animation: none; } }
   .replay { margin: -8px 0 24px; border: 1px solid var(--kp-line); border-radius: var(--kp-radius-m); background: var(--kp-bg-1); }
   .replay-head { display: flex; align-items: center; gap: 8px; width: 100%; padding: 12px 14px; border: 0; background: transparent; color: var(--kp-text-0); font-weight: 600; font-size: 13px; text-align: left; }
   .replay-head:hover { background: rgba(255, 255, 255, 0.03); }

@@ -16,6 +16,7 @@ summary: >
 difficulty: intermediate
 estimatedMinutes: 40
 locale: fr
+contract: { client: "Valmobilis", fee: 6000 }
 
 machine:
   hostname: ws-astreinte
